@@ -1,0 +1,2 @@
+# keiba-scraping
+netkeiba/jraから競馬データをスクレイピングしてデータを取得するライブラリ
