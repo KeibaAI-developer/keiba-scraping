@@ -97,7 +97,7 @@ explicit_package_bases = true
 disable_error_code = ["attr-defined", "import-untyped"]
 
 [[tool.mypy.overrides]]
-module = "tests.*"
+module = "test.*"
 disallow_untyped_defs = false
 
 [tool.pytest.ini_options]

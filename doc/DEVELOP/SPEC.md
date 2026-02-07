@@ -327,7 +327,7 @@ JRAから単勝・複勝オッズをスクレイピングする（async関数）
 
 ### 5.8. `schedule.py` — レーススケジュール・カレンダー
 
-KeibaAIの`scrape_today_race_info`、`scrape_calender_page`に対応する。
+KeibaAIの`scrape_today_race_info`、`scrape_calender_page`（KeibaAI側の関数名。"calender" は原文ママのタイポ）に対応する。
 
 #### 公開関数
 
@@ -381,7 +381,7 @@ KeibaAIの`scrape_today_race_info`、`scrape_calender_page`に対応する。
 | `scrape_horse_info_page` | `scrape_horse_info` | param不使用 |
 | `scrape_umabashira` | `scrape_past_performances` | 日付ID不使用 |
 | `scrape_today_race_info` | `scrape_race_schedule` | 日付ID不使用、保存しない |
-| `scrape_calender_page` | `scrape_race_calendar` | 日付ID不使用 |
+| `scrape_calender_page`（KeibaAI側の関数名。"calender" は原文ママのタイポ） | `scrape_race_calendar` | 日付ID不使用 |
 | `_scrape_odds_from_netkeiba` | `scrape_odds_from_netkeiba` | DataFrame返却 |
 | `_scrape_odds_from_jra` | `scrape_odds_from_jra` | 変更なし |
 | `update_odds` | （提供しない） | KeibaAIのビジネスロジック |

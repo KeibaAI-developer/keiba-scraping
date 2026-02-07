@@ -32,7 +32,7 @@ KeibaAIのmodulesとして実装されているスクレイピング機能に関
 - 馬の所属情報など（horse_info）をスクレイピングする関数
 - 馬柱（past_performances）のスクレイピングをする関数（KeibaAIではumabashiraと言っている）
 - その日のレーススケジュール（race_schedule）のスクレイピングをする関数（KeibaAIではtoday_race_infoと言っている）
-- レース一覧（race_calender）のスクレイピングをする関数
+- レース一覧（race_calendar）のスクレイピングをする関数
 - オッズをnetkeibaからスクレイピングする関数
 - オッズをJRAからスクレイピングする関数
 
