@@ -91,7 +91,7 @@ def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date, str]:
 
     Returns:
         date: レース開催日
-        str: 曜日（漢字1文字、例: "日"）。取得できない場合は空文字列
+        str: 曜日（漢字1文字、例: "日"）
 
     Raises:
         ParseError: RaceList_DateListまたはActive要素、kaisai_dateパラメータが見つからない場合
@@ -118,7 +118,10 @@ def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date, str]:
         raise ParseError("kaisai_dateパラメータが見つかりませんでした。")
 
     date_str = date_match.group(1)
-    race_date = date(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:8]))
+    try:
+        race_date = date(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:8]))
+    except ValueError as e:
+        raise ParseError(f"不正なkaisai_dateパラメータ値です: {date_str}") from e
 
     # 曜日をtitle属性またはspanテキストから取得
     day_of_week = ""

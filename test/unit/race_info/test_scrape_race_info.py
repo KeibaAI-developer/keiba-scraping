@@ -145,7 +145,7 @@ def test_scrape_race_info_has_non_empty_values(
     assert isinstance(row["日付"], date)
     assert row["曜日"] in ["月", "火", "水", "木", "金", "土", "日"]
     assert isinstance(row["発走時刻"], str)
-    assert re.match(r"\d{1,2}:\d{2}", row["発走時刻"])
+    assert re.fullmatch(r"\d{1,2}:\d{2}", row["発走時刻"])
 
 
 # 代表的なレースの具体的な値を検証
