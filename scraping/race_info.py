@@ -5,7 +5,7 @@ netkeibaのレースページからレースの基本情報をスクレイピン
 
 import logging
 import re
-from datetime import date, datetime
+from datetime import date
 
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
@@ -66,6 +66,7 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
 
     # RACE_INFO_COLUMNSの順でDataFrameを構築
     race_info_dict = _build_race_info_dict(race_id, race_info_list, race_date, day_of_week)
+    _validate_race_info_dict(race_info_dict)
     race_info_df = pd.DataFrame([race_info_dict], columns=RACE_INFO_COLUMNS)
 
     # 地方重賞の場合グレードを更新
@@ -78,7 +79,7 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
     return race_info_df
 
 
-def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date | None, str]:
+def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date, str]:
     """RaceList_DateListのActive要素からレース開催日と曜日を取得する
 
     RaceList_DateListのdd要素のうちclass="Active"のものを探し、
@@ -89,24 +90,24 @@ def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date | None, str]:
         soup (BeautifulSoup): ページのBeautifulSoupインスタンス
 
     Returns:
-        date | None: レース開催日（取得できない場合はNone）
+        date: レース開催日
         str: 曜日（漢字1文字、例: "日"）。取得できない場合は空文字列
+
+    Raises:
+        ParseError: RaceList_DateListまたはActive要素、kaisai_dateパラメータが見つからない場合
     """
     datelist = soup.find("dl", id="RaceList_DateList")
     if datelist is None or not isinstance(datelist, Tag):
-        logger.warning("RaceList_DateListが見つかりませんでした。")
-        return None, ""
+        raise ParseError("RaceList_DateListが見つかりませんでした。")
 
     active_dd = datelist.find("dd", class_="Active")
     if active_dd is None or not isinstance(active_dd, Tag):
-        logger.warning("Active日付が見つかりませんでした。")
-        return None, ""
+        raise ParseError("Active日付が見つかりませんでした。")
 
     # Active要素内のaタグを取得
     anchor = active_dd.find("a")
     if anchor is None or not isinstance(anchor, Tag):
-        logger.warning("Active日付のaタグが見つかりませんでした。")
-        return None, ""
+        raise ParseError("Active日付のaタグが見つかりませんでした。")
 
     # kaisai_dateパラメータから日付を取得
     href = anchor.get("href", "")
@@ -114,8 +115,7 @@ def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date | None, str]:
         href = href[0] if href else ""
     date_match = re.search(r"kaisai_date=(\d{8})", href)
     if date_match is None:
-        logger.warning("kaisai_dateパラメータが見つかりませんでした。")
-        return None, ""
+        raise ParseError("kaisai_dateパラメータが見つかりませんでした。")
 
     date_str = date_match.group(1)
     race_date = date(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:8]))
@@ -286,8 +286,8 @@ def _format_race_info_list(race_filtered_list: list[str]) -> list[str]:
 
 
 def _build_race_info_dict(
-    race_id: str, race_info_list: list[str], race_date: date | None, day_of_week: str
-) -> dict[str, str | int | date | datetime | None]:
+    race_id: str, race_info_list: list[str], race_date: date, day_of_week: str
+) -> dict[str, str | int | date | None]:
     """_format_race_info_listの出力をRACE_INFO_COLUMNSに対応するdictに変換する
 
     _format_race_info_listの出力順序（20要素）:
@@ -296,22 +296,18 @@ def _build_race_info_dict(
          競走種別(10), 競走条件(11), 競走記号(12), 斤量条件(13), 頭数(14),
          1着賞金(15), 2着賞金(16), 3着賞金(17), 4着賞金(18), 5着賞金(19)]
 
-    ※ グレードは netkeiba のアイコン情報から別途更新される（辞書の"グレード"は空文字列で初期化）。
-
+    グレードは netkeiba のアイコン情報から別途更新される（辞書の"グレード"は空文字列で初期化）。
     コース生値（例: "左 C", "右 外 B", "直線 A"）を「左右」「コース」「内外」に分割して辞書に格納する。
-
     距離・回・開催日は_format_race_info_listで整形済みの数値文字列をintに変換する。
-
-    発走時刻は "HH:MM" 形式の文字列を解析し、race_dateと組み合わせてdatetime型に変換する。
 
     Args:
         race_id (str): レースID
         race_info_list (list[str]): _format_race_info_listの出力
-        race_date (date | None): レース開催日（date型）
+        race_date (date): レース開催日（date型）
         day_of_week (str): 曜日（漢字1文字、例: "日"）
 
     Returns:
-        dict[str, str | int | date | datetime | None]: RACE_INFO_COLUMNSに対応する辞書
+        dict[str, str | int | date | None]: RACE_INFO_COLUMNSに対応する辞書
     """
 
     def _safe_get(lst: list[str], idx: int) -> str:
@@ -322,34 +318,14 @@ def _build_race_info_dict(
         """数値文字列をintに変換する。空文字の場合は0"""
         return int(value) if value else 0
 
-    def _parse_start_time(time_str: str, race_date: date | None) -> datetime | None:
-        """発走時刻を解析してdatetime型に変換する
-
-        Args:
-            time_str (str): 発走時刻文字列（例: "15:40"）
-            race_date (date | None): レース開催日
-
-        Returns:
-            datetime | None: 発走時刻（解析できない場合はNone）
-        """
-        if not time_str or race_date is None:
-            return None
-        time_match = re.match(r"(\d{1,2}):(\d{2})", time_str)
-        if time_match is None:
-            return None
-        hour = int(time_match.group(1))
-        minute = int(time_match.group(2))
-        return datetime(race_date.year, race_date.month, race_date.day, hour, minute)
-
     course_raw = _safe_get(race_info_list, 4)
-    start_time_str = _safe_get(race_info_list, 1)
 
     return {
         "レースID": race_id,
         "日付": race_date,
         "曜日": day_of_week,
         "レース名": _safe_get(race_info_list, 0),
-        "発走時刻": _parse_start_time(start_time_str, race_date),
+        "発走時刻": _safe_get(race_info_list, 1),
         "天候": _safe_get(race_info_list, 5),
         "馬場": _safe_get(race_info_list, 6),
         "芝ダ": _safe_get(race_info_list, 2),
@@ -372,6 +348,74 @@ def _build_race_info_dict(
         "4着賞金": _to_int(_safe_get(race_info_list, 18)),
         "5着賞金": _to_int(_safe_get(race_info_list, 19)),
     }
+
+
+def _validate_race_info_dict(
+    race_info: dict[str, str | int | date | None],
+) -> None:
+    """レース情報辞書の値をスキーマに基づいて検証する
+
+    各カラムの値が期待するフォーマット・範囲に収まっているかを確認し、
+    不正な値があればParseErrorを送出する。
+
+    Args:
+        race_info (dict[str, str | int | date | None]): レース情報辞書
+
+    Raises:
+        ParseError: 値がスキーマに適合しない場合
+    """
+    errors: list[str] = []
+
+    # レースID: 12桁
+    race_id = race_info.get("レースID", "")
+    if not isinstance(race_id, str) or not re.fullmatch(r"\d{12}", race_id):
+        errors.append(f"レースIDが12桁の数字ではありません: {race_id}")
+
+    # 曜日: 月火水木金土日のいずれか
+    day_of_week = race_info.get("曜日", "")
+    if day_of_week not in ("月", "火", "水", "木", "金", "土", "日"):
+        errors.append(f"曜日が不正です: {day_of_week}")
+
+    # 発走時刻: HH:MM形式
+    start_time = race_info.get("発走時刻", "")
+    if not isinstance(start_time, str) or not re.fullmatch(r"\d{1,2}:\d{2}", start_time):
+        errors.append(f"発走時刻がHH:MM形式ではありません: {start_time}")
+
+    # 天候: 晴、曇、雨、小雨、雪、小雪、空文字列
+    weather = race_info.get("天候", "")
+    if weather not in ("晴", "曇", "雨", "小雨", "雪", "小雪", ""):
+        errors.append(f"天候が不正です: {weather}")
+
+    # 馬場: 良、稍重、稍、重、不、不良、空文字列
+    track_condition = race_info.get("馬場", "")
+    if track_condition not in ("良", "稍重", "稍", "重", "不", "不良", ""):
+        errors.append(f"馬場が不正です: {track_condition}")
+
+    # 芝ダ: 芝、ダ、障を含む、もしくは空文字列
+    track_type = race_info.get("芝ダ", "")
+    if isinstance(track_type, str) and track_type != "":
+        if "芝" not in track_type and "ダ" not in track_type and "障" not in track_type:
+            errors.append(f"芝ダが不正です: {track_type}")
+
+    # 距離、回、開催日、頭数: 正であること
+    for key in ("距離", "回", "開催日", "頭数"):
+        value = race_info.get(key, 0)
+        if not isinstance(value, int) or value <= 0:
+            errors.append(f"{key}が正の整数ではありません: {value}")
+
+    # 賞金: 0以上であること
+    for key in ("1着賞金", "2着賞金", "3着賞金", "4着賞金", "5着賞金"):
+        value = race_info.get(key, 0)
+        if not isinstance(value, int) or value < 0:
+            errors.append(f"{key}が0以上の整数ではありません: {value}")
+
+    # 重量種別: 定量、別定、ハンデ、馬齢、空文字列
+    weight_type = race_info.get("重量種別", "")
+    if weight_type not in ("定量", "別定", "ハンデ", "馬齢", ""):
+        errors.append(f"重量種別が不正です: {weight_type}")
+
+    if errors:
+        raise ParseError("レース情報の検証に失敗しました:\n" + "\n".join(errors))
 
 
 def _update_grade_from_icon(soup: BeautifulSoup, race_info_df: pd.DataFrame) -> pd.DataFrame:
