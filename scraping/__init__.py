@@ -35,6 +35,7 @@ from scraping.exceptions import (
     ParseError,
     ScrapingError,
 )
+from scraping.race_info import scrape_race_info
 from scraping.utils import (
     build_entry_url,
     build_horse_info_url,
@@ -84,4 +85,6 @@ __all__ = [
     "get_race_info_from_past_performances",
     "calc_interval",
     "set_chrome_options",
+    # race_info
+    "scrape_race_info",
 ]
