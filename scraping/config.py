@@ -174,6 +174,8 @@ SHUTUBA_RAW_COLUMNS: list[str] = [
 # レース情報のカラム
 RACE_INFO_COLUMNS: list[str] = [
     "レースID",
+    "日付",
+    "曜日",
     "レース名",
     "発走時刻",
     "天候",
