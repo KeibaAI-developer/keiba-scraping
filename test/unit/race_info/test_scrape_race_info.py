@@ -39,6 +39,26 @@ def _load_soup(fixture_filename: str) -> BeautifulSoup:
     return BeautifulSoup(html, "html.parser")
 
 
+def _load_soup_with_replacements(
+    fixture_filename: str, replacements: dict[str, str]
+) -> BeautifulSoup:
+    """フィクスチャHTMLを読み込み、文字列置換してBeautifulSoupを返す
+
+    Args:
+        fixture_filename (str): フィクスチャファイル名
+        replacements (dict[str, str]): {置換前: 置換後} の辞書
+
+    Returns:
+        BeautifulSoup: 置換済みHTMLのBeautifulSoupオブジェクト
+    """
+    filepath = os.path.join(FIXTURES_DIR, fixture_filename)
+    with open(filepath, "r", encoding="utf-8") as f:
+        html = f.read()
+    for old, new in replacements.items():
+        html = html.replace(old, new)
+    return BeautifulSoup(html, "html.parser")
+
+
 def _collect_fixture_params() -> list[tuple[str, str, str]]:
     """フィクスチャHTMLから(page_type, race_id, fixture_filename)のリストを生成する
 
@@ -343,11 +363,132 @@ def test_scrape_race_info_entry_and_result_match(race_id: str) -> None:
     pd.testing.assert_frame_equal(entry_df, result_df)
 
 
-# 準正常系
-def test_scrape_race_info_parse_error_on_invalid_html() -> None:
-    """RaceList_Item02が存在しないHTMLでParseErrorが発生することを確認する"""
+# 準正常系: HTML構造エラー
+def test_scrape_race_info_parse_error_on_missing_datelist() -> None:
+    """RaceList_DateListが存在しないHTMLでParseErrorが発生することを確認する"""
     from scraping.exceptions import ParseError
 
     soup = BeautifulSoup("<html><body></body></html>", "html.parser")
     with pytest.raises(ParseError, match="RaceList_DateListが見つかりませんでした。"):
         scrape_race_info(soup, "000000000000")
+
+
+def test_scrape_race_info_parse_error_on_missing_race_item() -> None:
+    """RaceList_Item02が存在しないHTMLでParseErrorが発生することを確認する"""
+    from scraping.exceptions import ParseError
+
+    # RaceList_DateListは存在するがRaceList_Item02が存在しない
+    html = """
+    <html><body>
+        <dl id="RaceList_DateList">
+            <dd class="Active">
+                <a href="?kaisai_date=20250601" title="6/1(日)">
+                    <span class="Sun">(日)</span>
+                </a>
+            </dd>
+        </dl>
+    </body></html>
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    with pytest.raises(ParseError, match="RaceList_Item02が見つかりませんでした"):
+        scrape_race_info(soup, "202505021211")
+
+
+def test_scrape_race_info_parse_error_on_missing_active_date() -> None:
+    """Active日付が存在しないHTMLでParseErrorが発生することを確認する"""
+    from scraping.exceptions import ParseError
+
+    html = """
+    <html><body>
+        <dl id="RaceList_DateList">
+            <dd><a href="?kaisai_date=20250601">6/1</a></dd>
+        </dl>
+        <div class="RaceList_Item02">発走15:40</div>
+    </body></html>
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    with pytest.raises(ParseError, match="Active日付が見つかりませんでした。"):
+        scrape_race_info(soup, "202505021211")
+
+
+def test_scrape_race_info_parse_error_on_missing_kaisai_date() -> None:
+    """kaisai_dateパラメータが存在しないHTMLでParseErrorが発生することを確認する"""
+    from scraping.exceptions import ParseError
+
+    html = """
+    <html><body>
+        <dl id="RaceList_DateList">
+            <dd class="Active">
+                <a href="?invalid_param=20250601" title="6/1(日)">
+                    <span class="Sun">(日)</span>
+                </a>
+            </dd>
+        </dl>
+        <div class="RaceList_Item02">発走15:40</div>
+    </body></html>
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    with pytest.raises(ParseError, match="kaisai_dateパラメータが見つかりませんでした。"):
+        scrape_race_info(soup, "202505021211")
+
+
+# 準正常系: バリデーションエラー
+def test_scrape_race_info_validation_error_on_invalid_race_id() -> None:
+    """レースIDが12桁でない場合にParseErrorが発生することを確認する"""
+    from scraping.exceptions import ParseError
+
+    soup = _load_soup("result_202505021211.html")
+    with pytest.raises(ParseError, match="レースIDが12桁の数字ではありません"):
+        scrape_race_info(soup, "12345")  # 5桁のID
+
+
+def test_scrape_race_info_validation_error_on_invalid_day_of_week() -> None:
+    """曜日が不正な場合にParseErrorが発生することを確認する"""
+    from scraping.exceptions import ParseError
+
+    # フィクスチャHTMLのtitle属性の曜日を不正な値に置換
+    soup = _load_soup_with_replacements(
+        "result_202505021211.html",
+        {"6月1日(日)": "6月1日(X)", "(日)</span>": "(X)</span>"},
+    )
+    with pytest.raises(ParseError, match="曜日が不正です"):
+        scrape_race_info(soup, "202505021211")
+
+
+def test_scrape_race_info_validation_error_on_invalid_start_time() -> None:
+    """発走時刻が不正なフォーマットの場合にParseErrorが発生することを確認する"""
+    from scraping.exceptions import ParseError
+
+    # フィクスチャHTMLの発走時刻を不正な値に置換
+    soup = _load_soup_with_replacements(
+        "result_202505021211.html",
+        {"15:40発走": "abc発走"},
+    )
+    with pytest.raises(ParseError, match="発走時刻がHH:MM形式ではありません"):
+        scrape_race_info(soup, "202505021211")
+
+
+def test_scrape_race_info_validation_error_on_invalid_weather() -> None:
+    """天候が不正な値の場合にParseErrorが発生することを確認する"""
+    from scraping.exceptions import ParseError
+
+    # フィクスチャHTMLの天候を不正な値に置換
+    soup = _load_soup_with_replacements(
+        "result_202505021211.html",
+        {"天候:晴": "天候:台風"},
+    )
+    with pytest.raises(ParseError, match="天候が不正です"):
+        scrape_race_info(soup, "202505021211")
+
+
+def test_scrape_race_info_validation_error_on_invalid_track_condition() -> None:
+    """馬場が不正な値の場合にParseErrorが発生することを確認する"""
+    from scraping.exceptions import ParseError
+
+    # フィクスチャHTMLの馬場を不正な値に置換
+    soup = _load_soup_with_replacements(
+        "result_202505021211.html",
+        {"馬場:良": "馬場:最悪"},
+    )
+    with pytest.raises(ParseError, match="馬場が不正です"):
+        scrape_race_info(soup, "202505021211")
