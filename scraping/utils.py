@@ -113,7 +113,7 @@ def build_horse_list_url(year: int, page_num: int, config: ScrapingConfig | None
         str: URL
     """
     cfg = config or ScrapingConfig()
-    return f"{cfg.netkeiba_base_url}//" f"?pid=horse_list&birthyear={year}&list=100&page={page_num}"
+    return f"{cfg.netkeiba_base_url}/?pid=horse_list&birthyear={year}&list=100&page={page_num}"
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +179,7 @@ def get_race_info_from_past_performances(
         str: 競馬場
 
     Raises:
-        ValueError: 馬柱が1行もなかった場合
+        ValueError: 馬柱が1行もなかった場合、または未知の競馬場名が指定された場合
     """
     if len(past_performances_df) == 0:
         raise ValueError("馬柱が1行もありません")
@@ -202,22 +202,29 @@ def get_race_info_from_past_performances(
         race_num = "00"
 
     # 競馬場
-    keibajo: str = past_performances_df["競馬場"].iloc[race_index]
-    keibajo_id = KEIBAJO_TO_ID_DICT.get(keibajo, "00")
+    raw_keibajo: str = past_performances_df["競馬場"].iloc[race_index]
+    keibajo: str = raw_keibajo.strip() if isinstance(raw_keibajo, str) else raw_keibajo
 
     # レースIDと主催の作成
     if _is_katakana(keibajo):
         # 海外の場合（競馬場がカタカナ表記）
         race_id = ""
         organize = "海外"
-    elif pd.isna(kai) and not _is_katakana(keibajo):
-        # 地方の場合
-        race_id = f"{year}{keibajo_id}{month}{day}{int(race_num):02}"
-        organize = "地方"
     else:
-        # 中央の場合
-        race_id = f"{year}{keibajo_id}{int(kai):02}{int(kaisai_day):02}{int(race_num):02}"
-        organize = "中央"
+        # 国内の場合は競馬場名が辞書に存在することを要求する
+        try:
+            keibajo_id = KEIBAJO_TO_ID_DICT[keibajo]
+        except KeyError as exc:
+            raise ValueError(f"未知の競馬場名です: {keibajo!r}") from exc
+
+        if pd.isna(kai):
+            # 地方の場合
+            race_id = f"{year}{keibajo_id}{month}{day}{int(race_num):02}"
+            organize = "地方"
+        else:
+            # 中央の場合
+            race_id = f"{year}{keibajo_id}{int(kai):02}{int(kaisai_day):02}{int(race_num):02}"
+            organize = "中央"
 
     # レース間隔
     interval: int | float = np.nan
