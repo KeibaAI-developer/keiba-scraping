@@ -92,8 +92,8 @@ def test_grade_dict_values() -> None:
 
 
 def test_grade_dict_length() -> None:
-    """グレード辞書が3要素であることを確認する"""
-    assert len(GRADE_DICT) == 3
+    """グレード辞書が12要素であることを確認する"""
+    assert len(GRADE_DICT) == 12
 
 
 # 正常系 - 斤量条件
