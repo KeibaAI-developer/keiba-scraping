@@ -3,6 +3,7 @@
 netkeibaのレースページからレースの基本情報をスクレイピングする。
 """
 
+import logging
 import re
 
 import pandas as pd
@@ -10,6 +11,8 @@ from bs4 import BeautifulSoup, Tag
 
 from scraping.config import GRADE_DICT, RACE_INFO_COLUMNS, WEIGHT_CONDITIONS
 from scraping.exceptions import ParseError
+
+logger = logging.getLogger(__name__)
 
 
 def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
@@ -39,13 +42,23 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
     # 地方重賞の場合
     grade_icon = False
     local_grade = ""
+
+    # 必要な要素数をチェック
+    if len(race_filtered_list) < 2:
+        raise ParseError(
+            "レース情報の要素数が不足しています。HTML構造が変更された可能性があります。"
+        )
+
     if "発走" not in race_filtered_list[1]:  # 2つ目の要素に"発走"が含まれていない場合
         local_grade = race_filtered_list[1]
         del race_filtered_list[1]  # 2つ目の要素を削除
         grade_icon = True
 
     # 情報をリストにまとめる
-    race_info_list = _format_race_info_list(race_filtered_list)
+    try:
+        race_info_list = _format_race_info_list(race_filtered_list)
+    except ValueError as e:
+        raise ParseError(f"レース情報の整形に失敗しました: {e}") from e
 
     # RACE_INFO_COLUMNSの順でDataFrameを構築
     race_info_dict = _build_race_info_dict(race_id, race_info_list)
@@ -53,8 +66,8 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
 
     # 地方重賞の場合グレードを更新
     if grade_icon:
-        race_info_df["グレード"].iloc[0] = local_grade
-    elif race_info_df["競争条件"].iloc[0] == "オープン":
+        race_info_df.at[0, "グレード"] = local_grade
+    elif race_info_df.at[0, "競争条件"] == "オープン":
         # 中央オープンの場合グレードアイコンを読み取る
         race_info_df = _update_grade_from_icon(soup, race_info_df)
 
@@ -105,10 +118,10 @@ def _format_race_info_text(race_raw_text: str) -> list[str]:
                         race_filtered_list.append(remaining)  # 競走記号
                         kyoso_kigo_added = True
                 if not kyoso_kigo_added:
-                    print("[WARNING] 競走記号が見つかりませんでした。")
+                    logger.warning("競走記号が見つかりませんでした。")
                     race_filtered_list.append("")  # 競走記号なし
                 if not weight_added:
-                    print("[WARNING] 斤量条件が見つかりませんでした。")
+                    logger.warning("斤量条件が見つかりませんでした。")
                     race_filtered_list.append("")
                 break
             else:
@@ -130,8 +143,11 @@ def _format_race_info_list(race_filtered_list: list[str]) -> list[str]:
     Returns:
         list[str]: レース情報を整形したリスト
             順序: [レース名, 発走時刻, 芝ダ, 距離, コース, 天候, 馬場,
-                   回, 競馬場, 開催日, 条件, グレード, 競走記号, 斤量条件,
+                   回, 競馬場, 開催日, 競走種別, 競走条件, 競走記号, 斤量条件,
                    頭数, 1着賞金, 2着賞金, 3着賞金, 4着賞金, 5着賞金]
+
+            ※ グレード（G1/G2/G3/JpnI など）は netkeiba のアイコン情報から別途更新され、
+               本関数が返すリストには含まれない。
 
     Raises:
         ValueError: レース情報のフォーマットが不正な場合
@@ -209,12 +225,12 @@ def _build_race_info_dict(race_id: str, race_info_list: list[str]) -> dict[str, 
     _format_race_info_listの出力順序（20要素）:
         [レース名(0), 発走時刻(1), 芝ダ(2), 距離(3), コース生値(4),
          天候(5), 馬場(6), 回(7), 競馬場(8), 開催日(9),
-         条件(10), グレード(11), 競走記号(12), 斤量条件(13), 頭数(14),
+         競走種別(10), 競走条件(11), 競走記号(12), 斤量条件(13), 頭数(14),
          1着賞金(15), 2着賞金(16), 3着賞金(17), 4着賞金(18), 5着賞金(19)]
 
-    コース生値（例: "左 C", "右 外 B", "直線 A"）を
-    keiba_utilsのjudge_direction/judge_abcd/judge_course_inoutと同一のロジックで
-    「左右」「コース」「内外」に分割して辞書に格納する。
+    ※ グレードは netkeiba のアイコン情報から別途更新される（辞書の"グレード"は空文字列で初期化）。
+
+    コース生値（例: "左 C", "右 外 B", "直線 A"）を「左右」「コース」「内外」に分割して辞書に格納する。
 
     距離・回・開催日は_format_race_info_listで整形済みの数値文字列をintに変換する。
 
@@ -268,7 +284,6 @@ def _update_grade_from_icon(soup: BeautifulSoup, race_info_df: pd.DataFrame) -> 
     """グレードアイコンからグレード情報を更新する
 
     中央オープンの場合、RaceNameのspan要素からグレード情報を読み取る。
-    scraping_core._scrape_race_infoのグレードアイコン読み取り部分に対応。
 
     Args:
         soup (BeautifulSoup): ページのBeautifulSoupインスタンス
@@ -297,8 +312,6 @@ def _update_grade_from_icon(soup: BeautifulSoup, race_info_df: pd.DataFrame) -> 
 def _judge_direction(course: str) -> str:
     """コースから左右（方向）を判定する
 
-    keiba_utils.judge_directionと同一のロジック。
-
     Args:
         course (str): コースの生値（例: "左 C", "右 外 B", "直線 A"）
 
@@ -317,8 +330,6 @@ def _judge_direction(course: str) -> str:
 
 def _judge_abcd(course: str) -> str:
     """コースからABCDコースを判定する
-
-    keiba_utils.judge_abcdと同一のロジック。
 
     Args:
         course (str): コースの生値（例: "左 C", "右 外 B"）
@@ -340,8 +351,6 @@ def _judge_abcd(course: str) -> str:
 
 def _judge_course_inout(course: str) -> str:
     """コースから内外を判定する
-
-    keiba_utils.judge_course_inoutと同一のロジック。
 
     Args:
         course (str): コースの生値（例: "右 外 B"）

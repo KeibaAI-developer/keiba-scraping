@@ -1,6 +1,6 @@
 """テスト用HTMLフィクスチャ取得スクリプト
 
-config/test/test_case.ymlに定義されているレースIDに対して、
+test/fixtures/test_case.ymlに定義されているレースIDに対して、
 netkeibaの出馬表ページと結果ページのHTMLをrequestsで取得し、
 test/fixtures/html/にUTF-8で保存する。
 
@@ -18,9 +18,7 @@ import requests
 import yaml
 
 # テストケースYAMLファイルのパス
-TEST_CASE_YML_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..", "config", "test", "test_case.yml"
-)
+TEST_CASE_YML_PATH = os.path.join(os.path.dirname(__file__), "..", "fixtures", "test_case.yml")
 
 # フィクスチャ保存先ディレクトリ
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "..", "fixtures", "html")
@@ -99,62 +97,53 @@ def main() -> None:
         sys.exit(1)
 
     with open(yml_path, encoding="utf-8") as f:
-        test_cases = yaml.safe_load(f)
+        races = yaml.safe_load(f)
 
-    # 対象カテゴリ（異常系のERROR_TEST_RACESは除外）
-    target_categories = [
-        "NORMAL_TEST_RACES",
-        "ABNORMAL_TEST_RACES_SUCCESS",
-        "ABNORMAL_TEST_RACES_OPTIONAL",
-    ]
+    if not races:
+        print("[ERROR] test_case.ymlにレース情報がありません")
+        sys.exit(1)
 
     fixtures_dir = os.path.normpath(FIXTURES_DIR)
     total_fetched = 0
     total_skipped = 0
 
-    for category in target_categories:
-        races = test_cases.get(category, [])
-        if not races:
+    for race in races:
+        race_id = race["race_id"]
+        race_name = race.get("race_name", "不明")
+
+        # 地方競馬はスキップ
+        if _is_local_race(race_id):
+            print(f"[{race_name}] ({race_id}) → 地方競馬のためスキップ")
+            total_skipped += 1
             continue
 
-        print(f"\n=== {category} ===")
-        for race in races:
-            race_id = race["race_id"]
-            race_name = race.get("race_name", "不明")
+        print(f"[{race_name}] ({race_id})")
 
-            # 地方競馬はスキップ
-            if _is_local_race(race_id):
-                print(f"  [{race_name}] ({race_id}) → 地方競馬のためスキップ")
-                total_skipped += 1
-                continue
+        # 出馬表ページの取得
+        entry_path = os.path.join(fixtures_dir, f"entry_{race_id}.html")
+        if not os.path.exists(entry_path):
+            entry_url = ENTRY_URL_TEMPLATE.format(race_id=race_id)
+            html = _fetch_page(entry_url)
+            if html:
+                _save_html(html, entry_path)
+                print("  出馬表: 保存しました")
+                total_fetched += 1
+            time.sleep(REQUEST_INTERVAL)
+        else:
+            print("  出馬表: 既に存在")
 
-            print(f"  [{race_name}] ({race_id})")
-
-            # 出馬表ページの取得
-            entry_path = os.path.join(fixtures_dir, f"entry_{race_id}.html")
-            if not os.path.exists(entry_path):
-                entry_url = ENTRY_URL_TEMPLATE.format(race_id=race_id)
-                html = _fetch_page(entry_url)
-                if html:
-                    _save_html(html, entry_path)
-                    print("    出馬表: 保存しました")
-                    total_fetched += 1
-                time.sleep(REQUEST_INTERVAL)
-            else:
-                print("    出馬表: 既に存在")
-
-            # 結果ページの取得
-            result_path = os.path.join(fixtures_dir, f"result_{race_id}.html")
-            if not os.path.exists(result_path):
-                result_url = RESULT_URL_TEMPLATE.format(race_id=race_id)
-                html = _fetch_page(result_url)
-                if html:
-                    _save_html(html, result_path)
-                    print("    結果:   保存しました")
-                    total_fetched += 1
-                time.sleep(REQUEST_INTERVAL)
-            else:
-                print("    結果:   既に存在")
+        # 結果ページの取得
+        result_path = os.path.join(fixtures_dir, f"result_{race_id}.html")
+        if not os.path.exists(result_path):
+            result_url = RESULT_URL_TEMPLATE.format(race_id=race_id)
+            html = _fetch_page(result_url)
+            if html:
+                _save_html(html, result_path)
+                print("  結果:   保存しました")
+                total_fetched += 1
+            time.sleep(REQUEST_INTERVAL)
+        else:
+            print("  結果:   既に存在")
 
     print(f"\n完了: {total_fetched}件取得, {total_skipped}件スキップ")
 

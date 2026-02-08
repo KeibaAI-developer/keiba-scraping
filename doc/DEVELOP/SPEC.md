@@ -191,7 +191,7 @@ BeautifulSoupからレースの基本情報を抽出する。KeibaAIの`_scrape_
   - `soup`: 出馬表or結果ページのBeautifulSoupインスタンス
   - `race_id`: netkeibaのレースID（12桁文字列）
 - **戻り値**: レース基本情報のDataFrame（1行）
-- **カラム**: `RACE_INFO_COLUMNS`に定義（25カラム）
+- **カラム**: `RACE_INFO_COLUMNS`に定義（24カラム）
 
 | カラム名 | 型 | 説明 |
 |---|---|---|

@@ -605,11 +605,11 @@ test/
 - テスト関数名: `test_{テスト対象の動作}_{条件}`
   - 例: `test_scrape_race_info_returns_dataframe_with_expected_columns`
   - 例: `test_scrape_race_info_arima_kinen`
-- 日本語は使用しない（pytest-coding-ruleに準拠）
+  - 関数名に日本語は使用しない
 
 ### テスト実装の注意事項
 
-- テストクラスは作らない（pytest-coding-ruleに準拠）
+- テストクラスは作らない
 - プライベートメソッドのテストは行わない（公開関数経由でテストする）
 - `@pytest.mark.parametrize`を積極的に使用し、test_case.ymlの各レースIDに対してテストする
 - 単体テストではフィクスチャHTMLを使用し、外部サービスへのモックは不要とする

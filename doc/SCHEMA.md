@@ -2,7 +2,7 @@
 
 ## レース情報
 
-`scrape_race_info()`関数が返すDataFrameの仕様。RACE_INFO_COLUMNSに定義された25カラムを持つ1行のDataFrame。
+`scrape_race_info()`関数が返すDataFrameの仕様。RACE_INFO_COLUMNSに定義された24カラムを持つ1行のDataFrame。
 
 | カラム名     | 型    | 説明                             | 例               |
 |--------------|-------|----------------------------------|------------------|

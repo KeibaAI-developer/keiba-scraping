@@ -1,7 +1,6 @@
 """scrape_race_infoの単体テスト
 
 HTMLフィクスチャからBeautifulSoupを生成し、パブリック関数scrape_race_infoの出力を検証する。
-test_case.ymlに定義された正常系・準正常系のレースを対象にテストする。
 """
 
 import glob

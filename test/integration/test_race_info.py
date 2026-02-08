@@ -5,9 +5,10 @@ scrape_race_infoが正しく動作することを確認する。
 netkeibaのHTML構造の仕様変更に気づきやすくすることが目的。
 
 ネットワーク接続が必要なため、@pytest.mark.networkマーカーを付与する。
-CIでは -m "not network" でスキップ可能。
+環境変数 RUN_NETWORK_TESTS=1 が設定されている場合のみ実行される（opt-in）。
 """
 
+import os
 import time
 
 import pandas as pd
@@ -113,6 +114,9 @@ LIVE_TEST_CASE_IDS = [str(tc["description"]) for tc in LIVE_TEST_CASES]
 )
 def test_scrape_race_info_live(test_case: dict[str, object]) -> None:
     """実際にnetkeibaからスクレイピングしてscrape_race_infoが動作することを確認する"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
     race_id = str(test_case["race_id"])
     url = str(test_case["url"])
     expected = test_case["expected"]
@@ -145,6 +149,9 @@ def test_scrape_race_info_live(test_case: dict[str, object]) -> None:
 @pytest.mark.network
 def test_scrape_race_info_live_parse_error_on_nonexistent_race() -> None:
     """存在しないレースIDでParseErrorが発生することを確認する"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
     from scraping.exceptions import ParseError
 
     race_id = "202306010911"
