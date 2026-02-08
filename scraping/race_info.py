@@ -5,6 +5,7 @@ netkeibaのレースページからレースの基本情報をスクレイピン
 
 import logging
 import re
+from datetime import date, datetime
 
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
@@ -30,6 +31,9 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
     Raises:
         ParseError: HTMLの解析に失敗した場合
     """
+    # RaceList_DateListからActiveな日付を取得
+    race_date, day_of_week = _extract_date_from_datelist(soup)
+
     # class:RaceList_Item02のテキストを取得
     race_list_item = soup.find("div", attrs={"class": "RaceList_Item02"})
     if race_list_item is None:
@@ -61,7 +65,7 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
         raise ParseError(f"レース情報の整形に失敗しました: {e}") from e
 
     # RACE_INFO_COLUMNSの順でDataFrameを構築
-    race_info_dict = _build_race_info_dict(race_id, race_info_list)
+    race_info_dict = _build_race_info_dict(race_id, race_info_list, race_date, day_of_week)
     race_info_df = pd.DataFrame([race_info_dict], columns=RACE_INFO_COLUMNS)
 
     # 地方重賞の場合グレードを更新
@@ -72,6 +76,68 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
         race_info_df = _update_grade_from_icon(soup, race_info_df)
 
     return race_info_df
+
+
+def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date | None, str]:
+    """RaceList_DateListのActive要素からレース開催日と曜日を取得する
+
+    RaceList_DateListのdd要素のうちclass="Active"のものを探し、
+    その中のaタグのhrefに含まれるkaisai_dateパラメータ（YYYYMMDD形式）から
+    date型の日付を生成する。曜日はtitle属性またはspanのテキストから取得する。
+
+    Args:
+        soup (BeautifulSoup): ページのBeautifulSoupインスタンス
+
+    Returns:
+        date | None: レース開催日（取得できない場合はNone）
+        str: 曜日（漢字1文字、例: "日"）。取得できない場合は空文字列
+    """
+    datelist = soup.find("dl", id="RaceList_DateList")
+    if datelist is None or not isinstance(datelist, Tag):
+        logger.warning("RaceList_DateListが見つかりませんでした。")
+        return None, ""
+
+    active_dd = datelist.find("dd", class_="Active")
+    if active_dd is None or not isinstance(active_dd, Tag):
+        logger.warning("Active日付が見つかりませんでした。")
+        return None, ""
+
+    # Active要素内のaタグを取得
+    anchor = active_dd.find("a")
+    if anchor is None or not isinstance(anchor, Tag):
+        logger.warning("Active日付のaタグが見つかりませんでした。")
+        return None, ""
+
+    # kaisai_dateパラメータから日付を取得
+    href = anchor.get("href", "")
+    if isinstance(href, list):
+        href = href[0] if href else ""
+    date_match = re.search(r"kaisai_date=(\d{8})", href)
+    if date_match is None:
+        logger.warning("kaisai_dateパラメータが見つかりませんでした。")
+        return None, ""
+
+    date_str = date_match.group(1)
+    race_date = date(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:8]))
+
+    # 曜日をtitle属性またはspanテキストから取得
+    day_of_week = ""
+    title = anchor.get("title", "")
+    if isinstance(title, list):
+        title = title[0] if title else ""
+    dow_match = re.search(r"\((.)\)", title)
+    if dow_match:
+        day_of_week = dow_match.group(1)
+    else:
+        # spanタグのテキストから曜日を取得（例: <span class="Sat">(土)</span>）
+        span = anchor.find("span")
+        if span is not None:
+            span_text = span.get_text(strip=True)
+            span_match = re.search(r"\((.)\)", span_text)
+            if span_match:
+                day_of_week = span_match.group(1)
+
+    return race_date, day_of_week
 
 
 def _format_race_info_text(race_raw_text: str) -> list[str]:
@@ -219,7 +285,9 @@ def _format_race_info_list(race_filtered_list: list[str]) -> list[str]:
     return race_info_list
 
 
-def _build_race_info_dict(race_id: str, race_info_list: list[str]) -> dict[str, str | int]:
+def _build_race_info_dict(
+    race_id: str, race_info_list: list[str], race_date: date | None, day_of_week: str
+) -> dict[str, str | int | date | datetime | None]:
     """_format_race_info_listの出力をRACE_INFO_COLUMNSに対応するdictに変換する
 
     _format_race_info_listの出力順序（20要素）:
@@ -234,12 +302,16 @@ def _build_race_info_dict(race_id: str, race_info_list: list[str]) -> dict[str, 
 
     距離・回・開催日は_format_race_info_listで整形済みの数値文字列をintに変換する。
 
+    発走時刻は "HH:MM" 形式の文字列を解析し、race_dateと組み合わせてdatetime型に変換する。
+
     Args:
         race_id (str): レースID
         race_info_list (list[str]): _format_race_info_listの出力
+        race_date (date | None): レース開催日（date型）
+        day_of_week (str): 曜日（漢字1文字、例: "日"）
 
     Returns:
-        dict[str, str | int | float]: RACE_INFO_COLUMNSに対応する辞書
+        dict[str, str | int | date | datetime | None]: RACE_INFO_COLUMNSに対応する辞書
     """
 
     def _safe_get(lst: list[str], idx: int) -> str:
@@ -250,12 +322,34 @@ def _build_race_info_dict(race_id: str, race_info_list: list[str]) -> dict[str, 
         """数値文字列をintに変換する。空文字の場合は0"""
         return int(value) if value else 0
 
+    def _parse_start_time(time_str: str, race_date: date | None) -> datetime | None:
+        """発走時刻を解析してdatetime型に変換する
+
+        Args:
+            time_str (str): 発走時刻文字列（例: "15:40"）
+            race_date (date | None): レース開催日
+
+        Returns:
+            datetime | None: 発走時刻（解析できない場合はNone）
+        """
+        if not time_str or race_date is None:
+            return None
+        time_match = re.match(r"(\d{1,2}):(\d{2})", time_str)
+        if time_match is None:
+            return None
+        hour = int(time_match.group(1))
+        minute = int(time_match.group(2))
+        return datetime(race_date.year, race_date.month, race_date.day, hour, minute)
+
     course_raw = _safe_get(race_info_list, 4)
+    start_time_str = _safe_get(race_info_list, 1)
 
     return {
         "レースID": race_id,
+        "日付": race_date,
+        "曜日": day_of_week,
         "レース名": _safe_get(race_info_list, 0),
-        "発走時刻": _safe_get(race_info_list, 1),
+        "発走時刻": _parse_start_time(start_time_str, race_date),
         "天候": _safe_get(race_info_list, 5),
         "馬場": _safe_get(race_info_list, 6),
         "芝ダ": _safe_get(race_info_list, 2),

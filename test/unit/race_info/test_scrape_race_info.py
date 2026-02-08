@@ -5,6 +5,7 @@ HTMLフィクスチャからBeautifulSoupを生成し、パブリック関数scr
 
 import glob
 import os
+from datetime import date, datetime
 from typing import Any
 
 import numpy as np
@@ -120,6 +121,9 @@ def test_scrape_race_info_has_non_empty_values(
     assert row["頭数"] > 0
     assert isinstance(row["1着賞金"], (int, np.integer))
     assert row["1着賞金"] > 0
+    assert isinstance(row["日付"], date)
+    assert row["曜日"] in ["月", "火", "水", "木", "金", "土", "日"]
+    assert isinstance(row["発走時刻"], datetime)
 
 
 # 代表的なレースの具体的な値を検証
@@ -128,6 +132,9 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202505021211",
         "page_type": "result",
         "レース名": "日本ダービー",
+        "日付": date(2025, 6, 1),
+        "曜日": "日",
+        "発走時刻": datetime(2025, 6, 1, 15, 40),
         "芝ダ": "芝",
         "距離": 2400,
         "左右": "左",
@@ -152,6 +159,9 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202306030111",
         "page_type": "result",
         "レース名": "日経賞",
+        "日付": date(2023, 3, 25),
+        "曜日": "土",
+        "発走時刻": datetime(2023, 3, 25, 15, 45),
         "芝ダ": "芝",
         "距離": 2500,
         "左右": "右",
@@ -189,6 +199,9 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202508030111",
         "page_type": "result",
         "レース名": "オパールS",
+        "日付": date(2025, 10, 4),
+        "曜日": "土",
+        "発走時刻": datetime(2025, 10, 4, 15, 30),
         "芝ダ": "芝",
         "距離": 1200,
         "競馬場": "京都",
@@ -201,6 +214,9 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202506040609",
         "page_type": "result",
         "レース名": "カンナS",
+        "日付": date(2025, 9, 20),
+        "曜日": "土",
+        "発走時刻": datetime(2025, 9, 20, 14, 31),
         "芝ダ": "芝",
         "距離": 1200,
         "競馬場": "中山",
