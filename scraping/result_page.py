@@ -408,14 +408,17 @@ class ResultPageScraper:
 
         try:
             tables = pd.read_html(self.html_text)
-            rap_df = tables[table_index]
+            lap_tmp_df = tables[table_index]
         except (IndexError, AttributeError):
             logger.warning("ラップタイムの表が存在しません")
-            return pd.DataFrame()
+            nan_data: dict[str, object] = {"レースID": self.race_id}
+            lap_df = pd.DataFrame([nan_data])
+            lap_df = lap_df.reindex(columns=LAP_TIME_COLUMNS)
+            return lap_df
 
         # 行1がラップタイム（区間タイム）
-        section_times = rap_df.iloc[1]
-        source_columns = list(rap_df.columns)  # 例: ["200m", "400m", ..., "2400m"]
+        section_times = lap_tmp_df.iloc[1]
+        source_columns = list(lap_tmp_df.columns)  # 例: ["200m", "400m", ..., "2400m"]
 
         # ペースを取得
         pace_element = self.soup.find("div", attrs={"class": "RapPace_Title"})
@@ -427,10 +430,10 @@ class ResultPageScraper:
             data[col] = float(pd.to_numeric(section_times[col], errors="coerce"))
 
         # LAP_TIME_COLUMNSの順序で1行DataFrameを作成（該当しないカラムはNaN）
-        result_df = pd.DataFrame([data])
-        result_df = result_df.reindex(columns=LAP_TIME_COLUMNS)
+        lap_df = pd.DataFrame([data])
+        lap_df = lap_df.reindex(columns=LAP_TIME_COLUMNS)
 
-        return result_df
+        return lap_df
 
 
 def _classify_race_status(chakujun: object) -> str:
@@ -684,7 +687,7 @@ def _build_payoff_wide_df(
                 data[f"{bet_name}{number_label}_{n}_{j + 1}"] = u
         data[f"{bet_name}人気_{n}"] = nin
 
-    result_df = pd.DataFrame([data])
-    result_df = result_df.reindex(columns=columns)
+    payoff_df = pd.DataFrame([data])
+    payoff_df = payoff_df.reindex(columns=columns)
 
-    return result_df
+    return payoff_df
