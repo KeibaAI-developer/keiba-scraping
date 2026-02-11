@@ -36,6 +36,7 @@ from scraping.exceptions import (
     ScrapingError,
 )
 from scraping.race_info import scrape_race_info
+from scraping.result_page import ResultPageScraper
 from scraping.utils import (
     build_entry_url,
     build_horse_info_url,
@@ -87,4 +88,6 @@ __all__ = [
     "set_chrome_options",
     # race_info
     "scrape_race_info",
+    # result_page
+    "ResultPageScraper",
 ]
