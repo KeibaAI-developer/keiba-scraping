@@ -104,7 +104,7 @@ def main() -> None:
 def _is_local_race(race_id: str) -> bool:
     """地方競馬のレースかどうかを判定する
 
-    レースIDの5〜6桁目が競馬場IDを表し、30以上なら地方競馬。
+    レースIDの5〜6桁目が競馬場IDを表し、11以上なら地方競馬。
 
     Args:
         race_id (str): レースID（12桁文字列）
