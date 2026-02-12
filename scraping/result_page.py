@@ -243,7 +243,7 @@ class ResultPageScraper:
 
         Returns:
             pd.DataFrame: レース結果のDataFrame（RESULT_COLUMNSのカラム）。
-                開催中止の場合は1行で値がすべてNaN
+                開催中止の場合は1行でレースID以外がすべてNaN
 
         Raises:
             ValueError: 必要なカラムが不足している場合
@@ -255,7 +255,10 @@ class ResultPageScraper:
 
         # コンディション不良で開催中止の場合
         if result_df.iloc[0, 0] == "単勝":
-            return pd.DataFrame([[np.nan] * len(RESULT_COLUMNS)], columns=RESULT_COLUMNS)
+            nan_values: list[object] = [np.nan] * len(RESULT_COLUMNS)
+            cancel_df = pd.DataFrame([nan_values], columns=RESULT_COLUMNS)
+            cancel_df["レースID"] = self.race_id
+            return cancel_df
 
         # 列名に半角スペースがあれば除去する
         result_df = result_df.rename(columns=lambda col: col.replace(" ", ""))
@@ -402,7 +405,7 @@ class ResultPageScraper:
 
         Returns:
             pd.DataFrame: LAP_TIME_COLUMNSのカラムを持つ1行DataFrame。
-                取得失敗時は空DataFrame
+                取得失敗時はレースIDのみが設定されその他のカラムがNaNの1行DataFrameを返す。
         """
         table_index = 3 if race_type == "直線" else 5
 
