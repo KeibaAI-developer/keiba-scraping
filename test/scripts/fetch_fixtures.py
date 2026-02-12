@@ -4,8 +4,6 @@ test/fixtures/test_case.ymlに定義されているレースIDに対して、
 netkeibaの出馬表ページと結果ページのHTMLをrequestsで取得し、
 test/fixtures/html/にUTF-8で保存する。
 
-地方競馬（JavaScriptで動的にレンダリングされるページ）はスキップする。
-
 使用方法:
     python test/scripts/fetch_fixtures.py
 """
@@ -39,53 +37,8 @@ HEADERS = {
 # リクエスト間隔（秒）
 REQUEST_INTERVAL = 1.0
 
-# 地方競馬の競馬場IDプレフィックス（30以上は地方）
-LOCAL_KEIBAJO_ID_MIN = 30
-
-
-def _is_local_race(race_id: str) -> bool:
-    """地方競馬のレースかどうかを判定する
-
-    レースIDの5〜6桁目が競馬場IDを表し、30以上なら地方競馬。
-
-    Args:
-        race_id (str): レースID（12桁文字列）
-
-    Returns:
-        bool: 地方競馬ならTrue
-    """
-    keibajo_id = int(race_id[4:6])
-    return keibajo_id >= LOCAL_KEIBAJO_ID_MIN
-
-
-def _fetch_page(url: str) -> str | None:
-    """ページのHTMLを取得する
-
-    Args:
-        url (str): 取得するURL
-
-    Returns:
-        str | None: HTMLテキスト（UTF-8）。取得失敗時はNone
-    """
-    try:
-        response = requests.get(url, headers=HEADERS, timeout=10)
-        response.encoding = "EUC-JP"
-        return response.text
-    except requests.RequestException as exc:
-        print(f"  [ERROR] 取得失敗: {exc}")
-        return None
-
-
-def _save_html(html_text: str, filepath: str) -> None:
-    """HTMLをUTF-8で保存する
-
-    Args:
-        html_text (str): HTMLテキスト
-        filepath (str): 保存先ファイルパス
-    """
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(html_text)
+# 地方競馬の競馬場IDプレフィックス（11以上は地方）
+LOCAL_KEIBAJO_ID_MIN = 11
 
 
 def main() -> None:
@@ -146,6 +99,51 @@ def main() -> None:
             print("  結果:   既に存在")
 
     print(f"\n完了: {total_fetched}件取得, {total_skipped}件スキップ")
+
+
+def _is_local_race(race_id: str) -> bool:
+    """地方競馬のレースかどうかを判定する
+
+    レースIDの5〜6桁目が競馬場IDを表し、11以上なら地方競馬。
+
+    Args:
+        race_id (str): レースID（12桁文字列）
+
+    Returns:
+        bool: 地方競馬ならTrue
+    """
+    keibajo_id = int(race_id[4:6])
+    return keibajo_id >= LOCAL_KEIBAJO_ID_MIN
+
+
+def _fetch_page(url: str) -> str | None:
+    """ページのHTMLを取得する
+
+    Args:
+        url (str): 取得するURL
+
+    Returns:
+        str | None: HTMLテキスト（UTF-8）。取得失敗時はNone
+    """
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        response.encoding = "EUC-JP"
+        return response.text
+    except requests.RequestException as exc:
+        print(f"  [ERROR] 取得失敗: {exc}")
+        return None
+
+
+def _save_html(html_text: str, filepath: str) -> None:
+    """HTMLをUTF-8で保存する
+
+    Args:
+        html_text (str): HTMLテキスト
+        filepath (str): 保存先ファイルパス
+    """
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(html_text)
 
 
 if __name__ == "__main__":
