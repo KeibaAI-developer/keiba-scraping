@@ -38,16 +38,23 @@ def main() -> None:
         # レース結果
         print("\n【レース結果】")
         result_df = scraper.get_result()
-        print(result_df)
+        non_id_cols = [c for c in result_df.columns if c != "レースID"]
+        if result_df[non_id_cols].iloc[0].isna().all():
+            print("開催中止のためレース結果なし")
+        else:
+            print(result_df)
 
         # コーナー通過順
         print("\n【コーナー通過順】")
         corner_df = scraper.get_corner()
-        if corner_df.empty:
+        corner_cols = ["1コーナー通過順", "2コーナー通過順", "3コーナー通過順", "4コーナー通過順"]
+        if corner_df[corner_cols].iloc[0].isna().all():
             print("コーナー通過順データなし（直線レース等）")
         else:
-            for col in corner_df.columns:
-                print(f"{col}: {corner_df.at[0, col]}")
+            for col in corner_cols:
+                value = corner_df.at[0, col]
+                if pd.notna(value):
+                    print(f"{col}: {value}")
 
         # 払い戻し
         print("\n【払い戻し】")
@@ -64,7 +71,8 @@ def main() -> None:
         for bet_name, method in payoff_methods:
             print(f"\n  【{bet_name}】")
             payoff_df = method()
-            if payoff_df.empty or len(payoff_df) == 0:
+            non_id_cols = [c for c in payoff_df.columns if c != "レースID"]
+            if payoff_df[non_id_cols].iloc[0].isna().all():
                 print(f"    {bet_name}データなし")
                 continue
             # 各カラムを順番に表示（NaNはスキップ）
@@ -76,8 +84,9 @@ def main() -> None:
         # ラップタイム
         print("\n【ラップタイム】")
         lap_time_df = scraper.get_lap_time()
-        if lap_time_df.empty:
-            print("ラップタイムデータなし")
+        non_id_cols = [c for c in lap_time_df.columns if c != "レースID"]
+        if lap_time_df[non_id_cols].iloc[0].isna().all():
+            print("ラップタイムデータなし（障害レース等）")
         else:
             # 各カラムを順番に表示（NaNはスキップ）
             for col in lap_time_df.columns:

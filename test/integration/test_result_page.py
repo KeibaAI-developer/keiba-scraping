@@ -14,7 +14,20 @@ import time
 import pandas as pd
 import pytest
 
-from scraping.config import PAYBACK_COLUMNS, RACE_INFO_COLUMNS, RESULT_COLUMNS
+from scraping.config import (
+    BRACKET_PAYOFF_COLUMNS,
+    CORNER_COLUMNS,
+    EXACTA_PAYOFF_COLUMNS,
+    LAP_TIME_COLUMNS,
+    QUINELLA_PAYOFF_COLUMNS,
+    QUINELLA_PLACE_PAYOFF_COLUMNS,
+    RACE_INFO_COLUMNS,
+    RESULT_COLUMNS,
+    SHOW_PAYOFF_COLUMNS,
+    TRIFECTA_PAYOFF_COLUMNS,
+    TRIO_PAYOFF_COLUMNS,
+    WIN_PAYOFF_COLUMNS,
+)
 from scraping.result_page import ResultPageScraper
 
 # テスト間のリクエスト間隔（秒）
@@ -22,58 +35,64 @@ REQUEST_INTERVAL = 1.5
 
 
 # ---------------------------------------------------------------------------
-# 正常系
+# テストケース定義
 # ---------------------------------------------------------------------------
 LIVE_TEST_CASES = [
     {
         "race_id": "202505021211",
         "description": "日本ダービー2025（G1, 芝2400m）",
         "expected_result_count": 18,
-        "has_corner": True,
         "has_lap_time": True,
+        "is_obstacle": False,
     },
     {
         "race_id": "202306030111",
         "description": "日経賞2023（G2, 不良馬場, 芝2500m）",
-        "expected_result_count": 14,
-        "has_corner": True,
+        "expected_result_count": 12,
         "has_lap_time": True,
+        "is_obstacle": False,
     },
     {
         "race_id": "202406050710",
         "description": "中山大障害2024（障害, 4100m）",
-        "expected_result_count": 16,
-        "has_corner": True,
-        "has_lap_time": False,  # 障害レースはラップタイムなし
+        "expected_result_count": 9,
+        "has_lap_time": False,
+        "is_obstacle": True,
     },
 ]
 
 LIVE_TEST_CASE_IDS = [str(tc["description"]) for tc in LIVE_TEST_CASES]
 
 
+# ---------------------------------------------------------------------------
+# 正常系: get_race_info
+# ---------------------------------------------------------------------------
 @pytest.mark.network
 @pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
-def test_result_page_scraper_get_race_info_live(test_case: dict[str, object]) -> None:
-    """実際にnetkeibaからスクレイピングしてget_race_infoが動作することを確認する"""
+def test_get_race_info_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_race_infoがRACE_INFO_COLUMNSと一致する1行DataFrameを返すこと"""
     if not os.environ.get("RUN_NETWORK_TESTS"):
         pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
 
     race_id = str(test_case["race_id"])
     scraper = ResultPageScraper(race_id)
-    race_info_df = scraper.get_race_info()
+    df = scraper.get_race_info()
 
-    assert isinstance(race_info_df, pd.DataFrame)
-    assert len(race_info_df) == 1
-    assert list(race_info_df.columns) == RACE_INFO_COLUMNS
-    assert race_info_df["レースID"].iloc[0] == race_id
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == RACE_INFO_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
 
     time.sleep(REQUEST_INTERVAL)
 
 
+# ---------------------------------------------------------------------------
+# 正常系: get_result
+# ---------------------------------------------------------------------------
 @pytest.mark.network
 @pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
-def test_result_page_scraper_get_result_live(test_case: dict[str, object]) -> None:
-    """実際にnetkeibaからスクレイピングしてget_resultが動作することを確認する"""
+def test_get_result_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_resultがRESULT_COLUMNSと一致するDataFrameを返すこと"""
     if not os.environ.get("RUN_NETWORK_TESTS"):
         pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
 
@@ -82,91 +101,279 @@ def test_result_page_scraper_get_result_live(test_case: dict[str, object]) -> No
     assert isinstance(expected_count, int)
 
     scraper = ResultPageScraper(race_id)
-    result_df = scraper.get_result()
+    df = scraper.get_result()
 
-    assert isinstance(result_df, pd.DataFrame)
-    assert not result_df.empty
-
-    # RESULT_COLUMNSの全カラムが含まれること
-    for col in RESULT_COLUMNS:
-        assert col in result_df.columns
-
-    # 馬IDが存在すること
-    assert result_df["馬ID"].notna().any()
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == expected_count
+    assert list(df.columns) == RESULT_COLUMNS
+    assert (df["レースID"] == race_id).all()
+    assert df["馬ID"].notna().all()
 
     time.sleep(REQUEST_INTERVAL)
 
 
+# ---------------------------------------------------------------------------
+# 正常系: get_corner
+# ---------------------------------------------------------------------------
 @pytest.mark.network
 @pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
-def test_result_page_scraper_get_corner_live(test_case: dict[str, object]) -> None:
-    """実際にnetkeibaからスクレイピングしてget_cornerが動作することを確認する"""
-    if not os.environ.get("RUN_NETWORK_TESTS"):
-        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
-
-    race_id = str(test_case["race_id"])
-    has_corner = test_case["has_corner"]
-
-    scraper = ResultPageScraper(race_id)
-    corner_df = scraper.get_corner()
-
-    assert isinstance(corner_df, pd.DataFrame)
-    if has_corner:
-        assert not corner_df.empty
-        assert len(corner_df) == 4
-        assert "コーナー" in corner_df.columns
-        assert "通過順" in corner_df.columns
-
-    time.sleep(REQUEST_INTERVAL)
-
-
-@pytest.mark.network
-@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
-def test_result_page_scraper_get_payoff_live(test_case: dict[str, object]) -> None:
-    """実際にnetkeibaからスクレイピングしてget_payoffが動作することを確認する"""
+def test_get_corner_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_cornerがCORNER_COLUMNSと一致する1行DataFrameを返すこと"""
     if not os.environ.get("RUN_NETWORK_TESTS"):
         pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
 
     race_id = str(test_case["race_id"])
     scraper = ResultPageScraper(race_id)
-    payoff_df = scraper.get_payoff()
+    df = scraper.get_corner()
 
-    assert isinstance(payoff_df, pd.DataFrame)
-    assert not payoff_df.empty
-
-    for col in PAYBACK_COLUMNS:
-        assert col in payoff_df.columns
-
-    # 単勝・複勝が含まれること
-    bet_types = payoff_df["券種"].unique().tolist()
-    assert "単勝" in bet_types
-    assert "複勝" in bet_types
-
-    # 払戻が正の整数であること
-    assert (payoff_df["払戻"] > 0).all()
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == CORNER_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.notna(df["4コーナー通過順"].iloc[0])
 
     time.sleep(REQUEST_INTERVAL)
 
 
+# ---------------------------------------------------------------------------
+# 正常系: get_win_payoff
+# ---------------------------------------------------------------------------
 @pytest.mark.network
 @pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
-def test_result_page_scraper_get_lap_time_live(test_case: dict[str, object]) -> None:
-    """実際にnetkeibaからスクレイピングしてget_lap_timeが動作することを確認する"""
+def test_get_win_payoff_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_win_payoffがWIN_PAYOFF_COLUMNSと一致する1行DataFrameを返すこと"""
     if not os.environ.get("RUN_NETWORK_TESTS"):
         pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
 
     race_id = str(test_case["race_id"])
-    has_lap_time = test_case["has_lap_time"]
-
     scraper = ResultPageScraper(race_id)
-    lap_time_df = scraper.get_lap_time()
+    df = scraper.get_win_payoff()
 
-    assert isinstance(lap_time_df, pd.DataFrame)
-    if has_lap_time:
-        assert not lap_time_df.empty
-        assert len(lap_time_df) == 2
-        assert "ペース" in lap_time_df.columns
-    else:
-        assert lap_time_df.empty
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == WIN_PAYOFF_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.notna(df["単勝払戻金_1"].iloc[0])
+    assert pd.notna(df["単勝馬番_1"].iloc[0])
+    assert pd.notna(df["単勝人気_1"].iloc[0])
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_show_payoff
+# ---------------------------------------------------------------------------
+@pytest.mark.network
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_show_payoff_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_show_payoffがSHOW_PAYOFF_COLUMNSと一致する1行DataFrameを返すこと"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
+    race_id = str(test_case["race_id"])
+    scraper = ResultPageScraper(race_id)
+    df = scraper.get_show_payoff()
+
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == SHOW_PAYOFF_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.notna(df["複勝払戻金_1"].iloc[0])
+    assert pd.notna(df["複勝馬番_1"].iloc[0])
+    assert pd.notna(df["複勝人気_1"].iloc[0])
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_bracket_payoff
+# ---------------------------------------------------------------------------
+@pytest.mark.network
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_bracket_payoff_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_bracket_payoffがBRACKET_PAYOFF_COLUMNSと一致する1行DataFrameを返すこと"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
+    race_id = str(test_case["race_id"])
+    scraper = ResultPageScraper(race_id)
+    df = scraper.get_bracket_payoff()
+
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == BRACKET_PAYOFF_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_quinella_payoff
+# ---------------------------------------------------------------------------
+@pytest.mark.network
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_quinella_payoff_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_quinella_payoffがQUINELLA_PAYOFF_COLUMNSと一致する1行DataFrameを返すこと"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
+    race_id = str(test_case["race_id"])
+    scraper = ResultPageScraper(race_id)
+    df = scraper.get_quinella_payoff()
+
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == QUINELLA_PAYOFF_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.notna(df["馬連払戻金_1"].iloc[0])
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_quinella_place_payoff
+# ---------------------------------------------------------------------------
+@pytest.mark.network
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_quinella_place_payoff_returns_valid_dataframe(
+    test_case: dict[str, object],
+) -> None:
+    """get_quinella_place_payoffがQUINELLA_PLACE_PAYOFF_COLUMNSと一致する1行DataFrameを返すこと"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
+    race_id = str(test_case["race_id"])
+    scraper = ResultPageScraper(race_id)
+    df = scraper.get_quinella_place_payoff()
+
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == QUINELLA_PLACE_PAYOFF_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.notna(df["ワイド払戻金_1"].iloc[0])
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_exacta_payoff
+# ---------------------------------------------------------------------------
+@pytest.mark.network
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_exacta_payoff_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_exacta_payoffがEXACTA_PAYOFF_COLUMNSと一致する1行DataFrameを返すこと"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
+    race_id = str(test_case["race_id"])
+    scraper = ResultPageScraper(race_id)
+    df = scraper.get_exacta_payoff()
+
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == EXACTA_PAYOFF_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.notna(df["馬単払戻金_1"].iloc[0])
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_trio_payoff
+# ---------------------------------------------------------------------------
+@pytest.mark.network
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_trio_payoff_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_trio_payoffがTRIO_PAYOFF_COLUMNSと一致する1行DataFrameを返すこと"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
+    race_id = str(test_case["race_id"])
+    scraper = ResultPageScraper(race_id)
+    df = scraper.get_trio_payoff()
+
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == TRIO_PAYOFF_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.notna(df["3連複払戻金_1"].iloc[0])
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_trifecta_payoff
+# ---------------------------------------------------------------------------
+@pytest.mark.network
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_trifecta_payoff_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """get_trifecta_payoffがTRIFECTA_PAYOFF_COLUMNSと一致する1行DataFrameを返すこと"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
+    race_id = str(test_case["race_id"])
+    scraper = ResultPageScraper(race_id)
+    df = scraper.get_trifecta_payoff()
+
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == TRIFECTA_PAYOFF_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.notna(df["3連単払戻金_1"].iloc[0])
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_lap_time（平地レース）
+# ---------------------------------------------------------------------------
+FLAT_RACE_CASES = [tc for tc in LIVE_TEST_CASES if tc["has_lap_time"]]
+FLAT_RACE_IDS = [str(tc["description"]) for tc in FLAT_RACE_CASES]
+
+
+@pytest.mark.network
+@pytest.mark.parametrize("test_case", FLAT_RACE_CASES, ids=FLAT_RACE_IDS)
+def test_get_lap_time_flat_returns_valid_dataframe(test_case: dict[str, object]) -> None:
+    """平地レースでget_lap_timeがLAP_TIME_COLUMNSと一致する1行DataFrameを返すこと"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
+    race_id = str(test_case["race_id"])
+    scraper = ResultPageScraper(race_id)
+    df = scraper.get_lap_time()
+
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == LAP_TIME_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.notna(df["ペース"].iloc[0])
+    assert df["ペース"].iloc[0] in {"S", "M", "H"}
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_lap_time（障害レース）
+# ---------------------------------------------------------------------------
+OBSTACLE_RACE_CASES = [tc for tc in LIVE_TEST_CASES if tc.get("is_obstacle")]
+OBSTACLE_RACE_IDS = [str(tc["description"]) for tc in OBSTACLE_RACE_CASES]
+
+
+@pytest.mark.network
+@pytest.mark.parametrize("test_case", OBSTACLE_RACE_CASES, ids=OBSTACLE_RACE_IDS)
+def test_get_lap_time_obstacle_returns_nan_dataframe(test_case: dict[str, object]) -> None:
+    """障害レースでget_lap_timeがレースID以外NaNの1行DataFrameを返すこと"""
+    if not os.environ.get("RUN_NETWORK_TESTS"):
+        pytest.skip("RUN_NETWORK_TESTS environment variable is not set")
+
+    race_id = str(test_case["race_id"])
+    scraper = ResultPageScraper(race_id)
+    df = scraper.get_lap_time()
+
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+    assert list(df.columns) == LAP_TIME_COLUMNS
+    assert df["レースID"].iloc[0] == race_id
+    assert pd.isna(df["ペース"].iloc[0])
 
     time.sleep(REQUEST_INTERVAL)
