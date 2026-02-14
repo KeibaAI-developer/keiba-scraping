@@ -6,6 +6,7 @@ netkeibaのレース結果ページをスクレイピングし、
 
 import logging
 import re
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -33,6 +34,9 @@ from scraping.config import (
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.race_info import scrape_race_info
 from scraping.utils import build_result_url
+
+# pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logger = logging.getLogger(__name__)
 
