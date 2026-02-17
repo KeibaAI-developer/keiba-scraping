@@ -13,6 +13,7 @@ except (PackageNotFoundError, ImportError):
 
 from scraping.config import (
     ENTRY_COLUMNS,
+    ENTRY_NON_NAN_COLUMNS,
     GRADE_DICT,
     HORSE_INFO_COLUMNS,
     ID_TO_KEIBAJO_DICT,
@@ -25,9 +26,11 @@ from scraping.config import (
     RESULT_COLUMNS,
     THREE_COMBINATION_BETS,
     TWO_COMBINATION_BETS,
+    VALID_ENTRY_STATUSES,
     WEIGHT_CONDITIONS,
     ScrapingConfig,
 )
+from scraping.entry_page import EntryPageScraper
 from scraping.exceptions import (
     DriverError,
     NetworkError,
@@ -88,6 +91,10 @@ __all__ = [
     "set_chrome_options",
     # race_info
     "scrape_race_info",
+    # entry_page
+    "EntryPageScraper",
+    "ENTRY_NON_NAN_COLUMNS",
+    "VALID_ENTRY_STATUSES",
     # result_page
     "ResultPageScraper",
 ]
