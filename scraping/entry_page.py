@@ -185,6 +185,10 @@ class EntryPageScraper:
         add_df = pd.DataFrame(index=df.index, columns=["馬ID", "騎手ID", "厩舎ID"])
 
         # 馬IDを追加
+        # NOTE: soup.find_all("tr", class_="HorseList") は出走馬の行だけでなく
+        # フッター行（枠順展示リンク行・空行）も含む。これらのフッター行には
+        # HorseName/Jockey/Trainer要素が存在しないため、要素が見つからない行は
+        # スキップすることでpd.read_htmlが返す行数と一致させている。
         horse_list = self.soup.find_all("tr", class_="HorseList")
         horse_id_list: list[str] = []
         for horse_row in horse_list:

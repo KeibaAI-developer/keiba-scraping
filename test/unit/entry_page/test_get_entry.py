@@ -10,8 +10,9 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+from bs4 import BeautifulSoup
 
-from scraping.config import ENTRY_COLUMNS
+from scraping.config import ENTRY_COLUMNS, ENTRY_NON_NAN_COLUMNS
 
 from .conftest import collect_entry_fixture_race_ids, create_scraper_from_fixture
 
@@ -46,23 +47,7 @@ def test_non_nan_columns_valid(race_id: str) -> None:
     scraper = create_scraper_from_fixture(race_id)
     entry_df = scraper.get_entry()
 
-    non_nan_columns = [
-        "レースID",
-        "出走区分",
-        "枠",
-        "馬番",
-        "馬名",
-        "性別",
-        "年齢",
-        "斤量",
-        "騎手",
-        "所属",
-        "厩舎",
-        "馬ID",
-        "騎手ID",
-        "厩舎ID",
-    ]
-    for col in non_nan_columns:
+    for col in ENTRY_NON_NAN_COLUMNS:
         assert entry_df[col].notna().all(), f"'{col}'にNaNが含まれています"
 
 
@@ -364,7 +349,7 @@ def test_validation_error_on_invalid_gender() -> None:
     scraper = create_scraper_from_fixture("202505021211")
 
     scraper.html_text = scraper.html_text.replace("牡3", "X3", 1)
-    scraper.soup = __import__("bs4").BeautifulSoup(scraper.html_text, "html.parser")
+    scraper.soup = BeautifulSoup(scraper.html_text, "html.parser")
 
     with pytest.raises(ParseError, match="性別が不正です"):
         scraper.get_entry()
@@ -379,7 +364,7 @@ def test_validation_error_on_invalid_affiliation() -> None:
     scraper.html_text = scraper.html_text.replace(
         '<span class="Label2">栗東</span>', '<span class="Label2">XX</span>', 1
     )
-    scraper.soup = __import__("bs4").BeautifulSoup(scraper.html_text, "html.parser")
+    scraper.soup = BeautifulSoup(scraper.html_text, "html.parser")
 
     with pytest.raises(ParseError, match="所属が不正です"):
         scraper.get_entry()
