@@ -31,7 +31,7 @@ class ScrapingConfig:
             )
         }
     )
-    chrome_driver_path: str = "/usr/bin/chromedriver"
+    chrome_driver_path: str = "/usr/local/bin/chromedriver-linux64/chromedriver"
     request_timeout: int = 10
 
 
@@ -379,35 +379,41 @@ LAP_TIME_COLUMNS: list[str] = ["レースID", "ペース"] + [f"{i}m" for i in r
 
 # 馬柱のカラム
 PAST_PERFORMANCES_COLUMNS: list[str] = [
+    "レースID",
     "日付",
     "競馬場",
     "回",
-    "日",
+    "開催日",
     "R",
     "レース名",
     "天候",
     "頭数",
-    "枠番",
+    "枠",
     "馬番",
-    "オッズ",
+    "単勝オッズ",
     "人気",
     "着順",
     "騎手",
+    "騎手ID",
     "斤量",
+    "芝ダ",
     "距離",
     "馬場",
     "タイム",
     "着差",
-    "通過",
-    "ペース",
-    "上り",
+    "1コーナー通過順",
+    "2コーナー通過順",
+    "3コーナー通過順",
+    "4コーナー通過順",
+    "レース前3F",
+    "レース後3F",
+    "後3F",
     "馬体重",
     "増減",
     "勝ち馬(2着馬)",
     "賞金",
-    "レースID",
     "主催",
-    "間隔",
+    "間隔日数",
 ]
 
 # 馬情報のカラム
