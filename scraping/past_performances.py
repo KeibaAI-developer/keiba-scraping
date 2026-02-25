@@ -12,7 +12,7 @@ from io import StringIO
 
 import numpy as np
 import pandas as pd
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 
@@ -231,7 +231,7 @@ class PastPerformancesScraper:
 
         # 戦績テーブルの行を取得
         table = self.soup.find("table", class_="db_h_race_results")
-        if table is None:
+        if not isinstance(table, Tag):
             # テーブルが見つからない場合はNaNで埋める
             df["騎手ID"] = np.nan
             return df
@@ -395,7 +395,7 @@ def _add_race_info(df: pd.DataFrame) -> pd.DataFrame:
     """
     race_id_list: list[str] = []
     organize_list: list[str] = []
-    interval_list: list[object] = []
+    interval_list: list[int | float] = []
 
     for idx in range(len(df)):
         # 日付情報
@@ -436,7 +436,7 @@ def _add_race_info(df: pd.DataFrame) -> pd.DataFrame:
             organize_list.append("海外")
 
         # レース間隔日数
-        interval: object = np.nan
+        interval: int | float = np.nan
         for j in range(idx + 1, len(df)):
             if not pd.isna(df["人気"].iloc[j]):
                 date1 = str(df["日付"].iloc[idx])
