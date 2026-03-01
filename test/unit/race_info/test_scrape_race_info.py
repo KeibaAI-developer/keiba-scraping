@@ -67,8 +67,12 @@ def _collect_fixture_params() -> list[tuple[str, str, str]]:
     """
     params: list[tuple[str, str, str]] = []
     fixture_dir = os.path.normpath(FIXTURES_DIR)
+    # race_infoテストの対象はentry_/result_フィクスチャのみ
+    valid_prefixes = ("entry_", "result_")
     for filepath in sorted(glob.glob(os.path.join(fixture_dir, "*.html"))):
         basename = os.path.basename(filepath)
+        if not basename.startswith(valid_prefixes):
+            continue
         # entry_202505021211.html -> ("entry", "202505021211")
         parts = basename.replace(".html", "").split("_", 1)
         if len(parts) == 2:

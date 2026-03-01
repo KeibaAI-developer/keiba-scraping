@@ -15,7 +15,7 @@ def central_past_performances_df() -> pd.DataFrame:
             "日付": ["2024/06/23", "2024/05/12", "2024/03/10"],
             "競馬場": ["阪神", "東京", "中山"],
             "回": [3, 2, 1],
-            "日": [4, 3, 2],
+            "開催日": [4, 3, 2],
             "R": [11, 10, 5],
             "人気": [1, 3, 2],
         }
@@ -30,7 +30,7 @@ def local_past_performances_df() -> pd.DataFrame:
             "日付": ["2024/07/10", "2024/06/05"],
             "競馬場": ["大井", "大井"],
             "回": [np.nan, np.nan],
-            "日": [np.nan, np.nan],
+            "開催日": [np.nan, np.nan],
             "R": [8, 5],
             "人気": [2, 1],
         }
@@ -45,7 +45,7 @@ def overseas_past_performances_df() -> pd.DataFrame:
             "日付": ["2024/10/01", "2024/06/23"],
             "競馬場": ["ロンシャン", "阪神"],
             "回": [np.nan, 3],
-            "日": [np.nan, 4],
+            "開催日": [np.nan, 4],
             "R": [np.nan, 11],
             "人気": [5, 1],
         }
@@ -110,6 +110,6 @@ def test_last_race_interval_is_nan(central_past_performances_df: pd.DataFrame) -
 # 準正常系 - 空の馬柱
 def test_empty_past_performances_raises_error() -> None:
     """空の馬柱でValueErrorが発生することを確認する"""
-    empty_df = pd.DataFrame(columns=["日付", "競馬場", "回", "日", "R", "人気"])
+    empty_df = pd.DataFrame(columns=["日付", "競馬場", "回", "開催日", "R", "人気"])
     with pytest.raises(ValueError, match="馬柱が1行もありません"):
         get_race_info_from_past_performances(empty_df, 0)

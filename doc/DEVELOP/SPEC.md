@@ -146,7 +146,7 @@ KeibaAIでは`param.py`と各種`.yml`ファイルで管理していた定数類
 | `netkeiba_race_url` | `str` | netkeibaのレースURL | `"https://race.netkeiba.com"` |
 | `jra_url` | `str` | JRAのURL | `"https://www.jra.go.jp"` |
 | `headers` | `dict[str, str]` | HTTPリクエストヘッダー | User-Agent設定済み |
-| `chrome_driver_path` | `str` | ChromeDriverのパス | `"/usr/bin/chromedriver"` |
+| `chrome_driver_path` | `str \| None` | ChromeDriverのパス（`None`の場合はSelenium自動検出） | 環境変数 `CHROME_DRIVER_PATH` または `None` |
 | `request_timeout` | `int` | HTTPリクエストのタイムアウト(秒) | `10` |
 
 #### 定数

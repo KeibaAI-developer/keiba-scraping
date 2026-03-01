@@ -192,7 +192,7 @@ def get_race_info_from_past_performances(
 
     # 開催日
     kai = past_performances_df["回"].iloc[race_index]
-    kaisai_day = past_performances_df["日"].iloc[race_index]
+    kaisai_day = past_performances_df["開催日"].iloc[race_index]
 
     # R
     r_value = past_performances_df["R"].iloc[race_index]

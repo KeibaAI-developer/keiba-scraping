@@ -38,6 +38,7 @@ from scraping.exceptions import (
     ParseError,
     ScrapingError,
 )
+from scraping.past_performances import PastPerformancesScraper
 from scraping.race_info import scrape_race_info
 from scraping.result_page import ResultPageScraper
 from scraping.utils import (
@@ -97,4 +98,6 @@ __all__ = [
     "VALID_ENTRY_STATUSES",
     # result_page
     "ResultPageScraper",
+    # past_performances
+    "PastPerformancesScraper",
 ]
