@@ -16,7 +16,6 @@ import yaml
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 
 # テストケースYAMLファイルのパス
 TEST_HORSE_CASE_YML_PATH = os.path.join(
@@ -55,7 +54,9 @@ def main() -> None:
 
     # ChromeDriverを起動
     options = _set_chrome_options()
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    chrome_driver_path = os.environ.get("CHROME_DRIVER_PATH")
+    service = Service(chrome_driver_path) if chrome_driver_path else Service()
+    driver = webdriver.Chrome(service=service, options=options)
 
     total_fetched = 0
     total_skipped = 0
