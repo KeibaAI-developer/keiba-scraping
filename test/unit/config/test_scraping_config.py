@@ -10,7 +10,7 @@ def test_default_values() -> None:
     assert config.netkeiba_base_url == "https://db.netkeiba.com"
     assert config.netkeiba_race_url == "https://race.netkeiba.com"
     assert config.jra_url == "https://www.jra.go.jp"
-    assert config.chrome_driver_path == "/usr/local/bin/chromedriver-linux64/chromedriver"
+    assert config.chrome_driver_path is None
     assert config.request_timeout == 10
     assert "User-Agent" in config.headers
 

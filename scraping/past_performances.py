@@ -55,7 +55,11 @@ class PastPerformancesScraper:
 
         options = set_chrome_options()
         try:
-            driver = webdriver.Chrome(service=Service(cfg.chrome_driver_path), options=options)
+            if cfg.chrome_driver_path:
+                service = Service(cfg.chrome_driver_path)
+            else:
+                service = Service()
+            driver = webdriver.Chrome(service=service, options=options)
         except Exception as exc:
             raise DriverError(f"ChromeDriverの起動に失敗しました: {exc}") from exc
 

@@ -3,6 +3,7 @@
 ScrapingConfigデータクラスおよびライブラリ内で使用する定数を定義する。
 """
 
+import os
 from dataclasses import dataclass, field
 
 
@@ -15,7 +16,9 @@ class ScrapingConfig:
         netkeiba_race_url (str): netkeibaのレースURL
         jra_url (str): JRAのURL
         headers (dict[str, str]): HTTPリクエストヘッダー
-        chrome_driver_path (str): ChromeDriverのパス
+        chrome_driver_path (str | None): ChromeDriverのパス
+            環境変数 ``CHROME_DRIVER_PATH`` が設定されていればその値を使用し、
+            未設定の場合は ``None`` (SeleniumのService自動検出) をデフォルトとする。
         request_timeout (int): HTTPリクエストのタイムアウト(秒)
     """
 
@@ -31,7 +34,9 @@ class ScrapingConfig:
             )
         }
     )
-    chrome_driver_path: str = "/usr/local/bin/chromedriver-linux64/chromedriver"
+    chrome_driver_path: str | None = field(
+        default_factory=lambda: os.environ.get("CHROME_DRIVER_PATH")
+    )
     request_timeout: int = 10
 
 
