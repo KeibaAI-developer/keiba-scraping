@@ -21,7 +21,7 @@ from scraping.past_performances import PastPerformancesScraper
 
 # テスト間のリクエスト間隔（秒）: Seleniumなので長めに設定
 REQUEST_INTERVAL = 5.0
-RUN_NETWORK_TESTS = bool(os.environ.get("RUN_NETWORK_TESTS"))
+RUN_NETWORK_TESTS = os.environ.get("RUN_NETWORK_TESTS") == "1"
 
 pytestmark = [
     pytest.mark.network,
