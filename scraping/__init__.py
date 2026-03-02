@@ -12,6 +12,7 @@ except (PackageNotFoundError, ImportError):
     __version__ = "unknown"
 
 from scraping.config import (
+    AFFILIATION_MAP,
     ENTRY_COLUMNS,
     ENTRY_NON_NAN_COLUMNS,
     GRADE_DICT,
@@ -38,6 +39,7 @@ from scraping.exceptions import (
     ParseError,
     ScrapingError,
 )
+from scraping.horse_info import HorseInfoScraper
 from scraping.past_performances import PastPerformancesScraper
 from scraping.race_info import scrape_race_info
 from scraping.result_page import ResultPageScraper
@@ -50,6 +52,7 @@ from scraping.utils import (
     build_today_race_list_url,
     calc_interval,
     get_race_info_from_past_performances,
+    is_race_existence,
     judge_turf_dirt,
     race_id_to_race_info,
     set_chrome_options,
@@ -70,6 +73,7 @@ __all__ = [
     "RACE_INFO_COLUMNS",
     "PAST_PERFORMANCES_COLUMNS",
     "HORSE_INFO_COLUMNS",
+    "AFFILIATION_MAP",
     "RACE_CALENDAR_COLUMNS",
     "RACE_SCHEDULE_COLUMNS",
     # exceptions
@@ -90,6 +94,7 @@ __all__ = [
     "get_race_info_from_past_performances",
     "calc_interval",
     "set_chrome_options",
+    "is_race_existence",
     # race_info
     "scrape_race_info",
     # entry_page
@@ -100,4 +105,6 @@ __all__ = [
     "ResultPageScraper",
     # past_performances
     "PastPerformancesScraper",
+    # horse_info
+    "HorseInfoScraper",
 ]

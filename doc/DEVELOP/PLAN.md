@@ -13,10 +13,10 @@
 | PR-3 | レース情報スクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-4 | レース結果スクレイピングの実装 | PR-3 | 大 | 完了 |
 | PR-5 | 出馬表スクレイピングの実装 | PR-3 | 中 | 完了 |
-| PR-6 | 馬柱スクレイピングの実装 | PR-2 | 中 | 未着手 |
+| PR-6 | 馬柱スクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-7 | オッズスクレイピングの実装 | PR-2 | 中 | 未着手 |
 | PR-8 | レーススケジュール・カレンダーの実装 | PR-2 | 中 | 未着手 |
-| PR-9 | 馬情報スクレイピング・HorsePageScraperクラスの実装 | PR-6 | 大 | 未着手 |
+| PR-9 | 馬情報スクレイピング・HorseInfoScraperクラスの実装 | PR-2 | 中 | 未着手 |
 | PR-10 | 一括取得関数とREADME・サンプルコードの整備 | PR-6〜9 | 小 | 未着手 |
 
 
@@ -433,42 +433,82 @@ SCHEMA.mdの馬柱スキーマに従う。
 ---
 
 
-## PR-9: 馬情報スクレイピング・HorsePageScraperクラスの実装
+## PR-9: 馬情報スクレイピング・HorseInfoScraperクラスの実装
 
 ### 概要
 
 `scraping/horse_info.py`を実装し、馬情報スクレイピング機能を移植する。
-あわせて、馬情報ページのスクレイパークラス（`HorsePageScraper`）をまとめて実装する。
-`HorsePageScraper.get_past_performances()`はPR-6で実装した`PastPerformancesScraper`を利用する。
+KeibaAIの`scrape_horse_info_page`と基本的に同じロジックで実装するが、以下の点が異なる:
+- 所属の値を変換（"東"→"美浦"、"西"→"栗東"、"地"→"地方"、"外"→"海外"）
+- 総賞金を追加
+- 生年カラムを追加
+- 父ID・母ID・母父IDは非対応（馬一覧テーブルの父/母/母父リンクが馬検索URLであり馬IDを含まないため）
+
+馬柱スクレイピングはPR-6で実装済みの`PastPerformancesScraper`が担当するため、本PRでは馬情報のみを扱う。
 
 ### 作業内容
 
 1. `scraping/horse_info.py`の実装
-   - `scrape_horse_info(year, page_num, session, config)`: 馬情報ページからの馬情報スクレイピング
-   - `scrape_max_page_num(url, session, config)`: 馬情報ページの最大ページ数取得
-   - `is_race_existence(url, session, config)`: レース存在判定
-2. `scraping/horse_page.py`の実装
-   - `HorsePageScraper`クラス
-   - `__init__(horse_id, config)`: Selenium/HTML取得
-   - `get_past_performances()`: `PastPerformancesScraper`を利用して馬柱を返す
+   - `HorseInfoScraper`クラス
+   - `__init__(year, session, config)`: 初期化時に`scrape_max_page_num`を実行し、最大ページ数を`max_page_num`メンバ変数に保持
+   - `get_all_horse_info(horse_id=None)`: 馬情報の取得（HORSE_INFO_COLUMNSのカラム）
+     - `horse_id`が`None`の場合: 全ページを巡回しその年に生まれたすべての馬の情報を取得
+     - `horse_id`を指定した場合: 各ページを順に検索し、該当する馬の行を1行のDataFrameとして返す
+     - 1ページ分のスクレイピングロジック:
+       - `pd.read_html()`でテーブルの基本カラム（馬名、性、厩舎、父、母、母父、馬主、生産者、総賞金）を取得
+       - HTMLの`<table class="nk_tb_common race_table_01">`からaタグhrefを解析して各種IDを抽出
+         - 馬ID: 馬名リンクから10桁ID
+         - 厩舎ID: 厩舎リンクから5桁ID（デビュー前はNaN）
+         - 馬主ID: 馬主リンクから6桁ID
+         - 生産者ID: 生産者リンクから6桁ID
+         - 父ID/母ID/母父ID: 馬一覧テーブルの各リンクは馬検索URL（`/horse/list/`）のため馬IDを抽出不可、非対応
+       - 厩舎カラムを所属と厩舎に分割（"[西]友道康夫" → 所属="栗東", 厩舎="友道康夫"）
+       - 所属の値を変換: "東"→"美浦"、"西"→"栗東"、"地"→"地方"、"外"→"海外"
+       - 生年はコンストラクタのyear引数から取得
+       - 総賞金をテーブルから万円単位のintとして取得
+   - `_scrape_max_page_num(url, session, config)`: データベースページの最大ページ数取得（プライベート、コンストラクタから内部的に呼び出す）
+4. `scraping/utils.py`に`is_race_existence`を追加
+2. `scraping/config.py`の`HORSE_INFO_COLUMNS`を更新（SCHEMA.mdに準拠）
+   - 15カラム: 馬ID、馬名、性、生年、所属、厩舎、厩舎ID、父、母、母父、馬主、馬主ID、生産者、生産者ID、総賞金(万円)
 3. `scraping/__init__.py`の更新
+4. テストの実装
+5. exampleの実装
 
 ### テスト計画
 
+#### テスト用HTMLフィクスチャの作成
+
+netkeibaの競走馬一覧ページのHTMLをpythonのrequestsでスクレイピングし、`test/fixtures/html/`に保存する。
+
+- フィクスチャの取得は`test/scripts/fetch_horse_info_fixtures.py`スクリプトで行う
+- 取得したHTMLはUTF-8に変換して保存する
+- 2022年に生まれた競走馬一覧の最初のページと最後のページを取得し、フィクスチャとして保存する。これにより、正常系のページと、ページの最後で馬情報が少ないケースの両方をカバーする。
+
+##### フィクスチャファイル命名規則
+
+```
+test/fixtures/html/
+└── horse_info_{year}_p{page_num}.html  # 馬情報一覧ページ
+```
+
+##### 対象
+
+- 2022年・1ページ目（正常系: 通常の馬情報が取得できるページ）
+- 2022年・最後のページ（準正常系: ページの最後で馬情報が少ないケース）
 #### 単体テスト
+
+HTMLフィクスチャからBeautifulSoupを生成し、requestsをモックしてテストする。
 
 | テストファイル | テスト対象 | ケース |
 |---|---|---|
-| `test/unit/horse_info/test_scrape_horse_info.py` | `scrape_horse_info` | 正常系: モックHTMLからの馬情報抽出 / 準正常系: デビュー前（厩舎IDなし） |
-| `test/unit/horse_info/test_scrape_max_page_num.py` | `scrape_max_page_num` | 正常系: ページ数の取得 / 準正常系: 取得失敗 |
-| `test/unit/horse_info/test_is_race_existence.py` | `is_race_existence` | 正常系: 存在する場合 / 準正常系: 存在しない場合 |
-| `test/unit/horse_page/test_horse_page_scraper.py` | `HorsePageScraper` | コンストラクタ、get_past_performances |
+| `test/unit/horse_info/test_get_all_horse_info.py` | `HorseInfoScraper.get_all_horse_info` | 正常系: horse_id=Noneで全馬情報取得（カラム構成15カラム、所属変換、各種ID抽出、総賞金・生年の検証）、horse_id指定で1行取得 / 準正常系: デビュー前（厩舎IDがNaN）、存在しないhorse_id |
+| `test/unit/utils/test_is_race_existence.py` | `is_race_existence` | 正常系: 存在する場合 / 準正常系: 存在しない場合 |
 
 #### 結合テスト
 
 | テストファイル | テスト対象 | ケース |
 |---|---|---|
-| `test/integration/test_horse_page.py` | `HorsePageScraper` | 実際にnetkeibaにアクセスしてテスト |
+| `test/integration/test_horse_info.py` | `HorseInfoScraper` | 実際にnetkeibaにアクセスしてテスト |
 
 
 ---
@@ -516,24 +556,35 @@ PR-2 設定・例外・ユーティリティ
   ▼          ▼          ▼          ▼
 PR-3       PR-6       PR-7       PR-8
 レース情報  馬柱       オッズ     スケジュール
-  │          │
-  ├────┐     ▼
-  ▼    ▼   PR-9
-PR-4  PR-5 馬情報スクレイピング
-結果   出馬表  + HorsePageScraper
-(※ResultPageScraper   (※horse_info.py
- 含む)  (※EntryPageScraper    + horse_page.py)
-         含む)
-  │    │     │
-  ├────┘     │
-  │          │
-  ▼          ▼
+  │
+  ├────┐
+  ▼    ▼
+PR-4  PR-5
+結果   出馬表
+(※ResultPageScraper   (※EntryPageScraper
+ 含む)   含む)
+          │
+  ├────┐  │
+  │    │  │
+  ▼    ▼  ▼
+PR-10 統合・ドキュメント
+```
+
+```
+PR-2 設定・例外・ユーティリティ
+  │
+  ▼
+PR-9 馬情報スクレイピング
+(※HorseInfoScraper、
+horse_info.py)
+  │
+  ▼
 PR-10 統合・ドキュメント
 ```
 
 > **注**: PR-4にResultPageScraper、PR-5にEntryPageScraperの実装を含む。
 > PR-6にPastPerformancesScraperの実装を含む。
-> PR-9にscrape_horse_info等の馬情報スクレイピング関数とHorsePageScraperの実装を含む。
+> PR-9にHorseInfoScraperの実装を含む。PR-9はPR-6に依存せず、PR-2から直接実装可能。
 
 
 ## テスト全体方針
@@ -594,7 +645,8 @@ test/
 │   │   ├── test_race_id_to_race_info.py
 │   │   ├── test_get_race_info_from_past_performances.py
 │   │   ├── test_calc_interval.py
-│   │   └── test_set_chrome_options.py
+│   │   ├── test_set_chrome_options.py
+│   │   └── test_is_race_existence.py
 │   ├── race_info/
 │   │   ├── __init__.py
 │   │   └── test_scrape_race_info.py
@@ -622,12 +674,7 @@ test/
    │   └── test_get_past_performances.py
    ├── horse_info/
    │   ├── __init__.py
-   │   ├── test_scrape_horse_info.py
-   │   ├── test_scrape_max_page_num.py
-   │   └── test_is_race_existence.py
-   ├── horse_page/
-   │   ├── __init__.py
-   │   └── test_horse_page_scraper.py
+   │   └── test_get_all_horse_info.py
 │   ├── odds/
 │   │   ├── __init__.py
 │   │   ├── test_scrape_odds_from_netkeiba.py
@@ -643,7 +690,7 @@ test/
     ├── test_result_page.py
     ├── test_entry_page.py
     ├── test_past_performances.py
-    └── test_horse_page.py
+    └── test_horse_info.py
 ```
 
 ### テスト命名規則

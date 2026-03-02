@@ -6,12 +6,17 @@ URL構築関数、データ変換関数、Chromeオプション設定など
 
 import datetime
 import re
+from io import StringIO
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 from selenium.webdriver.chrome.options import Options
 
 from scraping.config import ID_TO_KEIBAJO_DICT, KEIBAJO_TO_ID_DICT, ScrapingConfig
+
+if TYPE_CHECKING:
+    from requests import Session
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +274,30 @@ def set_chrome_options() -> Options:
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     return options
+
+
+def is_race_existence(url: str, session: "Session", config: ScrapingConfig | None = None) -> bool:
+    """レース結果ページが存在するかを判定する
+
+    ``<table>`` 要素が1つ以上含まれていればページが存在すると判定する。
+
+    Args:
+        url (str): 結果払い戻しのページのURL
+        session (Session): requests.Sessionのインスタンス
+        config (ScrapingConfig | None): 設定オブジェクト
+
+    Returns:
+        bool: ページが存在すればTrue
+    """
+    cfg = config or ScrapingConfig()
+    html = session.get(url, headers=cfg.headers, timeout=cfg.request_timeout)
+    html.encoding = "EUC-JP"
+
+    try:
+        tables = pd.read_html(StringIO(html.text))
+        return len(tables) > 0
+    except Exception:
+        return False
 
 
 # ---------------------------------------------------------------------------
