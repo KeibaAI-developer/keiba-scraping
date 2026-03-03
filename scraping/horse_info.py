@@ -225,7 +225,7 @@ class HorseInfoScraper:
         return (birth_num + 99) // 100
 
 
-def _extract_id_from_td(td_element: "BeautifulSoup") -> str | float:
+def _extract_id_from_td(td_element: Tag) -> str | float:
     """tdタグからaタグのhrefを解析してIDを抽出する
 
     Args:
@@ -236,7 +236,7 @@ def _extract_id_from_td(td_element: "BeautifulSoup") -> str | float:
     """
     try:
         a_tag = td_element.find("a")
-        if a_tag is None:
+        if not isinstance(a_tag, Tag):
             return np.nan
         href = str(a_tag["href"])
         # URLの末尾からIDを抽出（末尾の/を除く）
