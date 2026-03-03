@@ -85,7 +85,7 @@ def fetch_last_page(year: int) -> None:
     match = re.search(r"\d{1,3}(?:,\d{3})?", pager.text)
     if match:
         birth_num = int(match.group().replace(",", ""))
-        max_page_num = birth_num // 100 + 1
+        max_page_num = (birth_num + 99) // 100
         print(f"  最大ページ数: {max_page_num} (生産頭数: {birth_num})")
     else:
         print("  ページ数の取得に失敗しました。スキップします。")

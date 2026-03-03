@@ -7,18 +7,15 @@ KeibaAIの``scrape_horse_info_page``に対応する。
 import re
 import time
 from io import StringIO
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+import requests
 from bs4 import BeautifulSoup, Tag
 
 from scraping.config import AFFILIATION_MAP, HORSE_INFO_COLUMNS, ScrapingConfig
-from scraping.exceptions import NetworkError, ParseError
+from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.utils import build_horse_list_url
-
-if TYPE_CHECKING:
-    from requests import Session
 
 
 class HorseInfoScraper:
@@ -34,7 +31,7 @@ class HorseInfoScraper:
     def __init__(
         self,
         year: int,
-        session: "Session | None" = None,
+        session: requests.Session | None = None,
         config: ScrapingConfig | None = None,
     ) -> None:
         """初期化
@@ -43,15 +40,13 @@ class HorseInfoScraper:
 
         Args:
             year (int): 馬の誕生年
-            session (Session | None): HTTPセッション。省略時は新規作成
+            session (requests.Session | None): HTTPセッション。省略時は新規作成
             config (ScrapingConfig | None): 設定オブジェクト
         """
-        import requests as _requests
-
         self.year = year
         self.config = config or ScrapingConfig()
         self._owns_session = session is None
-        self.session: _requests.Session = session or _requests.Session()
+        self.session: requests.Session = session or requests.Session()
 
         self.max_page_num = self._scrape_max_page_num()
 
@@ -85,6 +80,7 @@ class HorseInfoScraper:
 
         Raises:
             NetworkError: ページの取得に失敗した場合
+            PageNotFoundError: ページが見つからない場合
             ParseError: テーブルの解析に失敗した場合
         """
         url = build_horse_list_url(self.year, page_num, self.config)
@@ -94,8 +90,13 @@ class HorseInfoScraper:
             html = self.session.get(
                 url, headers=self.config.headers, timeout=self.config.request_timeout
             )
-        except Exception as exc:
-            raise NetworkError(f"馬情報ページの取得に失敗しました: {url}") from exc
+            html.raise_for_status()
+        except requests.exceptions.HTTPError as exc:
+            if html.status_code == 404:
+                raise PageNotFoundError(f"馬情報ページが見つかりません: {url}") from exc
+            raise NetworkError(f"HTTPエラーが発生しました: {exc}") from exc
+        except requests.exceptions.RequestException as exc:
+            raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
         html.encoding = "EUC-JP"
         soup = BeautifulSoup(html.text, "html.parser")
 
@@ -192,6 +193,7 @@ class HorseInfoScraper:
 
         Raises:
             NetworkError: ページの取得に失敗した場合
+            PageNotFoundError: ページが見つからない場合
             ParseError: 最大ページ数の取得に失敗した場合
         """
         url = build_horse_list_url(self.year, 1, self.config)
@@ -199,8 +201,13 @@ class HorseInfoScraper:
             html = self.session.get(
                 url, headers=self.config.headers, timeout=self.config.request_timeout
             )
-        except Exception as exc:
-            raise NetworkError(f"ページ数取得に失敗しました: {url}") from exc
+            html.raise_for_status()
+        except requests.exceptions.HTTPError as exc:
+            if html.status_code == 404:
+                raise PageNotFoundError(f"馬情報ページが見つかりません: {url}") from exc
+            raise NetworkError(f"HTTPエラーが発生しました: {exc}") from exc
+        except requests.exceptions.RequestException as exc:
+            raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
         html.encoding = "EUC-JP"
         soup = BeautifulSoup(html.text, "html.parser")
         pager = soup.find("div", class_="pager")
