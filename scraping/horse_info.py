@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from scraping.config import AFFILIATION_MAP, HORSE_INFO_COLUMNS, ScrapingConfig
 from scraping.exceptions import NetworkError, ParseError
@@ -101,7 +101,7 @@ class HorseInfoScraper:
 
         # テーブル要素を取得
         race_table_01 = soup.find("table", class_="nk_tb_common race_table_01")
-        if race_table_01 is None:
+        if not isinstance(race_table_01, Tag):
             raise ParseError(f"テーブルが見つかりません: {url}")
 
         # 各種IDを行ごとに抽出
@@ -231,7 +231,7 @@ def _extract_id_from_td(td_element: "BeautifulSoup") -> str | float:
         a_tag = td_element.find("a")
         if a_tag is None:
             return np.nan
-        href = a_tag["href"]
+        href = str(a_tag["href"])
         # URLの末尾からIDを抽出（末尾の/を除く）
         # 例: /horse/2022105081/ → 2022105081
         id_match = re.search(r"/(\d+)/?$", href)
