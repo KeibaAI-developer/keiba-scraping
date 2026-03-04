@@ -15,8 +15,8 @@
 | PR-5 | 出馬表スクレイピングの実装 | PR-3 | 中 | 完了 |
 | PR-6 | 馬柱スクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-7 | オッズスクレイピングの実装 | PR-2 | 中 | 未着手 |
-| PR-8a | レース一覧スクレイピングの実装 | PR-2 | 中 | 未着手 |
-| PR-8b | レーススケジュールスクレイピングの実装 | PR-2 | 中 | 未着手 |
+| PR-8a | レース一覧スクレイピングの実装 | PR-2 | 中 | 完了 |
+| PR-8b | レーススケジュールスクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-9 | 馬情報スクレイピング・HorseInfoScraperクラスの実装 | PR-2 | 中 | 完了 |
 | PR-10 | 一括取得関数とREADME・サンプルコードの整備 | PR-6〜9 | 小 | 未着手 |
 
@@ -500,7 +500,7 @@ test/fixtures/html/
      - レースIDから`race_id_to_race_info`で競馬場・回・開催日・Rを構築
      - 芝ダは`judge_turf_dirt`で判定
      - 馬場はページから取得（取得可能な場合）
-     - 発走時刻は`datetime.datetime`型（日付はコンストラクタの`year`, `month`, `day`から構築）
+     - 発走時刻は`str`型（HH:MM形式）
      - 開催のない日は0行のDataFrameを返す
 4. `scraping/config.py`のRACE_SCHEDULE_COLUMNSをSCHEMA.mdに準拠して更新（12カラム）
 5. `scraping/__init__.py`の更新

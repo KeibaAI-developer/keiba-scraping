@@ -575,13 +575,13 @@ Seleniumでページを取得しHTMLを保持する。
   - 芝ダは`judge_turf_dirt`で判定
   - 日付はコンストラクタの`year`, `month`, `day`から`datetime.date`として構築
   - 馬場はページから取得（取得可能な場合）
-  - 発走時刻は`datetime.datetime`型（日付はコンストラクタの`year`, `month`, `day`から構築）
+  - 発走時刻は`str`型（HH:MM形式）
 
 - **KeibaAIとの差異**:
   - スクレイパークラス化（KeibaAIでは関数`scrape_today_race_info`）
   - `date_id`カラムを含まない
   - KeibaAIでは「レースID」「日付ID」「レース名」「競馬場」「出走時刻」「芝ダ」「距離」「頭数」の8カラムだったが、SCHEMA.mdに準拠した12カラムに拡張
-  - 発走時刻は`datetime.datetime`型
+  - 発走時刻は`str`型（HH:MM形式）
   - ファイルへの保存は行わない
   - `param`不使用、`ScrapingConfig`を使用
 
@@ -621,7 +621,7 @@ Seleniumでページを取得しHTMLを保持する。
 | `scrape_max_page_num` | `HorseInfoScraper._scrape_max_page_num` | プライベート化、コンストラクタから内部的に呼び出し |
 | `is_race_existence` | `utils.is_race_existence` | utils.pyに移動 |
 | `scrape_umabashira` | `PastPerformancesScraper` | スクレイパークラス化、日付ID不使用、カラム名変更（日→開催日、天気→天候、オッズ→単勝オッズ、間隔→間隔日数）、距離を芝ダと距離(int)に分割、通過を1〜4コーナー通過順に分割、ペースをレース前3F・レース後3Fに分割、騎手ID追加 |
-| `scrape_today_race_info` | `RaceScheduleScraper` | スクレイパークラス化、日付ID不使用、保存しない、発走時刻はdatetime型、SCHEMA.mdに準拠した12カラムに拡張 |
+| `scrape_today_race_info` | `RaceScheduleScraper` | スクレイパークラス化、日付ID不使用、保存しない、発走時刻はstr型、SCHEMA.mdに準拠した12カラムに拡張 |
 | `scrape_calender_page`（KeibaAI側の関数名。"calender" は原文ママのタイポ） | `RaceListScraper` | スクレイパークラス化、日付ID不使用、SCHEMA.mdに準拠した26カラムに拡張、最大ページ数を自動取得、scrape_one_page()をパブリック提供 |
 | `_scrape_odds_from_netkeiba` | `scrape_odds_from_netkeiba` | DataFrame返却 |
 | `_scrape_odds_from_jra` | `scrape_odds_from_jra` | 変更なし |
