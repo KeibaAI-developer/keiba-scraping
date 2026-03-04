@@ -1,9 +1,4 @@
-"""レース一覧スクレイパーモジュール
-
-netkeibaのレース一覧ページをスクレイピングし、
-レース一覧データをDataFrameとして取得する。
-KeibaAIの``scrape_calender_page``に対応する。
-"""
+"""レース一覧スクレイパーモジュール"""
 
 import datetime
 import logging
@@ -97,7 +92,8 @@ class RaceListScraper:
             )
             html.raise_for_status()
         except requests.exceptions.HTTPError as exc:
-            if html.status_code == 404:
+            status_code = exc.response.status_code if exc.response is not None else None
+            if status_code == 404:
                 raise PageNotFoundError(f"レース一覧ページが見つかりません: {url}") from exc
             raise NetworkError(f"HTTPエラーが発生しました: {exc}") from exc
         except requests.exceptions.RequestException as exc:
@@ -269,7 +265,8 @@ class RaceListScraper:
             )
             html.raise_for_status()
         except requests.exceptions.HTTPError as exc:
-            if html.status_code == 404:
+            status_code = exc.response.status_code if exc.response is not None else None
+            if status_code == 404:
                 raise PageNotFoundError(f"レース一覧ページが見つかりません: {url}") from exc
             raise NetworkError(f"HTTPエラーが発生しました: {exc}") from exc
         except requests.exceptions.RequestException as exc:
@@ -351,20 +348,22 @@ def _parse_date(date_text: str) -> datetime.date:
         raise ParseError(f"日付のパースに失敗しました: {date_text}") from exc
 
 
-def _parse_pace(pace_text: str) -> tuple[float | object, float | object]:
+def _parse_pace(pace_text: str) -> tuple[float, float]:
     """ペース文字列を前半3Fと後半3Fに分割する
 
     Args:
         pace_text (str): "36.7-40.5" 形式のペース文字列
 
     Returns:
-        float | object: レース前3F（パース失敗時はNaN）
-        float | object: レース後3F（パース失敗時はNaN）
+        tuple[float, float]: レース前3F, レース後3F
+
+    Raises:
+        ParseError: ペース文字列のパースに失敗した場合
     """
     match = re.match(r"([\d.]+)-([\d.]+)", pace_text)
     if match:
         return float(match.group(1)), float(match.group(2))
-    return np.nan, np.nan
+    raise ParseError(f"ペースのパースに失敗しました: {pace_text}")
 
 
 def _parse_trainer(trainer_text: str) -> tuple[str, str]:

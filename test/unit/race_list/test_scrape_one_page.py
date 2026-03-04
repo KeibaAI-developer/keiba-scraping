@@ -39,7 +39,7 @@ def test_column_count_is_26() -> None:
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
-    assert len(df.columns) == 26
+    assert len(df.columns) == len(RACE_LIST_COLUMNS)
 
 
 # ---------------------------------------------------------------------------
