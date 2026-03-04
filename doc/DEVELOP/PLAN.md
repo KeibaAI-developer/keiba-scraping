@@ -15,8 +15,9 @@
 | PR-5 | 出馬表スクレイピングの実装 | PR-3 | 中 | 完了 |
 | PR-6 | 馬柱スクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-7 | オッズスクレイピングの実装 | PR-2 | 中 | 未着手 |
-| PR-8 | レーススケジュール・カレンダーの実装 | PR-2 | 中 | 未着手 |
-| PR-9 | 馬情報スクレイピング・HorseInfoScraperクラスの実装 | PR-2 | 中 | 未着手 |
+| PR-8a | レース一覧スクレイピングの実装 | PR-2 | 中 | 未着手 |
+| PR-8b | レーススケジュールスクレイピングの実装 | PR-2 | 中 | 未着手 |
+| PR-9 | 馬情報スクレイピング・HorseInfoScraperクラスの実装 | PR-2 | 中 | 完了 |
 | PR-10 | 一括取得関数とREADME・サンプルコードの整備 | PR-6〜9 | 小 | 未着手 |
 
 
@@ -407,27 +408,143 @@ SCHEMA.mdの馬柱スキーマに従う。
 ---
 
 
-## PR-8: レーススケジュール・カレンダーの実装
+## PR-8a: レース一覧スクレイピングの実装
 
 ### 概要
 
-`scraping/schedule.py`を実装する。日別スケジュールとレース一覧の取得機能を移植する。
+`scraping/race_list.py`を実装する。KeibaAIの`scrape_calender_page`に対応するレース一覧取得機能を、`RaceListScraper`クラスとして実装する。SCHEMA.mdのレース一覧スキーマに準拠した26カラムのDataFrameを返す。
 
 ### 作業内容
 
-1. `scraping/schedule.py`の実装
-   - `scrape_race_schedule(year, month, day, config)`: 日別レーススケジュール
-   - `scrape_race_calendar(year, page_num, session, config)`: レース一覧
-2. `scraping/__init__.py`の更新
+1. フィクスチャ取得スクリプトの実装
+   - `test/scripts/fetch_race_list_fixtures.py`を作成
+   - 2026年の最初のページ（1ページ目）のHTMLをrequestsで取得し保存
+   - エンコーディングはEUC-JPからUTF-8に変換
+2. フィクスチャHTML取得
+   - `test/fixtures/html/race_list_2026_p1.html`を取得・保存
+3. `scraping/race_list.py`の実装
+   - `RaceListScraper`クラス
+   - `__init__(year, session, config)`: 初期化時に`_scrape_max_page_num`を実行し、最大ページ数を`max_page_num`メンバ変数に保持
+   - `scrape_one_page(page_num)`: 指定ページのレース一覧を取得（RACE_LIST_COLUMNSのカラム、最大100行）
+     - `build_race_list_url`でURL構築 → HTTP取得 → BeautifulSoup生成
+     - `<table class="nk_tb_common race_table_01">`のtr/tdからレース情報を抽出
+     - レースIDから`race_id_to_race_info`で競馬場・回・開催日・Rを構築
+     - 日付、天候、レース名、芝ダ、距離、頭数、馬場、タイム、レース前3F、レース後3F、勝ち馬、勝ち馬ID、騎手、騎手ID、所属、厩舎、厩舎ID、2着馬、2着馬ID、3着馬、3着馬IDをHTMLから抽出
+   - `get_race_list(sleep=1.0)`: 全ページ分のレース一覧を取得。内部で`scrape_one_page()`を全ページ分呼び出す
+   - `_scrape_max_page_num()`: ページャーから全件数を取得し、100件単位で切り上げて最大ページ数を算出
+4. `scraping/config.py`に`RACE_LIST_COLUMNS`を追加（SCHEMA.mdに準拠した26カラム）
+5. `scraping/__init__.py`の更新
+6. 単体テストの実装
+   - HTMLフィクスチャからBeautifulSoupを生成し、requestsをモックしてテスト
+7. 統合テストの実装
+8. `example/race_list.py`の実装
 
 ### テスト計画
+
+#### テスト用HTMLフィクスチャの作成
+
+netkeibaのレース一覧ページのHTMLをrequestsで取得し、`test/fixtures/html/`に保存する。
+
+- フィクスチャの取得は`test/scripts/fetch_race_list_fixtures.py`スクリプトで行う
+- 取得したHTMLはEUC-JPからUTF-8に変換して保存する
+
+##### フィクスチャファイル命名規則
+
+```
+test/fixtures/html/
+└── race_list_{year}_p{page_num}.html  # レース一覧ページ
+```
+
+##### 対象
+
+- 2026年・1ページ目
 
 #### 単体テスト
 
 | テストファイル | テスト対象 | ケース |
 |---|---|---|
-| `test/unit/schedule/test_scrape_race_schedule.py` | `scrape_race_schedule` | 正常系: Seleniumモックでスケジュール取得 / 準正常系: 開催のない日 |
-| `test/unit/schedule/test_scrape_race_calendar.py` | `scrape_race_calendar` | 正常系: モックHTMLからレース一覧抽出 |
+| `test/unit/race_list/test_scrape_one_page.py` | `RaceListScraper.scrape_one_page` | 正常系: フィクスチャHTMLからレース一覧を抽出し、26カラム構成と主要値（レースID、日付、競馬場等）を検証 |
+| `test/unit/race_list/test_get_race_list.py` | `RaceListScraper.get_race_list` | 正常系: 全ページ取得（モック）、sleepが正しく呼ばれることの検証 |
+
+#### 結合テスト
+
+| テストファイル | テスト対象 | ケース |
+|---|---|---|
+| `test/integration/test_race_list.py` | `RaceListScraper` | 実際にnetkeibaにアクセスしてテスト |
+
+
+---
+
+
+## PR-8b: レーススケジュールスクレイピングの実装
+
+### 概要
+
+`scraping/race_schedule.py`を実装する。KeibaAIの`scrape_today_race_info`に対応する日別レーススケジュール取得機能を、`RaceScheduleScraper`クラスとして実装する。SCHEMA.mdのレーススケジュールスキーマに準拠した12カラムのDataFrameを返す。ページのレンダリングにSeleniumを使用する。
+
+### 作業内容
+
+1. フィクスチャ取得スクリプトの実装
+   - `test/scripts/fetch_race_schedule_fixtures.py`を作成
+   - Seleniumで2026年3月1日のレーススケジュールページのHTMLを取得し保存
+2. フィクスチャHTML取得
+   - `test/fixtures/html/race_schedule_20260301.html`を取得・保存
+3. `scraping/race_schedule.py`の実装
+   - `RaceScheduleScraper`クラス
+   - `__init__(year, month, day, config)`: Seleniumでページを取得しHTMLを保持
+     - `build_today_race_list_url`でURL構築 → ChromeDriver起動 → ページ取得 → `page_source`取得 → BeautifulSoup生成
+   - `get_race_schedule()`: レーススケジュールの取得（RACE_SCHEDULE_COLUMNSのカラム）
+     - `RaceList_DataItem`からレースIDを抽出（aタグhrefの`race_id=(\d{12})`部分）
+     - `RaceList_ItemTitle`からレース名を抽出
+     - `RaceData`から発走時刻、芝ダ、距離、頭数を正規表現で抽出
+     - レースIDから`race_id_to_race_info`で競馬場・回・開催日・Rを構築
+     - 芝ダは`judge_turf_dirt`で判定
+     - 馬場はページから取得（取得可能な場合）
+     - 発走時刻は`datetime.datetime`型（日付はコンストラクタの`year`, `month`, `day`から構築）
+     - 開催のない日は0行のDataFrameを返す
+4. `scraping/config.py`のRACE_SCHEDULE_COLUMNSをSCHEMA.mdに準拠して更新（12カラム）
+5. `scraping/__init__.py`の更新
+6. 単体テストの実装
+   - HTMLフィクスチャからSeleniumをモックしてテスト
+7. 統合テストの実装
+8. `example/race_schedule.py`の実装
+
+### テスト計画
+
+#### テスト用HTMLフィクスチャの作成
+
+netkeibaのレーススケジュールページのHTMLをSeleniumで取得し、`test/fixtures/html/`に保存する。
+
+- フィクスチャの取得は`test/scripts/fetch_race_schedule_fixtures.py`スクリプトで行う
+- Seleniumの`driver.page_source`から取得
+
+##### フィクスチャファイル命名規則
+
+```
+test/fixtures/html/
+└── race_schedule_{date}.html  # レーススケジュールページ（dateはYYYYMMDD形式）
+```
+
+##### 対象
+
+- 2026年3月1日
+
+#### 単体テスト
+
+| テストファイル | テスト対象 | ケース |
+|---|---|---|
+| `test/unit/race_schedule/test_get_race_schedule.py` | `RaceScheduleScraper.get_race_schedule` | 正常系: フィクスチャHTMLからレーススケジュールを抽出し、12カラム構成と主要値（レースID、発走時刻、芝ダ、距離等）を検証 / 準正常系: 開催のない日（0行DataFrame） |
+
+#### テストの注意点
+
+- `RaceScheduleScraper.__init__`でのSelenium `webdriver.Chrome`をモックする
+- フィクスチャHTMLを`driver.page_source`の戻り値としてモックする
+
+#### 結合テスト
+
+| テストファイル | テスト対象 | ケース |
+|---|---|---|
+| `test/integration/test_race_schedule.py` | `RaceScheduleScraper` | 実際にnetkeibaにアクセスしてテスト |
 
 
 ---
@@ -551,10 +668,10 @@ PR-1 プロジェクト基盤
   ▼
 PR-2 設定・例外・ユーティリティ
   │
-  ├──────────┬──────────┬──────────┐
-  ▼          ▼          ▼          ▼
-PR-3       PR-6       PR-7       PR-8
-レース情報  馬柱       オッズ     スケジュール
+  ├──────────┬──────────┬──────────┬──────────┐
+  ▼          ▼          ▼          ▼          ▼
+PR-3       PR-6       PR-7      PR-8a      PR-8b
+レース情報  馬柱       オッズ    レース一覧  スケジュール
   │
   ├────┐
   ▼    ▼
@@ -583,6 +700,8 @@ PR-10 統合・ドキュメント
 
 > **注**: PR-4にResultPageScraper、PR-5にEntryPageScraperの実装を含む。
 > PR-6にPastPerformancesScraperの実装を含む。
+> PR-8aにRaceListScraperの実装を含む。
+> PR-8bにRaceScheduleScraperの実装を含む。
 > PR-9にHorseInfoScraperの実装を含む。PR-9はPR-6に依存せず、PR-2から直接実装可能。
 
 
@@ -678,10 +797,13 @@ test/
 │   │   ├── __init__.py
 │   │   ├── test_scrape_odds_from_netkeiba.py
 │   │   └── test_scrape_odds_from_jra.py
-│   └── schedule/
+│   ├── race_list/
+│   │   ├── __init__.py
+│   │   ├── test_scrape_one_page.py
+│   │   └── test_get_race_list.py
+│   └── race_schedule/
 │       ├── __init__.py
-│       ├── test_scrape_race_schedule.py
-│       └── test_scrape_race_calendar.py
+│       └── test_get_race_schedule.py
 └── integration/
     ├── __init__.py
     ├── test_import.py
@@ -689,7 +811,9 @@ test/
     ├── test_result_page.py
     ├── test_entry_page.py
     ├── test_past_performances.py
-    └── test_horse_info.py
+    ├── test_horse_info.py
+    ├── test_race_list.py
+    └── test_race_schedule.py
 ```
 
 ### テスト命名規則

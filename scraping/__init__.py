@@ -21,8 +21,8 @@ from scraping.config import (
     KEIBAJO_TO_ID_DICT,
     PAST_PERFORMANCES_COLUMNS,
     PAYBACK_COLUMNS,
-    RACE_CALENDAR_COLUMNS,
     RACE_INFO_COLUMNS,
+    RACE_LIST_COLUMNS,
     RACE_SCHEDULE_COLUMNS,
     RESULT_COLUMNS,
     THREE_COMBINATION_BETS,
@@ -42,6 +42,7 @@ from scraping.exceptions import (
 from scraping.horse_info import HorseInfoScraper
 from scraping.past_performances import PastPerformancesScraper
 from scraping.race_info import scrape_race_info
+from scraping.race_list import RaceListScraper
 from scraping.result_page import ResultPageScraper
 from scraping.utils import (
     build_entry_url,
@@ -74,7 +75,7 @@ __all__ = [
     "PAST_PERFORMANCES_COLUMNS",
     "HORSE_INFO_COLUMNS",
     "AFFILIATION_MAP",
-    "RACE_CALENDAR_COLUMNS",
+    "RACE_LIST_COLUMNS",
     "RACE_SCHEDULE_COLUMNS",
     # exceptions
     "ScrapingError",
@@ -105,6 +106,8 @@ __all__ = [
     "ResultPageScraper",
     # past_performances
     "PastPerformancesScraper",
+    # race_list
+    "RaceListScraper",
     # horse_info
     "HorseInfoScraper",
 ]
