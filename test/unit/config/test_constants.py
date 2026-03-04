@@ -11,6 +11,7 @@ from scraping.config import (
     PAST_PERFORMANCES_COLUMNS,
     PAYBACK_COLUMNS,
     RACE_INFO_COLUMNS,
+    RACE_LIST_COLUMNS,
     RACE_SCHEDULE_COLUMNS,
     RESULT_COLUMNS,
     THREE_COMBINATION_BETS,
@@ -131,6 +132,7 @@ def test_three_combination_bets() -> None:
         RACE_INFO_COLUMNS,
         PAST_PERFORMANCES_COLUMNS,
         HORSE_INFO_COLUMNS,
+        RACE_LIST_COLUMNS,
         RACE_SCHEDULE_COLUMNS,
     ],
 )
@@ -150,6 +152,7 @@ def test_column_definitions_are_non_empty_list_of_str(columns: list[str]) -> Non
         RACE_INFO_COLUMNS,
         PAST_PERFORMANCES_COLUMNS,
         HORSE_INFO_COLUMNS,
+        RACE_LIST_COLUMNS,
         RACE_SCHEDULE_COLUMNS,
     ],
 )

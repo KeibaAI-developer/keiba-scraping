@@ -54,6 +54,7 @@ def fetch_and_save(year: int, page_num: int) -> None:
 
     print(f"取得中: {url}")
     response = requests.get(url, headers=HEADERS, timeout=30)
+    response.raise_for_status()
     response.encoding = "EUC-JP"
 
     os.makedirs(FIXTURES_DIR, exist_ok=True)

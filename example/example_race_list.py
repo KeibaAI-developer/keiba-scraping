@@ -32,6 +32,9 @@ def main() -> None:
         # 最初の1ページだけスクレイピング
         print("【1ページ目の先頭行】")
         df = scraper.scrape_one_page(1)
+        if df.empty:
+            print("データが取得できませんでした。")
+            return
         for col in df.columns:
             print(f"  {col}: {df.iloc[0][col]}")
 

@@ -51,7 +51,6 @@ class RaceListScraper:
         """
         self.year = year
         self.config = config or ScrapingConfig()
-        self._owns_session = session is None
         self.session: requests.Session = session or requests.Session()
 
         self.max_page_num = self._scrape_max_page_num()
@@ -152,6 +151,9 @@ class RaceListScraper:
 
         Returns:
             dict[str, object]: RACE_LIST_COLUMNSのキーを持つ辞書
+
+        Raises:
+            ParseError: 数値項目（R、距離、頭数）のパースに失敗した場合
         """
         # レースID (td[4]: レース名のリンクから)
         race_id = _extract_race_id(tds[4])
@@ -167,7 +169,10 @@ class RaceListScraper:
         weather = tds[2].text.strip()
 
         # R (td[3])
-        r_value = int(tds[3].text.strip())
+        try:
+            r_value = int(tds[3].text.strip())
+        except ValueError as exc:
+            raise ParseError(f"Rのパースに失敗しました: {tds[3].text.strip()}") from exc
 
         # レース名 (td[4])
         race_name = tds[4].text.strip()
@@ -176,10 +181,15 @@ class RaceListScraper:
         distance_text = tds[6].text.strip()
         turf_dirt = judge_turf_dirt(distance_text)
         distance_match = re.search(r"\d+", distance_text)
-        distance = int(distance_match.group()) if distance_match else 0
+        if distance_match is None:
+            raise ParseError(f"距離のパースに失敗しました: {distance_text}")
+        distance = int(distance_match.group())
 
         # 頭数 (td[7])
-        num_runners = int(tds[7].text.strip())
+        try:
+            num_runners = int(tds[7].text.strip())
+        except ValueError as exc:
+            raise ParseError(f"頭数のパースに失敗しました: {tds[7].text.strip()}") from exc
 
         # 馬場 (td[8])
         baba = tds[8].text.strip()
@@ -298,10 +308,10 @@ def _extract_race_id(td_element: Tag) -> str:
     if not isinstance(a_tag, Tag):
         raise ParseError("レースIDのリンクが見つかりません")
     href = str(a_tag.get("href", ""))
-    numbers = re.findall(r"\d+", href)
-    if not numbers:
+    match = re.search(r"(?:race_id=|/race/)(\d{12})", href)
+    if match is None:
         raise ParseError(f"レースIDが抽出できません: {href}")
-    return numbers[0]
+    return match.group(1)
 
 
 def _extract_id_from_link(td_element: Tag) -> str | float:
@@ -317,10 +327,10 @@ def _extract_id_from_link(td_element: Tag) -> str | float:
     if not isinstance(a_tag, Tag):
         return np.nan
     href = str(a_tag.get("href", ""))
-    numbers = re.findall(r"\d+", href)
-    if not numbers:
+    match = re.search(r"/(\d{5}|\d{10})(?:/|$)", href)
+    if match is None:
         return np.nan
-    return numbers[0]
+    return match.group(1)
 
 
 def _parse_date(date_text: str) -> datetime.date:
