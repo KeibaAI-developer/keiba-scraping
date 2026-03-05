@@ -43,6 +43,7 @@ from scraping.horse_info import HorseInfoScraper
 from scraping.past_performances import PastPerformancesScraper
 from scraping.race_info import scrape_race_info
 from scraping.race_list import RaceListScraper
+from scraping.race_schedule import RaceScheduleScraper
 from scraping.result_page import ResultPageScraper
 from scraping.utils import (
     build_entry_url,
@@ -108,6 +109,8 @@ __all__ = [
     "PastPerformancesScraper",
     # race_list
     "RaceListScraper",
+    # race_schedule
+    "RaceScheduleScraper",
     # horse_info
     "HorseInfoScraper",
 ]
