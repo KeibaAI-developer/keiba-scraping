@@ -244,7 +244,7 @@ def test_start_time_format() -> None:
 
     for time_val in df["発走時刻"]:
         assert isinstance(time_val, str), f"発走時刻が文字列でない: {time_val}"
-        assert re.match(r"^\d{1,2}:\d{2}$", time_val), f"発走時刻の形式が不正: {time_val}"
+        assert re.match(r"^\d{2}:\d{2}$", time_val), f"発走時刻の形式が不正: {time_val}"
 
 
 def test_start_time_not_empty() -> None:
@@ -288,10 +288,10 @@ def test_baba_turf_race() -> None:
     df = scraper.get_race_schedule()
 
     # 小倉の芝レースがある場合、小倉の馬場状態を確認
-    ogura_turf = df[(df["競馬場"] == "小倉") & (df["芝ダ"] == "芝")]
-    if len(ogura_turf) > 0:
-        for baba in ogura_turf["馬場"]:
-            assert baba == "良", f"小倉芝の馬場が良でない: {baba}"
+    kogura_turf = df[(df["競馬場"] == "小倉") & (df["芝ダ"] == "芝")]
+    assert len(kogura_turf) > 0, "小倉の芝レースが1件も見つかりません"
+    for baba in kogura_turf["馬場"]:
+        assert baba == "良", f"小倉芝の馬場が良でない: {baba}"
 
 
 def test_baba_dirt_race_ogura() -> None:
@@ -299,10 +299,10 @@ def test_baba_dirt_race_ogura() -> None:
     scraper = create_scraper_from_fixture(YEAR, MONTH, DAY, FIXTURE_20260301)
     df = scraper.get_race_schedule()
 
-    ogura_dirt = df[(df["競馬場"] == "小倉") & (df["芝ダ"] == "ダ")]
-    if len(ogura_dirt) > 0:
-        for baba in ogura_dirt["馬場"]:
-            assert baba == "稍", f"小倉ダの馬場が稍でない: {baba}"
+    kogura_dirt = df[(df["競馬場"] == "小倉") & (df["芝ダ"] == "ダ")]
+    assert len(kogura_dirt) > 0, "小倉のダートレースが1件も見つかりません"
+    for baba in kogura_dirt["馬場"]:
+        assert baba == "稍", f"小倉ダの馬場が稍でない: {baba}"
 
 
 # ---------------------------------------------------------------------------

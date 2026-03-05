@@ -179,9 +179,11 @@ class RaceScheduleScraper:
         start_time = ""
         if isinstance(time_span, Tag):
             time_text = time_span.text.strip()
-            time_match = re.match(r"(\d{2}:\d{2})", time_text)
+            time_match = re.match(r"(\d{1,2}):(\d{2})", time_text)
             if time_match:
-                start_time = time_match.group(1)
+                hour = int(time_match.group(1))
+                minute = time_match.group(2)
+                start_time = f"{hour:02d}:{minute}"
 
         # 芝ダ・距離
         # RaceList_ItemLong クラスを持つspanを探す。障害レースではclass=""の場合がある

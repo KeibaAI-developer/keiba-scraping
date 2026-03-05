@@ -154,12 +154,12 @@ def test_baba_values() -> None:
 # 正常系: 発走時刻の形式
 # ---------------------------------------------------------------------------
 def test_start_time_format() -> None:
-    """発走時刻がH:MMまたはHH:MM形式であること"""
+    """発走時刻がHH:MM形式（ゼロ埋め）であること"""
     scraper = _create_scraper()
     df = scraper.get_race_schedule()
 
     for t in df["発走時刻"]:
-        assert re.match(r"^\d{1,2}:\d{2}$", str(t)), f"発走時刻が不正: {t}"
+        assert re.match(r"^\d{2}:\d{2}$", str(t)), f"発走時刻が不正: {t}"
 
     time.sleep(REQUEST_INTERVAL)
 

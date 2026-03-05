@@ -1,6 +1,6 @@
 """テスト用レーススケジュールHTMLフィクスチャ取得スクリプト
 
-Seleniumでnetkeibaのレーススケジュールページのを取得し、
+Seleniumでnetkeibaのレーススケジュールページを取得し、
 test/fixtures/html/にUTF-8で保存する。
 
 使用方法:
