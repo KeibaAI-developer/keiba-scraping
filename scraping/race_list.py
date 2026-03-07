@@ -4,7 +4,6 @@ import datetime
 import logging
 import re
 import time
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -14,9 +13,6 @@ from bs4 import BeautifulSoup, Tag
 from scraping.config import AFFILIATION_MAP, RACE_LIST_COLUMNS, ScrapingConfig
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.utils import build_race_list_url, judge_turf_dirt, race_id_to_race_info
-
-# pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 class RaceListScraper:

@@ -6,7 +6,7 @@ netkeibaのレース結果ページをスクレイピングし、
 
 import logging
 import re
-import warnings
+from io import StringIO
 
 import numpy as np
 import pandas as pd
@@ -34,9 +34,6 @@ from scraping.config import (
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.race_info import scrape_race_info
 from scraping.utils import build_result_url
-
-# pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 class ResultPageScraper:
@@ -262,7 +259,7 @@ class ResultPageScraper:
             ParseError: バリデーション違反がある場合
         """
         # 結果の表を取得
-        tables = pd.read_html(self.html_text)
+        tables = pd.read_html(StringIO(self.html_text))
         result_df = tables[0]
 
         # コンディション不良で開催中止の場合
@@ -381,7 +378,7 @@ class ResultPageScraper:
         Returns:
             pd.DataFrame: 払い戻しのDataFrame（1行）
         """
-        tables = pd.read_html(self.html_text)
+        tables = pd.read_html(StringIO(self.html_text))
 
         df1 = tables[1]
         df1.columns = pd.Index(PAYBACK_COLUMNS)
@@ -423,7 +420,7 @@ class ResultPageScraper:
         table_index = 3 if race_type == "直線" else 5
 
         try:
-            tables = pd.read_html(self.html_text)
+            tables = pd.read_html(StringIO(self.html_text))
             lap_tmp_df = tables[table_index]
         except (IndexError, AttributeError):
             self._logger.warning("ラップタイムの表が存在しません")
@@ -593,7 +590,7 @@ def _split_corner_passing_order(df: pd.DataFrame) -> pd.DataFrame:
 
     # 初期化
     for col_name in corner_names:
-        df[col_name] = np.nan
+        df[col_name] = pd.Series(np.nan, index=df.index, dtype=object)
 
     # NaNでない行だけ処理
     mask = df["コーナー通過順"].notna()

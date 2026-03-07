@@ -8,7 +8,6 @@ import datetime
 import logging
 import re
 import time
-import warnings
 
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
@@ -23,9 +22,6 @@ from scraping.utils import (
     race_id_to_race_info,
     set_chrome_options,
 )
-
-# pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 class RaceScheduleScraper:
