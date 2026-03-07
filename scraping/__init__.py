@@ -19,6 +19,7 @@ from scraping.config import (
     HORSE_INFO_COLUMNS,
     ID_TO_KEIBAJO_DICT,
     KEIBAJO_TO_ID_DICT,
+    ODDS_COLUMNS,
     PAST_PERFORMANCES_COLUMNS,
     PAYBACK_COLUMNS,
     RACE_INFO_COLUMNS,
@@ -29,6 +30,7 @@ from scraping.config import (
     TWO_COMBINATION_BETS,
     VALID_ENTRY_STATUSES,
     WEIGHT_CONDITIONS,
+    YOSO_ODDS_COLUMNS,
     ScrapingConfig,
 )
 from scraping.entry_page import EntryPageScraper
@@ -40,6 +42,7 @@ from scraping.exceptions import (
     ScrapingError,
 )
 from scraping.horse_info import HorseInfoScraper
+from scraping.odds import scrape_odds_from_netkeiba, scrape_yoso_odds_from_netkeiba
 from scraping.past_performances import PastPerformancesScraper
 from scraping.race_info import scrape_race_info
 from scraping.race_list import RaceListScraper
@@ -49,6 +52,8 @@ from scraping.utils import (
     build_entry_url,
     build_horse_info_url,
     build_horse_list_url,
+    build_odds_api_url,
+    build_odds_url,
     build_race_list_url,
     build_result_url,
     build_today_race_list_url,
@@ -78,6 +83,8 @@ __all__ = [
     "AFFILIATION_MAP",
     "RACE_LIST_COLUMNS",
     "RACE_SCHEDULE_COLUMNS",
+    "ODDS_COLUMNS",
+    "YOSO_ODDS_COLUMNS",
     # exceptions
     "ScrapingError",
     "PageNotFoundError",
@@ -91,6 +98,8 @@ __all__ = [
     "build_entry_url",
     "build_horse_info_url",
     "build_horse_list_url",
+    "build_odds_url",
+    "build_odds_api_url",
     "judge_turf_dirt",
     "race_id_to_race_info",
     "get_race_info_from_past_performances",
@@ -113,4 +122,7 @@ __all__ = [
     "RaceScheduleScraper",
     # horse_info
     "HorseInfoScraper",
+    # odds
+    "scrape_odds_from_netkeiba",
+    "scrape_yoso_odds_from_netkeiba",
 ]

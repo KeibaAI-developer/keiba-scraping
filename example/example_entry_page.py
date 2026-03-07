@@ -14,7 +14,7 @@ def main() -> None:
     レース情報・出馬表を表示する。
     """
     # スクレイピング対象のrace_id
-    race_id = "202306050911"
+    race_id = "202606020411"
 
     # 設定を初期化
     config = ScrapingConfig()
