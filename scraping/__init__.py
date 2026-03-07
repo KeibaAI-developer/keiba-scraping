@@ -18,6 +18,7 @@ from scraping.config import (
     GRADE_DICT,
     HORSE_INFO_COLUMNS,
     ID_TO_KEIBAJO_DICT,
+    JRA_GRADED_RACE_COLUMNS,
     KEIBAJO_TO_ID_DICT,
     ODDS_COLUMNS,
     PAST_PERFORMANCES_COLUMNS,
@@ -42,6 +43,7 @@ from scraping.exceptions import (
     ScrapingError,
 )
 from scraping.horse_info import HorseInfoScraper
+from scraping.jra_graded_race import JraGradedRaceScraper
 from scraping.odds import (
     scrape_odds_from_jra,
     scrape_odds_from_netkeiba,
@@ -56,6 +58,7 @@ from scraping.utils import (
     build_entry_url,
     build_horse_info_url,
     build_horse_list_url,
+    build_jra_graded_race_url,
     build_odds_api_url,
     build_odds_url,
     build_race_list_url,
@@ -87,6 +90,7 @@ __all__ = [
     "AFFILIATION_MAP",
     "RACE_LIST_COLUMNS",
     "RACE_SCHEDULE_COLUMNS",
+    "JRA_GRADED_RACE_COLUMNS",
     "ODDS_COLUMNS",
     "YOSO_ODDS_COLUMNS",
     # exceptions
@@ -103,6 +107,7 @@ __all__ = [
     "build_horse_info_url",
     "build_horse_list_url",
     "build_odds_url",
+    "build_jra_graded_race_url",
     "build_odds_api_url",
     "judge_turf_dirt",
     "race_id_to_race_info",
@@ -124,6 +129,8 @@ __all__ = [
     "RaceListScraper",
     # race_schedule
     "RaceScheduleScraper",
+    # jra_graded_race
+    "JraGradedRaceScraper",
     # horse_info
     "HorseInfoScraper",
     # odds
