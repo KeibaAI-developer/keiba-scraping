@@ -149,6 +149,20 @@ def build_odds_api_url(race_id: str, config: ScrapingConfig | None = None) -> st
     return f"{cfg.netkeiba_race_url}/api/api_get_jra_odds.html?race_id={race_id}&type=1"
 
 
+def build_jra_graded_race_url(year: int, config: ScrapingConfig | None = None) -> str:
+    """JRAの重賞レース一覧ページのURLを作成する
+
+    Args:
+        year (int): 年
+        config (ScrapingConfig | None): 設定オブジェクト
+
+    Returns:
+        str: URL
+    """
+    cfg = config or ScrapingConfig()
+    return f"{cfg.jra_url}/datafile/seiseki/replay/{year}/jyusyo.html"
+
+
 # ---------------------------------------------------------------------------
 # データ変換関数
 # ---------------------------------------------------------------------------
