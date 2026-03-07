@@ -23,8 +23,6 @@ from scraping.utils import build_horse_info_url, calc_interval, set_chrome_optio
 # pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-logger = logging.getLogger(__name__)
-
 
 class PastPerformancesScraper:
     """馬柱のスクレイパー
@@ -38,17 +36,24 @@ class PastPerformancesScraper:
         soup (BeautifulSoup): 馬情報ページのBeautifulSoupインスタンス
     """
 
-    def __init__(self, horse_id: str, config: ScrapingConfig | None = None) -> None:
+    def __init__(
+        self,
+        horse_id: str,
+        config: ScrapingConfig | None = None,
+        logger: logging.Logger | None = None,
+    ) -> None:
         """Seleniumで馬情報ページを取得してBeautifulSoup生成を行う
 
         Args:
             horse_id (str): netkeibaの馬ID（10桁文字列）
             config (ScrapingConfig | None): 設定オブジェクト
+            logger (logging.Logger | None): ロガーインスタンス
 
         Raises:
             DriverError: Selenium WebDriverの起動・ページ取得に失敗した場合
         """
         self.horse_id = horse_id
+        self._logger = logger or logging.getLogger(__name__)
         cfg = config or ScrapingConfig()
 
         url = build_horse_info_url(horse_id, cfg)
@@ -61,6 +66,7 @@ class PastPerformancesScraper:
                 service = Service()
             driver = webdriver.Chrome(service=service, options=options)
         except Exception as exc:
+            self._logger.error("ChromeDriverの起動に失敗しました: %s", exc)
             raise DriverError(f"ChromeDriverの起動に失敗しました: {exc}") from exc
 
         try:
@@ -68,6 +74,7 @@ class PastPerformancesScraper:
             time.sleep(3)  # JavaScriptの実行を待つ
             self.html_text = driver.page_source
         except Exception as exc:
+            self._logger.error("ページの取得に失敗しました: %s (%s)", url, exc)
             raise DriverError(f"ページの取得に失敗しました: {url} ({exc})") from exc
         finally:
             driver.quit()
@@ -99,6 +106,7 @@ class PastPerformancesScraper:
         try:
             tables = pd.read_html(StringIO(self.html_text))
         except (ValueError, ImportError) as exc:
+            self._logger.error("HTML内にテーブルが見つかりません", exc_info=True)
             raise ParseError("HTML内にテーブルが見つかりません") from exc
 
         # 馬柱テーブルを特定
@@ -114,13 +122,13 @@ class PastPerformancesScraper:
                 break
 
         if umabashira_df.empty:
-            logger.info("馬柱データが見つかりません。新馬の可能性があります。")
+            self._logger.info("馬柱データが見つかりません。新馬の可能性があります。")
             return pd.DataFrame(columns=PAST_PERFORMANCES_COLUMNS)
 
         # カラム名の半角スペースを除去
         umabashira_df = umabashira_df.rename(columns=lambda col: col.replace(" ", ""))
 
-        _validate_required_columns(
+        self._validate_required_columns(
             umabashira_df,
             {
                 "開催",
@@ -178,9 +186,9 @@ class PastPerformancesScraper:
         umabashira_df["芝ダ"] = umabashira_df["距離"].apply(_extract_turf_dirt)
         umabashira_df["距離"] = umabashira_df["距離"].apply(_extract_distance)
         # 通過順を1〜4コーナーに分割
-        umabashira_df = _split_passing_order(umabashira_df)
+        umabashira_df = self._split_passing_order(umabashira_df)
         # ペースを前3F/後3Fに分割
-        umabashira_df = _split_pace(umabashira_df)
+        umabashira_df = self._split_pace(umabashira_df)
         # カラム名の改名
         umabashira_df = umabashira_df.rename(columns={"上り": "後3F"})
         umabashira_df = umabashira_df.rename(columns={"オッズ": "単勝オッズ"})
@@ -209,11 +217,18 @@ class PastPerformancesScraper:
         try:
             umabashira_df["日付"] = pd.to_datetime(umabashira_df["日付"], format="%Y/%m/%d").dt.date
         except (ValueError, TypeError) as exc:
+            sample_values = umabashira_df["日付"].head(5).astype(str).tolist()
+            self._logger.error(
+                "日付カラムの変換に失敗しました。サンプル値: %s",
+                sample_values,
+                exc_info=exc,
+            )
             raise ParseError("日付カラムの変換に失敗しました") from exc
 
         # PAST_PERFORMANCES_COLUMNSの順序に並べ替え
         missing_cols = set(PAST_PERFORMANCES_COLUMNS) - set(umabashira_df.columns)
         if missing_cols:
+            self._logger.error("必要なカラムが不足しています: %s", sorted(missing_cols))
             raise ParseError(f"必要なカラムが不足しています: {sorted(missing_cols)}")
         umabashira_df = umabashira_df[PAST_PERFORMANCES_COLUMNS]
 
@@ -275,6 +290,101 @@ class PastPerformancesScraper:
 
         return df
 
+    def _split_passing_order(self, df: pd.DataFrame) -> pd.DataFrame:
+        """通過順を1〜4コーナーの個別カラムに分割する
+
+        "3-4" → 3コーナー=3, 4コーナー=4
+        "11-11-10-11" → 1コーナー=11, 2コーナー=11, 3コーナー=10, 4コーナー=11
+
+        Args:
+            df (pd.DataFrame): 通過カラムを持つDataFrame
+
+        Returns:
+            pd.DataFrame: 1〜4コーナー通過順カラムが追加されたDataFrame（元の通過カラムは削除）
+
+        Raises:
+            ParseError: 通過カラムが存在しない場合
+        """
+        if "通過" not in df.columns:
+            self._logger.error("通過カラムが存在しません")
+            raise ParseError("通過カラムが存在しません")
+
+        corner_names = ["1コーナー通過順", "2コーナー通過順", "3コーナー通過順", "4コーナー通過順"]
+
+        for col_name in corner_names:
+            df[col_name] = np.nan
+
+        mask = df["通過"].notna()
+        if mask.any():
+            parts_series = df.loc[mask, "通過"].astype(str).str.split("-")
+            for idx in parts_series.index:
+                parts = parts_series[idx]
+                for i, corner_name in enumerate(reversed(corner_names)):
+                    pos = len(parts) - 1 - i
+                    if pos >= 0:
+                        df.loc[idx, corner_name] = parts[pos]
+
+        for col_name in corner_names:
+            df[col_name] = pd.to_numeric(df[col_name], errors="coerce")
+
+        df = df.drop(columns=["通過"])
+
+        return df
+
+    def _split_pace(self, df: pd.DataFrame) -> pd.DataFrame:
+        """ペースを前3F/後3Fに分割する
+
+        "33.1-34.5" → レース前3F=33.1, レース後3F=34.5
+
+        Args:
+            df (pd.DataFrame): ペースカラムを持つDataFrame
+
+        Returns:
+            pd.DataFrame: レース前3F/レース後3Fカラムが追加されたDataFrame（元のペースは削除）
+
+        Raises:
+            ParseError: ペースカラムが存在しない場合
+        """
+        if "ペース" not in df.columns:
+            self._logger.error("ペースカラムが存在しません")
+            raise ParseError("ペースカラムが存在しません")
+
+        df["レース前3F"] = np.nan
+        df["レース後3F"] = np.nan
+
+        mask = df["ペース"].notna()
+        if mask.any():
+            pace_str = df.loc[mask, "ペース"].astype(str)
+            parts = pace_str.str.split("-", expand=True)
+            if parts.shape[1] >= 2:
+                df.loc[mask, "レース前3F"] = pd.to_numeric(parts[0], errors="coerce")
+                df.loc[mask, "レース後3F"] = pd.to_numeric(parts[1], errors="coerce")
+
+        df = df.drop(columns=["ペース"])
+
+        return df
+
+    def _validate_required_columns(
+        self,
+        df: pd.DataFrame,
+        required_columns: set[str],
+        context: str,
+    ) -> None:
+        """DataFrameに必須カラムが存在することを検証する。
+
+        Args:
+            df (pd.DataFrame): 検証対象のDataFrame
+            required_columns (set[str]): 必須カラム名の集合
+            context (str): 例外メッセージに含める文脈情報
+
+        Raises:
+            ParseError: 必須カラムが不足している場合
+        """
+        missing_columns = sorted(required_columns - set(df.columns))
+        if missing_columns:
+            self._logger.error("%s 必須カラムが不足しています: %s", context, missing_columns)
+            raise ParseError(f"{context} 必須カラムが不足しています: {missing_columns}")
+
 
 def _extract_turf_dirt(distance_text: str) -> str:
     """距離テキストから芝/ダ/障を抽出する
@@ -312,80 +422,6 @@ def _extract_distance(distance_text: str) -> int | float:
     if match:
         return int(match.group(1))
     return np.nan
-
-
-def _split_passing_order(df: pd.DataFrame) -> pd.DataFrame:
-    """通過順を1〜4コーナーの個別カラムに分割する
-
-    "3-4" → 3コーナー=3, 4コーナー=4
-    "11-11-10-11" → 1コーナー=11, 2コーナー=11, 3コーナー=10, 4コーナー=11
-
-    Args:
-        df (pd.DataFrame): 通過カラムを持つDataFrame
-
-    Returns:
-        pd.DataFrame: 1〜4コーナー通過順カラムが追加されたDataFrame（元の通過カラムは削除）
-
-    Raises:
-        ParseError: 通過カラムが存在しない場合
-    """
-    if "通過" not in df.columns:
-        raise ParseError("通過カラムが存在しません")
-
-    corner_names = ["1コーナー通過順", "2コーナー通過順", "3コーナー通過順", "4コーナー通過順"]
-
-    for col_name in corner_names:
-        df[col_name] = np.nan
-
-    mask = df["通過"].notna()
-    if mask.any():
-        parts_series = df.loc[mask, "通過"].astype(str).str.split("-")
-        for idx in parts_series.index:
-            parts = parts_series[idx]
-            for i, corner_name in enumerate(reversed(corner_names)):
-                pos = len(parts) - 1 - i
-                if pos >= 0:
-                    df.loc[idx, corner_name] = parts[pos]
-
-    for col_name in corner_names:
-        df[col_name] = pd.to_numeric(df[col_name], errors="coerce")
-
-    df = df.drop(columns=["通過"])
-
-    return df
-
-
-def _split_pace(df: pd.DataFrame) -> pd.DataFrame:
-    """ペースを前3F/後3Fに分割する
-
-    "33.1-34.5" → レース前3F=33.1, レース後3F=34.5
-
-    Args:
-        df (pd.DataFrame): ペースカラムを持つDataFrame
-
-    Returns:
-        pd.DataFrame: レース前3F/レース後3Fカラムが追加されたDataFrame（元のペースは削除）
-
-    Raises:
-        ParseError: ペースカラムが存在しない場合
-    """
-    if "ペース" not in df.columns:
-        raise ParseError("ペースカラムが存在しません")
-
-    df["レース前3F"] = np.nan
-    df["レース後3F"] = np.nan
-
-    mask = df["ペース"].notna()
-    if mask.any():
-        pace_str = df.loc[mask, "ペース"].astype(str)
-        parts = pace_str.str.split("-", expand=True)
-        if parts.shape[1] >= 2:
-            df.loc[mask, "レース前3F"] = pd.to_numeric(parts[0], errors="coerce")
-            df.loc[mask, "レース後3F"] = pd.to_numeric(parts[1], errors="coerce")
-
-    df = df.drop(columns=["ペース"])
-
-    return df
 
 
 def _add_race_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -466,19 +502,3 @@ def _is_katakana(text: str) -> bool:
         bool: 全てカタカナならTrue
     """
     return re.match(r"^[ァ-ヶー]+$", text) is not None
-
-
-def _validate_required_columns(df: pd.DataFrame, required_columns: set[str], context: str) -> None:
-    """DataFrameに必須カラムが存在することを検証する。
-
-    Args:
-        df (pd.DataFrame): 検証対象のDataFrame
-        required_columns (set[str]): 必須カラム名の集合
-        context (str): 例外メッセージに含める文脈情報
-
-    Raises:
-        ParseError: 必須カラムが不足している場合
-    """
-    missing_columns = sorted(required_columns - set(df.columns))
-    if missing_columns:
-        raise ParseError(f"{context} 必須カラムが不足しています: {missing_columns}")

@@ -13,10 +13,12 @@ from bs4 import BeautifulSoup, Tag
 from scraping.config import GRADE_DICT, RACE_INFO_COLUMNS, WEIGHT_CONDITIONS
 from scraping.exceptions import ParseError
 
-logger = logging.getLogger(__name__)
 
-
-def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
+def scrape_race_info(
+    soup: BeautifulSoup,
+    race_id: str,
+    logger: logging.Logger | None = None,
+) -> pd.DataFrame:
     """BeautifulSoupからレースの基本情報を抽出する
 
     soupを外部から受け取り、レース基本情報のDataFrameを返す。
@@ -24,6 +26,7 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
     Args:
         soup (BeautifulSoup): 出馬表or結果ページのBeautifulSoupインスタンス
         race_id (str): netkeibaのレースID（12桁文字列）
+        logger (logging.Logger | None): ロガーインスタンス
 
     Returns:
         pd.DataFrame: レース基本情報のDataFrame（1行、RACE_INFO_COLUMNSのカラム）
@@ -32,16 +35,18 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
         ParseError: HTMLの解析に失敗した場合
     """
     # RaceList_DateListからActiveな日付を取得
-    race_date, day_of_week = _extract_date_from_datelist(soup)
+    _logger = logger or logging.getLogger(__name__)
+    race_date, day_of_week = _extract_date_from_datelist(soup, _logger)
 
     # class:RaceList_Item02のテキストを取得
     race_list_item = soup.find("div", attrs={"class": "RaceList_Item02"})
     if race_list_item is None:
+        _logger.error("RaceList_Item02が見つかりませんでした")
         raise ParseError("RaceList_Item02が見つかりませんでした")
     race_raw_text: str = race_list_item.text
 
     # テキストを整形
-    race_filtered_list = _format_race_info_text(race_raw_text)
+    race_filtered_list = _format_race_info_text(race_raw_text, _logger)
 
     # 地方重賞の場合
     grade_icon = False
@@ -49,6 +54,7 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
 
     # 必要な要素数をチェック
     if len(race_filtered_list) < 2:
+        _logger.error("レース情報の要素数が不足しています。HTML構造が変更された可能性があります。")
         raise ParseError(
             "レース情報の要素数が不足しています。HTML構造が変更された可能性があります。"
         )
@@ -60,13 +66,14 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
 
     # 情報をリストにまとめる
     try:
-        race_info_list = _format_race_info_list(race_filtered_list)
+        race_info_list = _format_race_info_list(race_filtered_list, _logger)
     except ValueError as e:
+        _logger.error("レース情報の整形に失敗しました: %s", e)
         raise ParseError(f"レース情報の整形に失敗しました: {e}") from e
 
     # RACE_INFO_COLUMNSの順でDataFrameを構築
     race_info_dict = _build_race_info_dict(race_id, race_info_list, race_date, day_of_week)
-    _validate_race_info_dict(race_info_dict)
+    _validate_race_info_dict(race_info_dict, _logger)
     race_info_df = pd.DataFrame([race_info_dict], columns=RACE_INFO_COLUMNS)
 
     # 地方重賞の場合グレードを更新
@@ -79,7 +86,7 @@ def scrape_race_info(soup: BeautifulSoup, race_id: str) -> pd.DataFrame:
     return race_info_df
 
 
-def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date, str]:
+def _extract_date_from_datelist(soup: BeautifulSoup, logger: logging.Logger) -> tuple[date, str]:
     """RaceList_DateListのActive要素からレース開催日と曜日を取得する
 
     RaceList_DateListのdd要素のうちclass="Active"のものを探し、
@@ -88,6 +95,7 @@ def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date, str]:
 
     Args:
         soup (BeautifulSoup): ページのBeautifulSoupインスタンス
+        logger (logging.Logger): ロガーインスタンス
 
     Returns:
         date: レース開催日
@@ -98,15 +106,18 @@ def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date, str]:
     """
     datelist = soup.find("dl", id="RaceList_DateList")
     if datelist is None or not isinstance(datelist, Tag):
+        logger.error("RaceList_DateListが見つかりませんでした。")
         raise ParseError("RaceList_DateListが見つかりませんでした。")
 
     active_dd = datelist.find("dd", class_="Active")
     if active_dd is None or not isinstance(active_dd, Tag):
+        logger.error("Active日付が見つかりませんでした。")
         raise ParseError("Active日付が見つかりませんでした。")
 
     # Active要素内のaタグを取得
     anchor = active_dd.find("a")
     if anchor is None or not isinstance(anchor, Tag):
+        logger.error("Active日付のaタグが見つかりませんでした。")
         raise ParseError("Active日付のaタグが見つかりませんでした。")
 
     # kaisai_dateパラメータから日付を取得
@@ -115,12 +126,14 @@ def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date, str]:
         href = href[0] if href else ""
     date_match = re.search(r"kaisai_date=(\d{8})", href)
     if date_match is None:
+        logger.error("kaisai_dateパラメータが見つかりませんでした。")
         raise ParseError("kaisai_dateパラメータが見つかりませんでした。")
 
     date_str = date_match.group(1)
     try:
         race_date = date(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:8]))
     except ValueError as e:
+        logger.error("不正なkaisai_dateパラメータ値です: %s", date_str)
         raise ParseError(f"不正なkaisai_dateパラメータ値です: {date_str}") from e
 
     # 曜日をtitle属性またはspanテキストから取得
@@ -143,7 +156,7 @@ def _extract_date_from_datelist(soup: BeautifulSoup) -> tuple[date, str]:
     return race_date, day_of_week
 
 
-def _format_race_info_text(race_raw_text: str) -> list[str]:
+def _format_race_info_text(race_raw_text: str, logger: logging.Logger) -> list[str]:
     """スクレイピングした生のテキストを整形してリストにする
 
     RaceList_Item02のテキストを改行やスラッシュで分割し、斤量条件・頭数・賞金までの情報を抽出する。
@@ -201,7 +214,7 @@ def _format_race_info_text(race_raw_text: str) -> list[str]:
     return race_filtered_list
 
 
-def _format_race_info_list(race_filtered_list: list[str]) -> list[str]:
+def _format_race_info_list(race_filtered_list: list[str], logger: logging.Logger) -> list[str]:
     """レース情報を整形してリストにまとめる
 
     整形したリストから各要素を解析してレース情報のリストを作成する。
@@ -246,6 +259,7 @@ def _format_race_info_list(race_filtered_list: list[str]) -> list[str]:
                 distance = matches.group(2).strip()  # 距離
                 course = matches.group(3).strip() if matches.group(3) else ""  # 左右，内外，コース
             else:
+                logger.error("レース情報のフォーマットが不正です")
                 raise ValueError("レース情報のフォーマットが不正です")
             # リストに追加
             race_info_list.append(turf_dirt)
@@ -355,6 +369,7 @@ def _build_race_info_dict(
 
 def _validate_race_info_dict(
     race_info: dict[str, str | int | date | None],
+    logger: logging.Logger,
 ) -> None:
     """レース情報辞書の値をスキーマに基づいて検証する
 
@@ -418,6 +433,7 @@ def _validate_race_info_dict(
         errors.append(f"重量種別が不正です: {weight_type}")
 
     if errors:
+        logger.error("レース情報の検証に失敗しました:\n%s", "\n".join(errors))
         raise ParseError("レース情報の検証に失敗しました:\n" + "\n".join(errors))
 
 

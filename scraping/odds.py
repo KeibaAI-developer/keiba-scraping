@@ -3,6 +3,7 @@
 netkeibaおよびJRAからオッズを取得する関数を提供する。
 """
 
+import logging
 from io import StringIO
 from typing import Any
 
@@ -23,6 +24,7 @@ from scraping.utils import build_entry_url, build_odds_api_url, race_id_to_race_
 async def scrape_odds_from_jra(
     race_id: str,
     config: ScrapingConfig | None = None,
+    logger: logging.Logger | None = None,
 ) -> pd.DataFrame:
     """JRA公式サイトからオッズを取得する
 
@@ -37,6 +39,7 @@ async def scrape_odds_from_jra(
     Args:
         race_id (str): レースID
         config (ScrapingConfig | None): 設定オブジェクト
+        logger (logging.Logger | None): ロガーインスタンス
 
     Returns:
         pd.DataFrame: オッズデータ（ODDS_COLUMNSのカラム）
@@ -47,6 +50,7 @@ async def scrape_odds_from_jra(
         DriverError: Playwrightの操作に失敗した場合
         ParseError: HTMLテーブルの解析に失敗した場合
     """
+    _logger = logger or logging.getLogger(__name__)
     cfg = config or ScrapingConfig()
     _, keibajo, kai, day, race = race_id_to_race_info(race_id)
 
@@ -64,6 +68,9 @@ async def scrape_odds_from_jra(
                 # 該当開催日のリンクが存在しない場合はPageNotFoundError
                 kaisai_link = page.get_by_role("link", name=f"{kai}回{keibajo}{day}日")
                 if await kaisai_link.count() == 0:
+                    _logger.error(
+                        "JRAに該当開催 (%s回%s%s日) が見つかりません。", kai, keibajo, day
+                    )
                     raise PageNotFoundError(
                         f"JRAに該当開催 ({kai}回{keibajo}{day}日) が見つかりません。"
                     )
@@ -73,7 +80,7 @@ async def scrape_odds_from_jra(
                     await page.get_by_role("link", name=f"{race}レース", exact=True).nth(0).click()
 
                 html = await page.content()
-                odds_df = _parse_jra_odds_table(html)
+                odds_df = _parse_jra_odds_table(html, _logger)
             finally:
                 if context is not None:
                     await context.close()
@@ -81,6 +88,7 @@ async def scrape_odds_from_jra(
     except (ParseError, DriverError, PageNotFoundError):
         raise
     except Exception as exc:
+        _logger.error("JRAオッズページの操作に失敗しました: %s", exc)
         raise DriverError(f"JRAオッズページの操作に失敗しました: {exc}") from exc
 
     return odds_df
@@ -89,6 +97,7 @@ async def scrape_odds_from_jra(
 def scrape_odds_from_netkeiba(
     race_id: str,
     config: ScrapingConfig | None = None,
+    logger: logging.Logger | None = None,
 ) -> pd.DataFrame:
     """netkeibaからオッズを取得する
 
@@ -98,6 +107,7 @@ def scrape_odds_from_netkeiba(
     Args:
         race_id (str): レースID
         config (ScrapingConfig | None): 設定オブジェクト
+        logger (logging.Logger | None): ロガーインスタンス
 
     Returns:
         pd.DataFrame: オッズデータ（ODDS_COLUMNSのカラム）
@@ -108,13 +118,14 @@ def scrape_odds_from_netkeiba(
         NetworkError: HTTPリクエストに失敗した場合
         ParseError: JSONの解析に失敗した場合
     """
+    _logger = logger or logging.getLogger(__name__)
     cfg = config or ScrapingConfig()
 
     # APIからオッズを取得
-    odds_data = _fetch_odds_api(race_id, cfg)
+    odds_data = _fetch_odds_api(race_id, cfg, _logger)
 
     # JSONをDataFrameに変換
-    odds_df = _parse_odds_response(odds_data)
+    odds_df = _parse_odds_response(odds_data, _logger)
 
     return odds_df
 
@@ -122,6 +133,7 @@ def scrape_odds_from_netkeiba(
 def scrape_yoso_odds_from_netkeiba(
     race_id: str,
     config: ScrapingConfig | None = None,
+    logger: logging.Logger | None = None,
 ) -> pd.DataFrame:
     """netkeibaから予想オッズを取得する（馬券発売前用）
 
@@ -131,6 +143,7 @@ def scrape_yoso_odds_from_netkeiba(
     Args:
         race_id (str): レースID
         config (ScrapingConfig | None): 設定オブジェクト
+        logger (logging.Logger | None): ロガーインスタンス
 
     Returns:
         pd.DataFrame: 予想オッズデータ（YOSO_ODDS_COLUMNSのカラム）
@@ -140,6 +153,7 @@ def scrape_yoso_odds_from_netkeiba(
         NetworkError: ページの取得に失敗した場合
         ParseError: ページ解析に失敗した場合
     """
+    _logger = logger or logging.getLogger(__name__)
     cfg = config or ScrapingConfig()
 
     # 出馬表ページのURLを構築
@@ -155,6 +169,7 @@ def scrape_yoso_odds_from_netkeiba(
             driver = webdriver.Chrome(service=service, options=options)
             driver.get(url)
         except Exception as exc:
+            _logger.error("予想オッズページの取得に失敗しました: %s", exc)
             raise NetworkError(f"予想オッズページの取得に失敗しました: {exc}") from exc
 
         # HorseListから馬名とオッズを取得
@@ -204,17 +219,19 @@ def scrape_yoso_odds_from_netkeiba(
     except (NetworkError, ParseError):
         raise
     except Exception as exc:
+        _logger.error("予想オッズの解析に失敗しました: %s", exc)
         raise ParseError(f"予想オッズの解析に失敗しました: {exc}") from exc
     finally:
         if driver is not None:
             driver.quit()
 
 
-def _parse_jra_odds_table(html: str) -> pd.DataFrame:
+def _parse_jra_odds_table(html: str, logger: logging.Logger) -> pd.DataFrame:
     """JRAオッズページのHTMLからオッズテーブルを解析する
 
     Args:
         html (str): JRAオッズページのHTML文字列
+        logger (logging.Logger): ロガーインスタンス
 
     Returns:
         pd.DataFrame: オッズデータ（ODDS_COLUMNSのカラム）
@@ -225,6 +242,7 @@ def _parse_jra_odds_table(html: str) -> pd.DataFrame:
     try:
         raw_df = pd.read_html(StringIO(html))[0]
     except (ValueError, IndexError) as exc:
+        logger.error("JRAオッズテーブルの読み取りに失敗しました: %s", exc)
         raise ParseError(f"JRAオッズテーブルの読み取りに失敗しました: {exc}") from exc
 
     try:
@@ -257,15 +275,17 @@ def _parse_jra_odds_table(html: str) -> pd.DataFrame:
         return result
 
     except (KeyError, TypeError) as exc:
+        logger.error("JRAオッズテーブルの解析に失敗しました: %s", exc)
         raise ParseError(f"JRAオッズテーブルの解析に失敗しました: {exc}") from exc
 
 
-def _fetch_odds_api(race_id: str, config: ScrapingConfig) -> dict[str, Any]:
+def _fetch_odds_api(race_id: str, config: ScrapingConfig, logger: logging.Logger) -> dict[str, Any]:
     """netkeibaのオッズAPIからJSONを取得する
 
     Args:
         race_id (str): レースID
         config (ScrapingConfig): 設定オブジェクト
+        logger (logging.Logger): ロガーインスタンス
 
     Returns:
         dict[str, Any]: APIレスポンスのJSON
@@ -280,19 +300,22 @@ def _fetch_odds_api(race_id: str, config: ScrapingConfig) -> dict[str, Any]:
         response = requests.get(url, headers=config.headers, timeout=config.request_timeout)
         response.raise_for_status()
     except requests.RequestException as e:
+        logger.error("オッズAPIの取得に失敗しました: %s", e)
         raise NetworkError(f"オッズAPIの取得に失敗しました: {e}") from e
 
     try:
         return response.json()
     except ValueError as e:
+        logger.error("オッズAPIレスポンスのJSON解析に失敗しました: %s", e)
         raise ParseError(f"オッズAPIレスポンスのJSON解析に失敗しました: {e}") from e
 
 
-def _parse_odds_response(data: dict[str, Any]) -> pd.DataFrame:
+def _parse_odds_response(data: dict[str, Any], logger: logging.Logger) -> pd.DataFrame:
     """APIレスポンスをDataFrameに変換する
 
     Args:
         data (dict[str, Any]): APIレスポンスのJSON
+        logger (logging.Logger): ロガーインスタンス
 
     Returns:
         pd.DataFrame: オッズデータ（ODDS_COLUMNSのカラム）
@@ -351,6 +374,7 @@ def _parse_odds_response(data: dict[str, Any]) -> pd.DataFrame:
         return df
 
     except (KeyError, TypeError, ValueError) as e:
+        logger.error("オッズJSONの解析に失敗しました: %s", e)
         raise ParseError(f"オッズJSONの解析に失敗しました: {e}") from e
 
 
