@@ -234,8 +234,8 @@ def _parse_jra_odds_table(html: str) -> pd.DataFrame:
         odds_df["単勝人気"] = odds_df["単勝オッズ"].rank(ascending=True, method="min")
         odds_df["複勝人気"] = odds_df["複勝最小オッズ"].rank(ascending=True, method="min")
 
-        # ODDS_COLUMNSのカラムで整形
-        result = odds_df[ODDS_COLUMNS].copy()
+        # ODDS_COLUMNSのカラムで整形し、馬番順にソート
+        result = odds_df[ODDS_COLUMNS].copy().sort_values("馬番").reset_index(drop=True)
 
         return result
 

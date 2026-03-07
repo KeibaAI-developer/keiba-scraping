@@ -473,7 +473,6 @@ KeibaAIの`_scrape_odds_from_jra`と同一ロジック。カラム名のみODDS_
    - `scrape_odds_from_jra(race_id, config)`: JRAからPlaywrightでオッズ取得（async）
    - KeibaAIの`_scrape_odds_from_jra`と同一ロジック
    - カラム名をODDS_COLUMNSに統一（`単勝`→`単勝オッズ`、`人気`→`単勝人気`、`複勝min`→`複勝最小オッズ`、`複勝max`→`複勝最大オッズ`）
-   - 馬名カラムを追加（JRAのテーブルから取得）
 4. `scraping/__init__.py`の更新
 5. 単体テストの実装
 6. 統合テストの実装
