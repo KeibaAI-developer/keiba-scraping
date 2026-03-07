@@ -15,7 +15,7 @@ from selenium.webdriver.common.by import By
 
 from scraping.config import ODDS_COLUMNS, YOSO_ODDS_COLUMNS, ScrapingConfig
 from scraping.exceptions import NetworkError, ParseError
-from scraping.utils import build_odds_api_url
+from scraping.utils import build_entry_url, build_odds_api_url
 
 
 def scrape_odds_from_netkeiba(
@@ -75,7 +75,7 @@ def scrape_yoso_odds_from_netkeiba(
     cfg = config or ScrapingConfig()
 
     # 出馬表ページのURLを構築
-    url = f"{cfg.netkeiba_race_url}/race/shutuba.html?race_id={race_id}"
+    url = build_entry_url(race_id, cfg)
 
     # ChromeDriverを起動
     options = _set_chrome_options()
