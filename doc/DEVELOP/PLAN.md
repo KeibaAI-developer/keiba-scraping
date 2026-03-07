@@ -14,8 +14,8 @@
 | PR-4 | レース結果スクレイピングの実装 | PR-3 | 大 | 完了 |
 | PR-5 | 出馬表スクレイピングの実装 | PR-3 | 中 | 完了 |
 | PR-6 | 馬柱スクレイピングの実装 | PR-2 | 中 | 完了 |
-| PR-7a | netkeibaオッズスクレイピングの実装 | PR-2 | 中 | 未着手 |
-| PR-7b | JRAオッズスクレイピングの実装 | PR-2 | 中 | 未着手 |
+| PR-7a | netkeibaオッズスクレイピングの実装 | PR-2 | 中 | 完了 |
+| PR-7b | JRAオッズスクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-8a | レース一覧スクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-8b | レーススケジュールスクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-9 | 馬情報スクレイピング・HorseInfoScraperクラスの実装 | PR-2 | 中 | 完了 |
@@ -468,11 +468,11 @@ KeibaAIの`_scrape_odds_from_jra`と同一ロジック。カラム名のみODDS_
      ```
 2. フィクスチャ取得
    - JRAオッズテーブル（正常系）: `odds_jra_{race_id}.csv`（`pd.read_html`で取得したDataFrameをCSV保存）
+   - 取得するレースのレースIDは"202606020411"とする
 3. `scraping/odds.py`に`scrape_odds_from_jra`を追加
    - `scrape_odds_from_jra(race_id, config)`: JRAからPlaywrightでオッズ取得（async）
    - KeibaAIの`_scrape_odds_from_jra`と同一ロジック
    - カラム名をODDS_COLUMNSに統一（`単勝`→`単勝オッズ`、`人気`→`単勝人気`、`複勝min`→`複勝最小オッズ`、`複勝max`→`複勝最大オッズ`）
-   - 馬名カラムを追加（JRAのテーブルから取得）
 4. `scraping/__init__.py`の更新
 5. 単体テストの実装
 6. 統合テストの実装
