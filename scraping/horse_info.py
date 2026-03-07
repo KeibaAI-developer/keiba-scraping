@@ -156,7 +156,7 @@ class HorseInfoScraper:
             tables = pd.read_html(StringIO(html.text))
             horse_info_df = tables[0][read_html_columns].copy()
         except Exception as exc:
-            self._logger.error("テーブルの読み込みに失敗しました: %s", url)
+            self._logger.error("テーブルの読み込みに失敗しました: %s", url, exc_info=True)
             raise ParseError(f"テーブルの読み込みに失敗しました: {url}") from exc
 
         # カラム名を変換

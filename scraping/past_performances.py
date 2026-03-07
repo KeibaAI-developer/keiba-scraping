@@ -106,7 +106,7 @@ class PastPerformancesScraper:
         try:
             tables = pd.read_html(StringIO(self.html_text))
         except (ValueError, ImportError) as exc:
-            self._logger.error("HTML内にテーブルが見つかりません")
+            self._logger.error("HTML内にテーブルが見つかりません", exc_info=True)
             raise ParseError("HTML内にテーブルが見つかりません") from exc
 
         # 馬柱テーブルを特定
@@ -217,7 +217,12 @@ class PastPerformancesScraper:
         try:
             umabashira_df["日付"] = pd.to_datetime(umabashira_df["日付"], format="%Y/%m/%d").dt.date
         except (ValueError, TypeError) as exc:
-            self._logger.error("日付カラムの変換に失敗しました")
+            sample_values = umabashira_df["日付"].head(5).astype(str).tolist()
+            self._logger.error(
+                "日付カラムの変換に失敗しました。サンプル値: %s",
+                sample_values,
+                exc_info=exc,
+            )
             raise ParseError("日付カラムの変換に失敗しました") from exc
 
         # PAST_PERFORMANCES_COLUMNSの順序に並べ替え
