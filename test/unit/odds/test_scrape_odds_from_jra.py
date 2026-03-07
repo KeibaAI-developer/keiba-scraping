@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 
 from scraping.config import ODDS_COLUMNS
-from scraping.exceptions import DriverError, ParseError
+from scraping.exceptions import DriverError, PageNotFoundError, ParseError
 from scraping.odds import scrape_odds_from_jra
 
 
@@ -30,11 +30,12 @@ def jra_odds_raw_df(fixtures_csv_dir: Path) -> pd.DataFrame:
 
 
 @pytest.fixture
-def mock_playwright(jra_odds_raw_df: pd.DataFrame) -> MagicMock:
-    """async_playwrightをモックし、pd.read_htmlがCSVフィクスチャを返すように設定する"""
+def mock_playwright() -> MagicMock:
+    """Playwrightのasync_playwrightをモックする"""
     # Locatorのモック（get_by_roleの返り値）
     mock_locator = MagicMock()
     mock_locator.click = AsyncMock()
+    mock_locator.count = AsyncMock(return_value=1)
     mock_locator.nth.return_value = mock_locator
 
     # expect_navigationのモック（async context manager）
@@ -136,6 +137,34 @@ def test_scrape_odds_from_jra_with_2着払い_column(
 
 
 # 準正常系
+def test_scrape_odds_from_jra_kaisai_not_found_raises_page_not_found_error(
+    mock_playwright: MagicMock,
+) -> None:
+    """該当開催が見つからない場合にPageNotFoundErrorを送出すること"""
+    # count()が0を返すLocatorを取得するようにモックを書き換え
+    mock_pw = mock_playwright.__aenter__.return_value
+    mock_browser = mock_pw.chromium.launch.return_value
+    mock_context = mock_browser.new_context.return_value
+    mock_page = mock_context.new_page.return_value
+
+    mock_not_found_locator = MagicMock()
+    mock_not_found_locator.count = AsyncMock(return_value=0)
+
+    original_get_by_role = mock_page.get_by_role
+
+    def get_by_role_side_effect(role: str, **kwargs: str) -> MagicMock:
+        name = kwargs.get("name", "")
+        if "回" in name and "日" in name:
+            return mock_not_found_locator
+        return original_get_by_role(role, **kwargs)
+
+    mock_page.get_by_role = MagicMock(side_effect=get_by_role_side_effect)
+
+    with patch("scraping.odds.async_playwright", return_value=mock_playwright):
+        with pytest.raises(PageNotFoundError, match="該当開催"):
+            asyncio.run(scrape_odds_from_jra("202606020411"))
+
+
 def test_scrape_odds_from_jra_read_html_fails_raises_parse_error(
     mock_playwright: MagicMock,
 ) -> None:

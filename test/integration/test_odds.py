@@ -17,7 +17,7 @@ import pandas as pd
 import pytest
 
 from scraping.config import ODDS_COLUMNS
-from scraping.exceptions import DriverError
+from scraping.exceptions import PageNotFoundError
 from scraping.odds import scrape_odds_from_jra, scrape_odds_from_netkeiba
 
 # テスト間のリクエスト間隔（秒）
@@ -134,7 +134,7 @@ def test_scrape_odds_from_jra_returns_correct_columns(test_case: dict[str, Any])
 
     try:
         result = asyncio.run(scrape_odds_from_jra(race_id))
-    except DriverError:
+    except PageNotFoundError:
         pytest.skip(
             f"JRAにレース {race_id} が見つかりません。race_idを当週の開催レースに更新してください。"
         )
@@ -156,7 +156,7 @@ def test_scrape_odds_from_jra_returns_rows(test_case: dict[str, Any]) -> None:
 
     try:
         result = asyncio.run(scrape_odds_from_jra(race_id))
-    except DriverError:
+    except PageNotFoundError:
         pytest.skip(
             f"JRAにレース {race_id} が見つかりません。race_idを当週の開催レースに更新してください。"
         )
@@ -176,7 +176,7 @@ def test_scrape_odds_from_jra_tansho_odds_are_positive(test_case: dict[str, Any]
 
     try:
         result = asyncio.run(scrape_odds_from_jra(race_id))
-    except DriverError:
+    except PageNotFoundError:
         pytest.skip(
             f"JRAにレース {race_id} が見つかりません。race_idを当週の開催レースに更新してください。"
         )

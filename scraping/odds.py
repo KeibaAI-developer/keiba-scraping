@@ -16,7 +16,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
 from scraping.config import ODDS_COLUMNS, YOSO_ODDS_COLUMNS, ScrapingConfig
-from scraping.exceptions import DriverError, NetworkError, ParseError
+from scraping.exceptions import DriverError, NetworkError, PageNotFoundError, ParseError
 from scraping.utils import build_entry_url, build_odds_api_url, race_id_to_race_info
 
 
@@ -29,6 +29,11 @@ async def scrape_odds_from_jra(
     PlaywrightでJRA公式サイトを操作し、最新の単勝・複勝オッズを取得する。
     人気はオッズの昇順ランクで算出する。
 
+    この関数はPlaywrightおよびChromiumブラウザバイナリに依存する。
+    pip install playwright だけではブラウザがインストールされないため、
+    事前に以下のコマンドでChromiumをインストールすること::
+        python -m playwright install chromium
+
     Args:
         race_id (str): レースID
         config (ScrapingConfig | None): 設定オブジェクト
@@ -38,6 +43,7 @@ async def scrape_odds_from_jra(
             馬番順にソートされている
 
     Raises:
+        PageNotFoundError: 指定したレースがJRAサイト上に見つからない場合
         DriverError: Playwrightの操作に失敗した場合
         ParseError: HTMLテーブルの解析に失敗した場合
     """
@@ -47,21 +53,32 @@ async def scrape_odds_from_jra(
     try:
         async with async_playwright() as playwright:
             browser = await playwright.chromium.launch(headless=True)
-            context = await browser.new_context()
-            page = await context.new_page()
+            context = None
+            try:
+                context = await browser.new_context()
+                page = await context.new_page()
 
-            await page.goto(cfg.jra_url)
-            await page.get_by_role("link", name="オッズ", exact=True).click()
-            await page.get_by_role("link", name=f"{kai}回{keibajo}{day}日").click()
-            async with page.expect_navigation():
-                await page.get_by_role("link", name=f"{race}レース", exact=True).nth(0).click()
+                await page.goto(cfg.jra_url)
+                await page.get_by_role("link", name="オッズ", exact=True).click()
 
-            html = await page.content()
-            odds_df = _parse_jra_odds_table(html)
+                # 該当開催日のリンクが存在しない場合はPageNotFoundError
+                kaisai_link = page.get_by_role("link", name=f"{kai}回{keibajo}{day}日")
+                if await kaisai_link.count() == 0:
+                    raise PageNotFoundError(
+                        f"JRAに該当開催 ({kai}回{keibajo}{day}日) が見つかりません。"
+                    )
+                await kaisai_link.click()
 
-            await context.close()
-            await browser.close()
-    except (ParseError, DriverError):
+                async with page.expect_navigation():
+                    await page.get_by_role("link", name=f"{race}レース", exact=True).nth(0).click()
+
+                html = await page.content()
+                odds_df = _parse_jra_odds_table(html)
+            finally:
+                if context is not None:
+                    await context.close()
+                await browser.close()
+    except (ParseError, DriverError, PageNotFoundError):
         raise
     except Exception as exc:
         raise DriverError(f"JRAオッズページの操作に失敗しました: {exc}") from exc
