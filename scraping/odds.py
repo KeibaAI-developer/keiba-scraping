@@ -3,7 +3,6 @@
 netkeibaおよびJRAからオッズを取得する関数を提供する。
 """
 
-import time
 from typing import Any
 
 import numpy as np
@@ -68,6 +67,10 @@ def scrape_yoso_odds_from_netkeiba(
     Returns:
         pd.DataFrame: 予想オッズデータ（YOSO_ODDS_COLUMNSのカラム）
             馬名順（出馬表の登録順）
+
+    Raises:
+        NetworkError: ページの取得に失敗した場合
+        ParseError: ページ解析に失敗した場合
     """
     cfg = config or ScrapingConfig()
 
@@ -80,9 +83,11 @@ def scrape_yoso_odds_from_netkeiba(
     driver = None
 
     try:
-        driver = webdriver.Chrome(service=service, options=options)
-        driver.get(url)
-        time.sleep(3)  # ページの読み込みを待つ
+        try:
+            driver = webdriver.Chrome(service=service, options=options)
+            driver.get(url)
+        except Exception as exc:
+            raise NetworkError(f"予想オッズページの取得に失敗しました: {exc}") from exc
 
         # HorseListから馬名とオッズを取得
         horse_list = driver.find_elements(By.CLASS_NAME, "HorseList")
@@ -128,9 +133,10 @@ def scrape_yoso_odds_from_netkeiba(
         df = pd.DataFrame(rows, columns=YOSO_ODDS_COLUMNS)
         return df
 
-    except Exception:
-        # エラーが発生した場合はカラムだけのDataFrameを返す
-        return pd.DataFrame(columns=YOSO_ODDS_COLUMNS)
+    except (NetworkError, ParseError):
+        raise
+    except Exception as exc:
+        raise ParseError(f"予想オッズの解析に失敗しました: {exc}") from exc
     finally:
         if driver is not None:
             driver.quit()
@@ -148,15 +154,20 @@ def _fetch_odds_api(race_id: str, config: ScrapingConfig) -> dict[str, Any]:
 
     Raises:
         NetworkError: HTTPリクエストに失敗した場合
+        ParseError: JSONの解析に失敗した場合
     """
     url = build_odds_api_url(race_id, config)
 
     try:
         response = requests.get(url, headers=config.headers, timeout=config.request_timeout)
         response.raise_for_status()
-        return response.json()
     except requests.RequestException as e:
         raise NetworkError(f"オッズAPIの取得に失敗しました: {e}") from e
+
+    try:
+        return response.json()
+    except ValueError as e:
+        raise ParseError(f"オッズAPIレスポンスのJSON解析に失敗しました: {e}") from e
 
 
 def _parse_odds_response(data: dict[str, Any]) -> pd.DataFrame:

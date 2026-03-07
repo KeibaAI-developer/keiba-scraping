@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 
 from scraping.config import ODDS_COLUMNS
+from scraping.exceptions import ParseError
 from scraping.odds import scrape_odds_from_netkeiba
 
 
@@ -181,3 +182,15 @@ def test_scrape_odds_from_netkeiba_cancel_horse_has_nan_ninki(
         umaban_1 = result[result["馬番"] == 1].iloc[0]
         assert np.isnan(umaban_1["単勝人気"])
         assert np.isnan(umaban_1["複勝人気"])
+
+
+def test_scrape_odds_from_netkeiba_invalid_json_raises_parse_error() -> None:
+    """APIレスポンスJSONの解析失敗時にParseErrorを送出すること"""
+    with patch("scraping.odds.requests.get") as mock_get:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.side_effect = ValueError("invalid json")
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ParseError, match="JSON解析に失敗しました"):
+            scrape_odds_from_netkeiba("202306050911")

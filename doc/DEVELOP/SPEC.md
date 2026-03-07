@@ -525,7 +525,7 @@ JRAから単勝・複勝オッズをスクレイピングする（async関数）
   - 出走取消等があると文字列になるため`pd.to_numeric(errors="coerce")`で数値変換
   - 単勝人気は単勝オッズの昇順rank、複勝人気は複勝最小オッズの昇順rankで計算
 - **KeibaAIとの差異**:
-  - カラムを統一（馬番、馬名、単勝オッズ、単勝人気、複勝最小オッズ、複勝最大オッズ、複勝人気）
+  - カラムを統一（馬番、単勝オッズ、単勝人気、複勝最小オッズ、複勝最大オッズ、複勝人気）
   - KeibaAIの`単勝`→`単勝オッズ`、`人気`→`単勝人気`、`複勝min`→`複勝最小オッズ`、`複勝max`→`複勝最大オッズ`にカラム名変更
   - 馬名カラムを追加（JRAのテーブルから取得）
   - `param`不使用、`ScrapingConfig`を使用
@@ -673,8 +673,8 @@ Seleniumでページを取得しHTMLを保持する。
 | `scrape_umabashira` | `PastPerformancesScraper` | スクレイパークラス化、日付ID不使用、カラム名変更（日→開催日、天気→天候、オッズ→単勝オッズ、間隔→間隔日数）、距離を芝ダと距離(int)に分割、通過を1〜4コーナー通過順に分割、ペースをレース前3F・レース後3Fに分割、騎手ID追加 |
 | `scrape_today_race_info` | `RaceScheduleScraper` | スクレイパークラス化、日付ID不使用、保存しない、発走時刻はstr型、SCHEMA.mdに準拠した12カラムに拡張 |
 | `scrape_calender_page`（KeibaAI側の関数名。"calender" は原文ママのタイポ） | `RaceListScraper` | スクレイパークラス化、日付ID不使用、SCHEMA.mdに準拠した26カラムに拡張、最大ページ数を自動取得、scrape_one_page()をパブリック提供 |
-| `_scrape_odds_from_netkeiba` | `scrape_odds_from_netkeiba` | DataFrame返却、オッズ専用ページからrequests取得に変更（Selenium不使用）、カラム統一（ODDS_COLUMNS 7カラム）、複勝オッズ追加（馬券発売後のみ） |
-| `_scrape_odds_from_jra` | `scrape_odds_from_jra` | カラム統一（ODDS_COLUMNS 7カラム）、カラム名変更（単勝→単勝オッズ、人気→単勝人気、複勝min→複勝最小オッズ、複勝max→複勝最大オッズ）、馬名カラム追加 |
+| `_scrape_odds_from_netkeiba` | `scrape_odds_from_netkeiba` | DataFrame返却、オッズ専用ページからrequests取得に変更（Selenium不使用）、カラム統一（ODDS_COLUMNS 6カラム）、複勝オッズ追加（馬券発売後のみ） |
+| `_scrape_odds_from_jra` | `scrape_odds_from_jra` | カラム統一（ODDS_COLUMNS 6カラム）、カラム名変更（単勝→単勝オッズ、人気→単勝人気、複勝min→複勝最小オッズ、複勝max→複勝最大オッズ） |
 | `update_odds` | （提供しない） | KeibaAIのビジネスロジック |
 | `calc_course_days` | （提供しない） | 過去データの蓄積が必要 |
 | `date_id` | （使用しない） | KeibaAI固有の概念 |

@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from scraping.config import YOSO_ODDS_COLUMNS
+from scraping.exceptions import NetworkError
 from scraping.odds import scrape_yoso_odds_from_netkeiba
 
 
@@ -176,13 +177,10 @@ def test_scrape_yoso_odds_from_netkeiba_empty_umaban_returns_nan() -> None:
         assert result["予想単勝オッズ"].iloc[0] == 2.5
 
 
-def test_scrape_yoso_odds_from_netkeiba_exception_returns_empty() -> None:
-    """例外発生時は空のDataFrameを返すこと"""
+def test_scrape_yoso_odds_from_netkeiba_exception_raises_network_error() -> None:
+    """ページ取得時の例外はNetworkErrorを送出すること"""
     with patch("scraping.odds.webdriver.Chrome") as mock_chrome:
         mock_chrome.side_effect = Exception("Driver error")
 
-        result = scrape_yoso_odds_from_netkeiba("202606020411")
-
-        assert isinstance(result, pd.DataFrame)
-        assert list(result.columns) == YOSO_ODDS_COLUMNS
-        assert len(result) == 0
+        with pytest.raises(NetworkError, match="予想オッズページの取得に失敗しました"):
+            scrape_yoso_odds_from_netkeiba("202606020411")
