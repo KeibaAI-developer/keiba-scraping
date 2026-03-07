@@ -5,7 +5,6 @@ netkeibaの出馬表ページをスクレイピングし、
 """
 
 import logging
-import warnings
 from io import StringIO
 
 import numpy as np
@@ -25,9 +24,6 @@ from scraping.config import (
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.race_info import scrape_race_info
 from scraping.utils import build_entry_url
-
-# pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 class EntryPageScraper:

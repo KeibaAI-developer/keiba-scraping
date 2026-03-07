@@ -7,7 +7,6 @@ netkeibaの馬情報ページをSeleniumでスクレイピングし、
 import logging
 import re
 import time
-import warnings
 from io import StringIO
 
 import numpy as np
@@ -19,9 +18,6 @@ from selenium.webdriver.chrome.service import Service
 from scraping.config import KEIBAJO_TO_ID_DICT, PAST_PERFORMANCES_COLUMNS, ScrapingConfig
 from scraping.exceptions import DriverError, ParseError
 from scraping.utils import build_horse_info_url, calc_interval, set_chrome_options
-
-# pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 class PastPerformancesScraper:
@@ -163,8 +159,8 @@ class PastPerformancesScraper:
         else:
             umabashira_df["天候"] = np.nan
         # 開催を回と開催日と競馬場に分ける
-        umabashira_df["回"] = np.nan
-        umabashira_df["開催日"] = np.nan
+        umabashira_df["回"] = pd.Series(np.nan, index=umabashira_df.index, dtype=object)
+        umabashira_df["開催日"] = pd.Series(np.nan, index=umabashira_df.index, dtype=object)
         for idx in umabashira_df.index:
             try:
                 kaisai_str = str(umabashira_df.at[idx, "開催"])
@@ -312,7 +308,7 @@ class PastPerformancesScraper:
         corner_names = ["1コーナー通過順", "2コーナー通過順", "3コーナー通過順", "4コーナー通過順"]
 
         for col_name in corner_names:
-            df[col_name] = np.nan
+            df[col_name] = pd.Series(np.nan, index=df.index, dtype=object)
 
         mask = df["通過"].notna()
         if mask.any():
