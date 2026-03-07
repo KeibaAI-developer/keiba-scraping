@@ -4,6 +4,7 @@ netkeibaの競走馬一覧ページから馬情報をスクレイピングする
 KeibaAIの``scrape_horse_info_page``に対応する。
 """
 
+import logging
 import re
 import time
 from io import StringIO
@@ -33,6 +34,7 @@ class HorseInfoScraper:
         year: int,
         session: requests.Session | None = None,
         config: ScrapingConfig | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         """初期化
 
@@ -42,8 +44,10 @@ class HorseInfoScraper:
             year (int): 馬の誕生年
             session (requests.Session | None): HTTPセッション。省略時は新規作成
             config (ScrapingConfig | None): 設定オブジェクト
+            logger (logging.Logger | None): ロガーインスタンス
         """
         self.year = year
+        self._logger = logger or logging.getLogger(__name__)
         self.config = config or ScrapingConfig()
         self._owns_session = session is None
         self.session: requests.Session = session or requests.Session()
@@ -93,9 +97,12 @@ class HorseInfoScraper:
             html.raise_for_status()
         except requests.exceptions.HTTPError as exc:
             if html.status_code == 404:
+                self._logger.error("馬情報ページが見つかりません: %s", url)
                 raise PageNotFoundError(f"馬情報ページが見つかりません: {url}") from exc
+            self._logger.error("HTTPエラーが発生しました: %s", exc)
             raise NetworkError(f"HTTPエラーが発生しました: {exc}") from exc
         except requests.exceptions.RequestException as exc:
+            self._logger.error("ネットワークエラーが発生しました: %s", exc)
             raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
         html.encoding = "EUC-JP"
         soup = BeautifulSoup(html.text, "html.parser")
@@ -103,6 +110,7 @@ class HorseInfoScraper:
         # テーブル要素を取得
         race_table_01 = soup.find("table", class_="nk_tb_common race_table_01")
         if not isinstance(race_table_01, Tag):
+            self._logger.error("テーブルが見つかりません: %s", url)
             raise ParseError(f"テーブルが見つかりません: {url}")
 
         # 各種IDを行ごとに抽出
@@ -115,6 +123,9 @@ class HorseInfoScraper:
         for i in range(1, len(trs)):  # 最初の行はヘッダーのためスキップ
             tds = trs[i].find_all("td")
             if len(tds) <= 10:
+                self._logger.error(
+                    "テーブル列数が不足しています: %s (row=%d, columns=%d)", url, i, len(tds)
+                )
                 raise ParseError(
                     f"テーブル列数が不足しています: {url} (row={i}, columns={len(tds)})"
                 )
@@ -145,6 +156,7 @@ class HorseInfoScraper:
             tables = pd.read_html(StringIO(html.text))
             horse_info_df = tables[0][read_html_columns].copy()
         except Exception as exc:
+            self._logger.error("テーブルの読み込みに失敗しました: %s", url)
             raise ParseError(f"テーブルの読み込みに失敗しました: {url}") from exc
 
         # カラム名を変換
@@ -204,14 +216,18 @@ class HorseInfoScraper:
             html.raise_for_status()
         except requests.exceptions.HTTPError as exc:
             if html.status_code == 404:
+                self._logger.error("馬情報ページが見つかりません: %s", url)
                 raise PageNotFoundError(f"馬情報ページが見つかりません: {url}") from exc
+            self._logger.error("HTTPエラーが発生しました: %s", exc)
             raise NetworkError(f"HTTPエラーが発生しました: {exc}") from exc
         except requests.exceptions.RequestException as exc:
+            self._logger.error("ネットワークエラーが発生しました: %s", exc)
             raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
         html.encoding = "EUC-JP"
         soup = BeautifulSoup(html.text, "html.parser")
         pager = soup.find("div", class_="pager")
         if pager is None:
+            self._logger.error("ページャーが見つかりません")
             raise ParseError("ページャーが見つかりません")
 
         # 正規表現でカンマ付きの数値を探す
@@ -219,6 +235,7 @@ class HorseInfoScraper:
         if match:
             birth_num = int(match.group().replace(",", ""))
         else:
+            self._logger.error("データベースページの最大ページ数の取得に失敗しました")
             raise ParseError("データベースページの最大ページ数の取得に失敗しました")
 
         # 100頭ごとに1ページなので切り上げでページ数を算出

@@ -27,8 +27,6 @@ from scraping.utils import (
 # pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-logger = logging.getLogger(__name__)
-
 
 class RaceScheduleScraper:
     """レーススケジュールスクレイパークラス
@@ -50,6 +48,7 @@ class RaceScheduleScraper:
         month: int,
         day: int,
         config: ScrapingConfig | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         """Seleniumでレーススケジュールページを取得してBeautifulSoupを生成する
 
@@ -58,6 +57,7 @@ class RaceScheduleScraper:
             month (int): 月
             day (int): 日
             config (ScrapingConfig | None): 設定オブジェクト
+            logger (logging.Logger | None): ロガーインスタンス
 
         Raises:
             DriverError: Selenium WebDriverの起動・ページ取得に失敗した場合
@@ -65,6 +65,7 @@ class RaceScheduleScraper:
         self.year = year
         self.month = month
         self.day = day
+        self._logger = logger or logging.getLogger(__name__)
         cfg = config or ScrapingConfig()
 
         url = build_today_race_list_url(year, month, day, cfg)
@@ -77,6 +78,7 @@ class RaceScheduleScraper:
                 service = Service()
             driver = webdriver.Chrome(service=service, options=options)
         except Exception as exc:
+            self._logger.error("ChromeDriverの起動に失敗しました: %s", exc)
             raise DriverError(f"ChromeDriverの起動に失敗しました: {exc}") from exc
 
         try:
@@ -84,6 +86,7 @@ class RaceScheduleScraper:
             time.sleep(3)  # JavaScriptの実行を待つ
             self.html_text = driver.page_source
         except Exception as exc:
+            self._logger.error("ページの取得に失敗しました: %s (%s)", url, exc)
             raise DriverError(f"ページの取得に失敗しました: {url} ({exc})") from exc
         finally:
             driver.quit()
@@ -148,13 +151,13 @@ class RaceScheduleScraper:
         # レースIDを抽出（aタグのhrefから）
         a_tag = item.find("a")
         if not isinstance(a_tag, Tag):
-            logger.warning("レースリンクが見つかりません")
+            self._logger.warning("レースリンクが見つかりません")
             return None
 
         href = str(a_tag.get("href", ""))
         race_id_match = re.search(r"race_id=(\d{12})", href)
         if race_id_match is None:
-            logger.warning("レースIDが抽出できません: %s", href)
+            self._logger.warning("レースIDが抽出できません: %s", href)
             return None
 
         race_id = race_id_match.group(1)
@@ -171,7 +174,7 @@ class RaceScheduleScraper:
         # RaceDataから発走時刻・芝ダ・距離・頭数を抽出
         race_data = item.find(class_="RaceData")
         if not isinstance(race_data, Tag):
-            logger.warning("RaceDataが見つかりません: race_id=%s", race_id)
+            self._logger.warning("RaceDataが見つかりません: race_id=%s", race_id)
             return None
 
         # 発走時刻

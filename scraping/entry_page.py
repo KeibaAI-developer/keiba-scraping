@@ -29,8 +29,6 @@ from scraping.utils import build_entry_url
 # pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-logger = logging.getLogger(__name__)
-
 
 class EntryPageScraper:
     """出馬表ページのスクレイパー
@@ -44,18 +42,25 @@ class EntryPageScraper:
         html_text (str): 出馬表ページのHTMLテキスト
     """
 
-    def __init__(self, race_id: str, config: ScrapingConfig | None = None) -> None:
+    def __init__(
+        self,
+        race_id: str,
+        config: ScrapingConfig | None = None,
+        logger: logging.Logger | None = None,
+    ) -> None:
         """HTTP取得とBeautifulSoup生成を行う
 
         Args:
             race_id (str): netkeibaのレースID（12桁文字列）
             config (ScrapingConfig | None): 設定オブジェクト
+            logger (logging.Logger | None): ロガーインスタンス
 
         Raises:
             NetworkError: HTTPリクエストに失敗した場合
             PageNotFoundError: ページが見つからない場合
         """
         self.race_id = race_id
+        self._logger = logger or logging.getLogger(__name__)
         cfg = config or ScrapingConfig()
 
         url = build_entry_url(race_id, cfg)
@@ -66,9 +71,12 @@ class EntryPageScraper:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if response.status_code == 404:
+                self._logger.error("出馬表ページが見つかりません: %s", url)
                 raise PageNotFoundError(f"出馬表ページが見つかりません: {url}") from e
+            self._logger.error("HTTPエラーが発生しました: %s", e)
             raise NetworkError(f"HTTPエラーが発生しました: {e}") from e
         except requests.exceptions.RequestException as e:
+            self._logger.error("ネットワークエラーが発生しました: %s", e)
             raise NetworkError(f"ネットワークエラーが発生しました: {e}") from e
 
         response.encoding = "EUC-JP"
@@ -83,7 +91,7 @@ class EntryPageScraper:
         Returns:
             pd.DataFrame: レース基本情報のDataFrame（1行、RACE_INFO_COLUMNSのカラム）
         """
-        return scrape_race_info(self.soup, self.race_id)
+        return scrape_race_info(self.soup, self.race_id, logger=self._logger)
 
     def get_entry(self) -> pd.DataFrame:
         """出馬表を取得する
@@ -165,11 +173,12 @@ class EntryPageScraper:
         # ENTRY_COLUMNSに必要なカラムが揃っているか確認
         missing_cols = set(ENTRY_COLUMNS) - set(entry_df.columns)
         if missing_cols:
+            self._logger.error("必要なカラムが不足しています: %s", sorted(missing_cols))
             raise ValueError(f"必要なカラムが不足しています: {sorted(missing_cols)}")
         entry_df = entry_df[ENTRY_COLUMNS]
 
         # バリデーション
-        _validate_entry(entry_df)
+        self._validate_entry(entry_df)
 
         return entry_df
 
@@ -224,6 +233,41 @@ class EntryPageScraper:
 
         return df
 
+    def _validate_entry(self, df: pd.DataFrame) -> None:
+        """出馬表DataFrameのバリデーションを行う
+
+        Args:
+            df (pd.DataFrame): ENTRY_COLUMNSのカラムを持つDataFrame
+
+        Raises:
+            ParseError: バリデーション違反がある場合
+        """
+        # NaN不可カラムの検証（全行）
+        for col in ENTRY_NON_NAN_COLUMNS:
+            nan_rows = df[df[col].isna()]
+            if not nan_rows.empty:
+                umaban_list = nan_rows["馬番"].tolist()
+                self._logger.error("'%s'にNaNが含まれています: 馬番%s", col, umaban_list)
+                raise ParseError(f"'{col}'にNaNが含まれています: 馬番{umaban_list}")
+
+        # 出走区分のバリデーション
+        invalid_statuses = set(df["出走区分"].unique()) - VALID_ENTRY_STATUSES
+        if invalid_statuses:
+            self._logger.error("出走区分が不正です: %s", invalid_statuses)
+            raise ParseError(f"出走区分が不正です: {invalid_statuses}")
+
+        # 性別のバリデーション
+        invalid_genders = set(df["性別"].unique()) - VALID_GENDERS
+        if invalid_genders:
+            self._logger.error("性別が不正です: %s", invalid_genders)
+            raise ParseError(f"性別が不正です: {invalid_genders}")
+
+        # 所属のバリデーション
+        invalid_affiliations = set(df["所属"].unique()) - VALID_AFFILIATIONS
+        if invalid_affiliations:
+            self._logger.error("所属が不正です: %s", invalid_affiliations)
+            raise ParseError(f"所属が不正です: {invalid_affiliations}")
+
 
 def _classify_entry_status(mark: object) -> str:
     """印テキストから出走区分を判定する
@@ -258,35 +302,3 @@ def _add_gender_age(df: pd.DataFrame) -> pd.DataFrame:
     df = pd.concat([df, gender_age_df], axis=1)
 
     return df
-
-
-def _validate_entry(df: pd.DataFrame) -> None:
-    """出馬表DataFrameのバリデーションを行う
-
-    Args:
-        df (pd.DataFrame): ENTRY_COLUMNSのカラムを持つDataFrame
-
-    Raises:
-        ParseError: バリデーション違反がある場合
-    """
-    # NaN不可カラムの検証（全行）
-    for col in ENTRY_NON_NAN_COLUMNS:
-        nan_rows = df[df[col].isna()]
-        if not nan_rows.empty:
-            umaban_list = nan_rows["馬番"].tolist()
-            raise ParseError(f"'{col}'にNaNが含まれています: 馬番{umaban_list}")
-
-    # 出走区分のバリデーション
-    invalid_statuses = set(df["出走区分"].unique()) - VALID_ENTRY_STATUSES
-    if invalid_statuses:
-        raise ParseError(f"出走区分が不正です: {invalid_statuses}")
-
-    # 性別のバリデーション
-    invalid_genders = set(df["性別"].unique()) - VALID_GENDERS
-    if invalid_genders:
-        raise ParseError(f"性別が不正です: {invalid_genders}")
-
-    # 所属のバリデーション
-    invalid_affiliations = set(df["所属"].unique()) - VALID_AFFILIATIONS
-    if invalid_affiliations:
-        raise ParseError(f"所属が不正です: {invalid_affiliations}")

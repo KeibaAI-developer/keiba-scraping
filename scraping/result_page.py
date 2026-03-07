@@ -38,8 +38,6 @@ from scraping.utils import build_result_url
 # pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-logger = logging.getLogger(__name__)
-
 
 class ResultPageScraper:
     """レース結果ページのスクレイパー
@@ -53,18 +51,25 @@ class ResultPageScraper:
         html_text (str): 結果ページのHTMLテキスト
     """
 
-    def __init__(self, race_id: str, config: ScrapingConfig | None = None) -> None:
+    def __init__(
+        self,
+        race_id: str,
+        config: ScrapingConfig | None = None,
+        logger: logging.Logger | None = None,
+    ) -> None:
         """HTTP取得とBeautifulSoup生成を行う
 
         Args:
             race_id (str): netkeibaのレースID（12桁文字列）
             config (ScrapingConfig | None): 設定オブジェクト
+            logger (logging.Logger | None): ロガーインスタンス
 
         Raises:
             NetworkError: HTTPリクエストに失敗した場合
             PageNotFoundError: ページが見つからない場合
         """
         self.race_id = race_id
+        self._logger = logger or logging.getLogger(__name__)
         cfg = config or ScrapingConfig()
 
         url = build_result_url(race_id, cfg)
@@ -75,9 +80,12 @@ class ResultPageScraper:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if response.status_code == 404:
+                self._logger.error("レース結果ページが見つかりません: %s", url)
                 raise PageNotFoundError(f"レース結果ページが見つかりません: {url}") from e
+            self._logger.error("HTTPエラーが発生しました: %s", e)
             raise NetworkError(f"HTTPエラーが発生しました: {e}") from e
         except requests.exceptions.RequestException as e:
+            self._logger.error("ネットワークエラーが発生しました: %s", e)
             raise NetworkError(f"ネットワークエラーが発生しました: {e}") from e
 
         response.encoding = "EUC-JP"
@@ -92,7 +100,7 @@ class ResultPageScraper:
         Returns:
             pd.DataFrame: レース基本情報のDataFrame（1行、RACE_INFO_COLUMNSのカラム）
         """
-        return scrape_race_info(self.soup, self.race_id)
+        return scrape_race_info(self.soup, self.race_id, logger=self._logger)
 
     def get_result(self) -> pd.DataFrame:
         """レース結果の表を取得する
@@ -311,11 +319,12 @@ class ResultPageScraper:
         # RESULT_COLUMNSに必要なカラムが揃っているか確認
         missing_cols = set(RESULT_COLUMNS) - set(result_df.columns)
         if missing_cols:
+            self._logger.error("必要なカラムが不足しています: %s", sorted(missing_cols))
             raise ValueError(f"必要なカラムが不足しています: {sorted(missing_cols)}")
         result_df = result_df[RESULT_COLUMNS]  # RESULT_COLUMNSの順序に並べ替え
 
         # バリデーション
-        _validate_result(result_df)
+        self._validate_result(result_df)
 
         return result_df
 
@@ -417,7 +426,7 @@ class ResultPageScraper:
             tables = pd.read_html(self.html_text)
             lap_tmp_df = tables[table_index]
         except (IndexError, AttributeError):
-            logger.warning("ラップタイムの表が存在しません")
+            self._logger.warning("ラップタイムの表が存在しません")
             nan_data: dict[str, object] = {"レースID": self.race_id}
             lap_df = pd.DataFrame([nan_data])
             lap_df = lap_df.reindex(columns=LAP_TIME_COLUMNS)
@@ -441,6 +450,49 @@ class ResultPageScraper:
         lap_df = lap_df.reindex(columns=LAP_TIME_COLUMNS)
 
         return lap_df
+
+    def _validate_result(self, df: pd.DataFrame) -> None:
+        """結果DataFrameのバリデーションを行う
+
+        Args:
+            df (pd.DataFrame): RESULT_COLUMNSのカラムを持つDataFrame
+
+        Raises:
+            ParseError: バリデーション違反がある場合
+        """
+        # NaN不可カラムの検証（全行）
+        for col in NON_NAN_COLUMNS:
+            nan_rows = df[df[col].isna()]
+            if not nan_rows.empty:
+                umaban_list = nan_rows["馬番"].tolist()
+                self._logger.error("'%s'にNaNが含まれています: 馬番%s", col, umaban_list)
+                raise ParseError(f"'{col}'にNaNが含まれています: 馬番{umaban_list}")
+
+        # 出走区分のバリデーション
+        invalid_statuses = set(df["出走区分"].unique()) - VALID_RACE_STATUSES
+        if invalid_statuses:
+            self._logger.error("出走区分が不正です: %s", invalid_statuses)
+            raise ParseError(f"出走区分が不正です: {invalid_statuses}")
+
+        # 馬体重は出走取消以外はNaN不可
+        non_cancel_mask = df["出走区分"] != "取消"
+        weight_nan = df.loc[non_cancel_mask, "馬体重"].isna()
+        if weight_nan.any():
+            umaban_list = df.loc[non_cancel_mask & df["馬体重"].isna(), "馬番"].tolist()
+            self._logger.error("'馬体重'にNaNが含まれています: 馬番%s", umaban_list)
+            raise ParseError(f"'馬体重'にNaNが含まれています: 馬番{umaban_list}")
+
+        # 性別のバリデーション
+        invalid_genders = set(df["性別"].unique()) - VALID_GENDERS
+        if invalid_genders:
+            self._logger.error("性別が不正です: %s", invalid_genders)
+            raise ParseError(f"性別が不正です: {invalid_genders}")
+
+        # 所属のバリデーション
+        invalid_affiliations = set(df["所属"].unique()) - VALID_AFFILIATIONS
+        if invalid_affiliations:
+            self._logger.error("所属が不正です: %s", invalid_affiliations)
+            raise ParseError(f"所属が不正です: {invalid_affiliations}")
 
 
 def _classify_race_status(chakujun: object) -> str:
@@ -563,45 +615,6 @@ def _split_corner_passing_order(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop(columns=["コーナー通過順"])
 
     return df
-
-
-def _validate_result(df: pd.DataFrame) -> None:
-    """結果DataFrameのバリデーションを行う
-
-    Args:
-        df (pd.DataFrame): RESULT_COLUMNSのカラムを持つDataFrame
-
-    Raises:
-        ParseError: バリデーション違反がある場合
-    """
-    # NaN不可カラムの検証（全行）
-    for col in NON_NAN_COLUMNS:
-        nan_rows = df[df[col].isna()]
-        if not nan_rows.empty:
-            umaban_list = nan_rows["馬番"].tolist()
-            raise ParseError(f"'{col}'にNaNが含まれています: 馬番{umaban_list}")
-
-    # 出走区分のバリデーション
-    invalid_statuses = set(df["出走区分"].unique()) - VALID_RACE_STATUSES
-    if invalid_statuses:
-        raise ParseError(f"出走区分が不正です: {invalid_statuses}")
-
-    # 馬体重は出走取消以外はNaN不可
-    non_cancel_mask = df["出走区分"] != "取消"
-    weight_nan = df.loc[non_cancel_mask, "馬体重"].isna()
-    if weight_nan.any():
-        umaban_list = df.loc[non_cancel_mask & df["馬体重"].isna(), "馬番"].tolist()
-        raise ParseError(f"'馬体重'にNaNが含まれています: 馬番{umaban_list}")
-
-    # 性別のバリデーション
-    invalid_genders = set(df["性別"].unique()) - VALID_GENDERS
-    if invalid_genders:
-        raise ParseError(f"性別が不正です: {invalid_genders}")
-
-    # 所属のバリデーション
-    invalid_affiliations = set(df["所属"].unique()) - VALID_AFFILIATIONS
-    if invalid_affiliations:
-        raise ParseError(f"所属が不正です: {invalid_affiliations}")
 
 
 def _parse_haraimodoshi_text(text: str) -> list[int]:

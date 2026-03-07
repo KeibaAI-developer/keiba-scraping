@@ -18,8 +18,6 @@ from scraping.utils import build_race_list_url, judge_turf_dirt, race_id_to_race
 # pandasのFutureWarningを無視する（pandas 3.0以降の警告対策）
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-logger = logging.getLogger(__name__)
-
 
 class RaceListScraper:
     """レース一覧スクレイパークラス
@@ -36,6 +34,7 @@ class RaceListScraper:
         year: int,
         session: requests.Session | None = None,
         config: ScrapingConfig | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         """初期化
 
@@ -43,8 +42,10 @@ class RaceListScraper:
             year (int): 検索対象の年
             session (requests.Session | None): HTTPセッション。省略時は新規作成
             config (ScrapingConfig | None): 設定オブジェクト
+            logger (logging.Logger | None): ロガーインスタンス
         """
         self.year = year
+        self._logger = logger or logging.getLogger(__name__)
         self.config = config or ScrapingConfig()
         self.session: requests.Session = session or requests.Session()
 
@@ -94,9 +95,12 @@ class RaceListScraper:
         except requests.exceptions.HTTPError as exc:
             status_code = exc.response.status_code if exc.response is not None else None
             if status_code == 404:
+                self._logger.error("レース一覧ページが見つかりません: %s", url)
                 raise PageNotFoundError(f"レース一覧ページが見つかりません: {url}") from exc
+            self._logger.error("HTTPエラーが発生しました: %s", exc)
             raise NetworkError(f"HTTPエラーが発生しました: {exc}") from exc
         except requests.exceptions.RequestException as exc:
+            self._logger.error("ネットワークエラーが発生しました: %s", exc)
             raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
 
         html.encoding = "EUC-JP"
@@ -118,6 +122,7 @@ class RaceListScraper:
         """
         table = soup.find("table", class_="nk_tb_common race_table_01")
         if not isinstance(table, Tag):
+            self._logger.error("レース一覧テーブルが見つかりません")
             raise ParseError("レース一覧テーブルが見つかりません")
 
         trs = table.find_all("tr")
@@ -128,7 +133,7 @@ class RaceListScraper:
         for i in range(1, len(trs)):
             tds = trs[i].find_all("td")
             if len(tds) < 16:
-                logger.warning("列数が不足しています (row=%d, columns=%d)", i, len(tds))
+                self._logger.warning("列数が不足しています (row=%d, columns=%d)", i, len(tds))
                 continue
             row = self._parse_row(tds)
             rows.append(row)
@@ -152,14 +157,14 @@ class RaceListScraper:
             ParseError: 数値項目（R、距離、頭数）のパースに失敗した場合
         """
         # レースID (td[4]: レース名のリンクから)
-        race_id = _extract_race_id(tds[4])
+        race_id = self._extract_race_id(tds[4])
 
         # レースIDからrace_id_to_race_infoで情報取得
         _, keibajo, kai, kaisai_day, race_num = race_id_to_race_info(race_id)
 
         # 日付 (td[0]: 開催日のリンクから "yyyy/mm/dd")
         date_text = tds[0].text.strip()
-        date_obj = _parse_date(date_text)
+        date_obj = self._parse_date(date_text)
 
         # 天候 (td[2])
         weather = tds[2].text.strip()
@@ -168,6 +173,7 @@ class RaceListScraper:
         try:
             r_value = int(tds[3].text.strip())
         except ValueError as exc:
+            self._logger.error("Rのパースに失敗しました: %s", tds[3].text.strip())
             raise ParseError(f"Rのパースに失敗しました: {tds[3].text.strip()}") from exc
 
         # レース名 (td[4])
@@ -178,6 +184,7 @@ class RaceListScraper:
         turf_dirt = judge_turf_dirt(distance_text)
         distance_match = re.search(r"\d+", distance_text)
         if distance_match is None:
+            self._logger.error("距離のパースに失敗しました: %s", distance_text)
             raise ParseError(f"距離のパースに失敗しました: {distance_text}")
         distance = int(distance_match.group())
 
@@ -185,6 +192,7 @@ class RaceListScraper:
         try:
             num_runners = int(tds[7].text.strip())
         except ValueError as exc:
+            self._logger.error("頭数のパースに失敗しました: %s", tds[7].text.strip())
             raise ParseError(f"頭数のパースに失敗しました: {tds[7].text.strip()}") from exc
 
         # 馬場 (td[8])
@@ -195,7 +203,7 @@ class RaceListScraper:
 
         # ペース (td[10]: "36.7-40.5" → レース前3F, レース後3F)
         pace_text = tds[10].text.strip()
-        pace_first, pace_last = _parse_pace(pace_text)
+        pace_first, pace_last = self._parse_pace(pace_text)
 
         # 勝ち馬 (td[11])
         winner_name = tds[11].text.strip()
@@ -283,32 +291,70 @@ class RaceListScraper:
         if match:
             total_count = int(match.group().replace(",", ""))
         else:
+            self._logger.error("レース一覧の総件数の取得に失敗しました")
             raise ParseError("レース一覧の総件数の取得に失敗しました")
 
         # 100件ごとに1ページなので切り上げでページ数を算出
         return (total_count + 99) // 100
 
+    def _extract_race_id(self, td_element: Tag) -> str:
+        """td要素内のaタグからレースIDを抽出する
 
-def _extract_race_id(td_element: Tag) -> str:
-    """td要素内のaタグからレースIDを抽出する
+        Args:
+            td_element (Tag): td要素
 
-    Args:
-        td_element (Tag): td要素
+        Returns:
+            str: レースID（12桁文字列）
 
-    Returns:
-        str: レースID（12桁文字列）
+        Raises:
+            ParseError: レースIDが取得できない場合
+        """
+        a_tag = td_element.find("a")
+        if not isinstance(a_tag, Tag):
+            self._logger.error("レースIDのリンクが見つかりません")
+            raise ParseError("レースIDのリンクが見つかりません")
+        href = str(a_tag.get("href", ""))
+        match = re.search(r"(?:race_id=|/race/)(\d{12})", href)
+        if match is None:
+            self._logger.error("レースIDが抽出できません: %s", href)
+            raise ParseError(f"レースIDが抽出できません: {href}")
+        return match.group(1)
 
-    Raises:
-        ParseError: レースIDが取得できない場合
-    """
-    a_tag = td_element.find("a")
-    if not isinstance(a_tag, Tag):
-        raise ParseError("レースIDのリンクが見つかりません")
-    href = str(a_tag.get("href", ""))
-    match = re.search(r"(?:race_id=|/race/)(\d{12})", href)
-    if match is None:
-        raise ParseError(f"レースIDが抽出できません: {href}")
-    return match.group(1)
+    def _parse_date(self, date_text: str) -> datetime.date:
+        """日付文字列をdatetime.dateに変換する
+
+        Args:
+            date_text (str): "yyyy/mm/dd" 形式の日付文字列
+
+        Returns:
+            datetime.date: 日付オブジェクト
+
+        Raises:
+            ParseError: 日付のパースに失敗した場合
+        """
+        try:
+            return datetime.datetime.strptime(date_text, "%Y/%m/%d").date()
+        except ValueError as exc:
+            self._logger.error("日付のパースに失敗しました: %s", date_text)
+            raise ParseError(f"日付のパースに失敗しました: {date_text}") from exc
+
+    def _parse_pace(self, pace_text: str) -> tuple[float, float]:
+        """ペース文字列を前半3Fと後半3Fに分割する
+
+        Args:
+            pace_text (str): "36.7-40.5" 形式のペース文字列
+
+        Returns:
+            tuple[float, float]: レース前3F, レース後3F
+
+        Raises:
+            ParseError: ペース文字列のパースに失敗した場合
+        """
+        match = re.match(r"([\d.]+)-([\d.]+)", pace_text)
+        if match:
+            return float(match.group(1)), float(match.group(2))
+        self._logger.error("ペースのパースに失敗しました: %s", pace_text)
+        raise ParseError(f"ペースのパースに失敗しました: {pace_text}")
 
 
 def _extract_id_from_link(td_element: Tag) -> str | float:
@@ -328,42 +374,6 @@ def _extract_id_from_link(td_element: Tag) -> str | float:
     if match is None:
         return np.nan
     return match.group(1)
-
-
-def _parse_date(date_text: str) -> datetime.date:
-    """日付文字列をdatetime.dateに変換する
-
-    Args:
-        date_text (str): "yyyy/mm/dd" 形式の日付文字列
-
-    Returns:
-        datetime.date: 日付オブジェクト
-
-    Raises:
-        ParseError: 日付のパースに失敗した場合
-    """
-    try:
-        return datetime.datetime.strptime(date_text, "%Y/%m/%d").date()
-    except ValueError as exc:
-        raise ParseError(f"日付のパースに失敗しました: {date_text}") from exc
-
-
-def _parse_pace(pace_text: str) -> tuple[float, float]:
-    """ペース文字列を前半3Fと後半3Fに分割する
-
-    Args:
-        pace_text (str): "36.7-40.5" 形式のペース文字列
-
-    Returns:
-        tuple[float, float]: レース前3F, レース後3F
-
-    Raises:
-        ParseError: ペース文字列のパースに失敗した場合
-    """
-    match = re.match(r"([\d.]+)-([\d.]+)", pace_text)
-    if match:
-        return float(match.group(1)), float(match.group(2))
-    raise ParseError(f"ペースのパースに失敗しました: {pace_text}")
 
 
 def _parse_trainer(trainer_text: str) -> tuple[str, str]:
