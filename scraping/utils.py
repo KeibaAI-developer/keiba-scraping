@@ -121,6 +121,34 @@ def build_horse_list_url(year: int, page_num: int, config: ScrapingConfig | None
     return f"{cfg.netkeiba_base_url}/?pid=horse_list&birthyear={year}&list=100&page={page_num}"
 
 
+def build_odds_url(race_id: str, config: ScrapingConfig | None = None) -> str:
+    """netkeibaのオッズページのURLを作成する
+
+    Args:
+        race_id (str): レースID
+        config (ScrapingConfig | None): 設定オブジェクト
+
+    Returns:
+        str: URL
+    """
+    cfg = config or ScrapingConfig()
+    return f"{cfg.netkeiba_race_url}/odds/index.html?race_id={race_id}"
+
+
+def build_odds_api_url(race_id: str, config: ScrapingConfig | None = None) -> str:
+    """netkeibaのオッズAPIのURLを作成する
+
+    Args:
+        race_id (str): レースID
+        config (ScrapingConfig | None): 設定オブジェクト
+
+    Returns:
+        str: URL
+    """
+    cfg = config or ScrapingConfig()
+    return f"{cfg.netkeiba_race_url}/api/api_get_jra_odds.html?race_id={race_id}&type=1"
+
+
 # ---------------------------------------------------------------------------
 # データ変換関数
 # ---------------------------------------------------------------------------

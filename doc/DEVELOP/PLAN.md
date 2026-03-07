@@ -14,7 +14,8 @@
 | PR-4 | レース結果スクレイピングの実装 | PR-3 | 大 | 完了 |
 | PR-5 | 出馬表スクレイピングの実装 | PR-3 | 中 | 完了 |
 | PR-6 | 馬柱スクレイピングの実装 | PR-2 | 中 | 完了 |
-| PR-7 | オッズスクレイピングの実装 | PR-2 | 中 | 未着手 |
+| PR-7a | netkeibaオッズスクレイピングの実装 | PR-2 | 中 | 未着手 |
+| PR-7b | JRAオッズスクレイピングの実装 | PR-2 | 中 | 未着手 |
 | PR-8a | レース一覧スクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-8b | レーススケジュールスクレイピングの実装 | PR-2 | 中 | 完了 |
 | PR-9 | 馬情報スクレイピング・HorseInfoScraperクラスの実装 | PR-2 | 中 | 完了 |
@@ -377,32 +378,132 @@ SCHEMA.mdの馬柱スキーマに従う。
 ---
 
 
-## PR-7: オッズスクレイピングの実装
+## PR-7a: netkeibaオッズスクレイピングの実装
 
 ### 概要
 
-`scraping/odds.py`を実装する。netkeibaおよびJRAからのオッズ取得機能を移植する。
+`scraping/odds.py`を実装する。
+- `scrape_odds_from_netkeiba`: netkeibaのオッズAPIからrequestsで確定オッズを取得する。馬券発売前は空のDataFrameを返す。
+- `scrape_yoso_odds_from_netkeiba`: netkeibaの出馬表ページからSeleniumで予想オッズを取得する（馬券発売前用）。
 
 ### 作業内容
 
-1. `scraping/odds.py`の実装
-   - `scrape_odds_from_netkeiba(race_id, config)`: netkeibaからのオッズ取得
-   - `scrape_odds_from_jra(race_id, config)`: JRAからのオッズ取得（async）
-2. `scraping/__init__.py`の更新
+1. フィクスチャ取得スクリプトの実装
+   - `test/scripts/fetch_odds_netkeiba_fixtures.py`を作成
+   - netkeibaオッズAPIのJSONレスポンスを保存（馬券発売後・出走取消あり）
+   - フィクスチャファイル命名規則:
+     ```
+     test/fixtures/json/
+     ├── odds_netkeiba_{race_id}.json        # netkeibaオッズAPI
+     ```
+2. フィクスチャ取得
+   - netkeibaオッズAPI（馬券発売後・正常系）: `odds_netkeiba_202606020211.json`
+   - netkeibaオッズAPI（馬券発売後・出走取消あり）: `odds_netkeiba_202306050911.json`
+3. `scraping/config.py`に`ODDS_COLUMNS`、`YOSO_ODDS_COLUMNS`を追加
+   - ODDS_COLUMNS: 馬番、単勝オッズ、単勝人気、複勝最小オッズ、複勝最大オッズ、複勝人気（6カラム）
+   - YOSO_ODDS_COLUMNS: 馬番、馬名、予想単勝オッズ（3カラム）
+4. `scraping/utils.py`に`build_odds_api_url`を追加
+   - URL: `https://race.netkeiba.com/api/api_get_jra_odds.html?race_id={race_id}&type=1`
+5. `scraping/odds.py`の実装
+   - `scrape_odds_from_netkeiba(race_id, config)`: netkeibaオッズAPIからrequestsで取得
+     - 馬券発売前: 空のDataFrame（0行、カラムのみ）を返す
+     - 馬券発売後: JSON APIからオッズを取得し、ODDS_COLUMNSのカラムで返す
+   - `scrape_yoso_odds_from_netkeiba(race_id, config)`: netkeibaの出馬表ページからSeleniumで予想オッズを取得
+     - 馬番: 枠順確定前は空のためNaN
+     - 馬名: 馬を識別するための馬名
+     - 予想単勝オッズ: 予想オッズ
+6. `scraping/__init__.py`の更新
+7. 単体テストの実装
+8. 統合テストの実装
+9. `example/example_odds_netkeiba.py`、`example/example_yoso_odds_netkeiba.py`の実装
 
 ### テスト計画
+
+#### テスト用JSONフィクスチャの作成
+
+netkeibaのオッズAPIのJSONレスポンスを`test/fixtures/json/`に保存する。
+フィクスチャの取得は`test/scripts/fetch_odds_netkeiba_fixtures.py`スクリプトで行う。
+
+- 馬券発売後のオッズAPI（正常系）
+- 馬券発売後のオッズAPI（出走取消2頭あり）
 
 #### 単体テスト
 
 | テストファイル | テスト対象 | ケース |
 |---|---|---|
-| `test/unit/odds/test_scrape_odds_from_netkeiba.py` | `scrape_odds_from_netkeiba` | 正常系: Seleniumモックで予想オッズ/確定オッズの取得 |
-| `test/unit/odds/test_scrape_odds_from_jra.py` | `scrape_odds_from_jra` | 正常系: Playwrightモックで単勝・複勝オッズの取得 |
+| `test/unit/odds/test_scrape_odds_from_netkeiba.py` | `scrape_odds_from_netkeiba` | 正常系: 馬券発売後（単勝・複勝オッズ取得、複勝人気の検証）/ 準正常系: 出走取消あり（出走取消馬のオッズがNaN）/ 準正常系: 馬券発売前（空のDataFrame） |
+| `test/unit/odds/test_scrape_yoso_odds_from_netkeiba.py` | `scrape_yoso_odds_from_netkeiba` | 正常系: 馬番・馬名・予想オッズ取得 / 準正常系: 枠順未確定時（馬番がNaN）/ 準正常系: 馬情報なし（空のDataFrame）/ 異常系: 例外発生時（空のDataFrame） |
 
 #### テストの注意点
 
-- Selenium/Playwrightは外部サービスへのアクセスを伴うため、`pytest-mock`で完全にモック化する
+- `scrape_odds_from_netkeiba`: JSONフィクスチャを使用し、requestsをモックしてテスト
+- `scrape_yoso_odds_from_netkeiba`: webdriver.Chromeをモックしてテスト
+
+#### 結合テスト
+
+| テストファイル | テスト対象 | ケース |
+|---|---|---|
+| `test/integration/test_odds.py` | `scrape_odds_from_netkeiba` | 実際にnetkeibaにアクセスしてテスト（PR-7b完了後に`scrape_odds_from_jra`のテストも追加） |
+
+
+---
+
+
+## PR-7b: JRAオッズスクレイピングの実装
+
+### 概要
+
+`scraping/odds.py`に`scrape_odds_from_jra`を追加する。PlaywrightでJRA公式サイトを操作してオッズを取得する。
+KeibaAIの`_scrape_odds_from_jra`と同一ロジック。カラム名のみODDS_COLUMNSに統一する。
+
+### 作業内容
+
+1. フィクスチャ取得スクリプトの実装
+   - `test/scripts/fetch_odds_jra_fixtures.py`を作成
+   - JRAオッズページ: Playwrightでページを操作し、`pd.read_html`で取得したDataFrameをCSVで保存（JRAはページ操作が複雑でHTMLフィクスチャの静的保存が困難なため、テーブルデータをCSVとして保存する）
+   - フィクスチャファイル命名規則:
+     ```
+     test/fixtures/csv/
+     └── odds_jra_{race_id}.csv              # JRAオッズのテーブルデータ（pd.read_htmlの出力）
+     ```
+2. フィクスチャ取得
+   - JRAオッズテーブル（正常系）: `odds_jra_{race_id}.csv`（`pd.read_html`で取得したDataFrameをCSV保存）
+3. `scraping/odds.py`に`scrape_odds_from_jra`を追加
+   - `scrape_odds_from_jra(race_id, config)`: JRAからPlaywrightでオッズ取得（async）
+   - KeibaAIの`_scrape_odds_from_jra`と同一ロジック
+   - カラム名をODDS_COLUMNSに統一（`単勝`→`単勝オッズ`、`人気`→`単勝人気`、`複勝min`→`複勝最小オッズ`、`複勝max`→`複勝最大オッズ`）
+   - 馬名カラムを追加（JRAのテーブルから取得）
+4. `scraping/__init__.py`の更新
+5. 単体テストの実装
+6. 統合テストの実装
+7. `example/odds_jra.py`の実装
+
+### テスト計画
+
+#### テスト用CSVフィクスチャの作成
+
+JRAのオッズはPlaywrightでページを操作して取得するため、HTMLフィクスチャの静的保存が困難である。
+代わりに、実際にPlaywrightで取得した`pd.read_html`の出力をCSVファイルとして保存し、単体テストではCSVからDataFrameを読み込んで`pd.read_html`をモックする。
+
+- `test/fixtures/csv/odds_jra_{race_id}.csv`: JRAオッズページから`pd.read_html`で取得したテーブルデータ
+
+#### 単体テスト
+
+| テストファイル | テスト対象 | ケース |
+|---|---|---|
+| `test/unit/odds/test_scrape_odds_from_jra.py` | `scrape_odds_from_jra` | 正常系: CSVフィクスチャから`pd.read_html`をモックし、単勝・複勝オッズの取得とカラム構成の検証 |
+
+#### テストの注意点
+
+- `playwright`の`async_playwright`をモックし、`page.content()`をモック
+- `pd.read_html`をモックし、CSVフィクスチャから読み込んだDataFrameを返すようにする
 - 非同期関数のテストには`pytest-asyncio`を使用する
+
+#### 結合テスト
+
+| テストファイル | テスト対象 | ケース |
+|---|---|---|
+| `test/integration/test_odds.py` | `scrape_odds_from_netkeiba`, `scrape_odds_from_jra` | 実際にnetkeiba/JRAにアクセスしてテスト |
 
 
 ---
@@ -670,8 +771,8 @@ PR-2 設定・例外・ユーティリティ
   │
   ├──────────┬──────────┬──────────┬──────────┐
   ▼          ▼          ▼          ▼          ▼
-PR-3       PR-6       PR-7      PR-8a      PR-8b
-レース情報  馬柱       オッズ    レース一覧  スケジュール
+PR-3       PR-6      PR-7a      PR-7b     PR-8a      PR-8b
+レース情報  馬柱  netkeibaオッズ JRAオッズ レース一覧  スケジュール
   │
   ├────┐
   ▼    ▼
