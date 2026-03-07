@@ -42,7 +42,11 @@ from scraping.exceptions import (
     ScrapingError,
 )
 from scraping.horse_info import HorseInfoScraper
-from scraping.odds import scrape_odds_from_netkeiba, scrape_yoso_odds_from_netkeiba
+from scraping.odds import (
+    scrape_odds_from_jra,
+    scrape_odds_from_netkeiba,
+    scrape_yoso_odds_from_netkeiba,
+)
 from scraping.past_performances import PastPerformancesScraper
 from scraping.race_info import scrape_race_info
 from scraping.race_list import RaceListScraper
@@ -125,4 +129,5 @@ __all__ = [
     # odds
     "scrape_odds_from_netkeiba",
     "scrape_yoso_odds_from_netkeiba",
+    "scrape_odds_from_jra",
 ]

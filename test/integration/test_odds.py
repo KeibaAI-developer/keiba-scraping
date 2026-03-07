@@ -1,13 +1,14 @@
-"""scrape_odds_from_netkeibaの結合テスト
+"""scrape_odds_from_netkeibaおよびscrape_odds_from_jraの結合テスト
 
-フィクスチャは使用せず、実際にnetkeibaにアクセスしてスクレイピングを行い、
-scrape_odds_from_netkeibaが正しく動作することを確認する。
-netkeibaのHTML構造の仕様変更に気づきやすくすることが目的。
+フィクスチャは使用せず、実際にnetkeiba/JRAにアクセスしてスクレイピングを行い、
+オッズ取得関数が正しく動作することを確認する。
+netkeibaおよびJRAのHTML構造の仕様変更に気づきやすくすることが目的。
 
 ネットワーク接続が必要なため、@pytest.mark.networkマーカーを付与する。
 環境変数 RUN_NETWORK_TESTS=1 が設定されている場合のみ実行される（opt-in）。
 """
 
+import asyncio
 import os
 import time
 from typing import Any
@@ -16,7 +17,8 @@ import pandas as pd
 import pytest
 
 from scraping.config import ODDS_COLUMNS
-from scraping.odds import scrape_odds_from_netkeiba
+from scraping.exceptions import DriverError
+from scraping.odds import scrape_odds_from_jra, scrape_odds_from_netkeiba
 
 # テスト間のリクエスト間隔（秒）
 REQUEST_INTERVAL = 1.0
@@ -103,3 +105,81 @@ def test_scrape_odds_from_netkeiba_cancel_horse_has_nan_odds() -> None:
         row = result[result["馬番"] == umaban].iloc[0]
         assert pd.isna(row["単勝オッズ"]), f"馬番{umaban}の単勝オッズがNaNではありません"
         assert pd.isna(row["単勝人気"]), f"馬番{umaban}の単勝人気がNaNではありません"
+
+
+# ---------------------------------------------------------------------------
+# scrape_odds_from_jra
+# ---------------------------------------------------------------------------
+# JRAのオッズページは今週開催中のレースしか掲載されないため、
+# 毎週 race_id を当週の開催レースに手動で書き換える必要がある。
+# 古い race_id のままテストを実行すると DriverError が発生し、スキップされる。
+JRA_LIVE_TEST_CASES: list[dict[str, Any]] = [
+    {
+        "race_id": "202606020411",
+        "description": "2回中山4日11R",
+        "min_tousuu": 5,
+    },
+]
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    "test_case",
+    JRA_LIVE_TEST_CASES,
+    ids=[tc["description"] for tc in JRA_LIVE_TEST_CASES],
+)
+def test_scrape_odds_from_jra_returns_correct_columns(test_case: dict[str, Any]) -> None:
+    """ODDS_COLUMNSのカラムを持つDataFrameを返すこと"""
+    race_id = test_case["race_id"]
+
+    try:
+        result = asyncio.run(scrape_odds_from_jra(race_id))
+    except DriverError:
+        pytest.skip(
+            f"JRAにレース {race_id} が見つかりません。race_idを当週の開催レースに更新してください。"
+        )
+
+    assert isinstance(result, pd.DataFrame)
+    assert list(result.columns) == ODDS_COLUMNS
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    "test_case",
+    JRA_LIVE_TEST_CASES,
+    ids=[tc["description"] for tc in JRA_LIVE_TEST_CASES],
+)
+def test_scrape_odds_from_jra_returns_rows(test_case: dict[str, Any]) -> None:
+    """データが存在すること"""
+    race_id = test_case["race_id"]
+    min_tousuu = test_case["min_tousuu"]
+
+    try:
+        result = asyncio.run(scrape_odds_from_jra(race_id))
+    except DriverError:
+        pytest.skip(
+            f"JRAにレース {race_id} が見つかりません。race_idを当週の開催レースに更新してください。"
+        )
+
+    assert len(result) >= min_tousuu
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    "test_case",
+    JRA_LIVE_TEST_CASES,
+    ids=[tc["description"] for tc in JRA_LIVE_TEST_CASES],
+)
+def test_scrape_odds_from_jra_tansho_odds_are_positive(test_case: dict[str, Any]) -> None:
+    """単勝オッズが正の値であること"""
+    race_id = test_case["race_id"]
+
+    try:
+        result = asyncio.run(scrape_odds_from_jra(race_id))
+    except DriverError:
+        pytest.skip(
+            f"JRAにレース {race_id} が見つかりません。race_idを当週の開催レースに更新してください。"
+        )
+
+    valid_odds = result["単勝オッズ"].dropna()
+    assert (valid_odds > 0).all()

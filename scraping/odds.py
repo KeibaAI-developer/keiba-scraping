@@ -3,19 +3,70 @@
 netkeibaおよびJRAからオッズを取得する関数を提供する。
 """
 
+from io import StringIO
 from typing import Any
 
 import numpy as np
 import pandas as pd
 import requests
+from playwright.async_api import async_playwright
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
 from scraping.config import ODDS_COLUMNS, YOSO_ODDS_COLUMNS, ScrapingConfig
-from scraping.exceptions import NetworkError, ParseError
-from scraping.utils import build_entry_url, build_odds_api_url
+from scraping.exceptions import DriverError, NetworkError, ParseError
+from scraping.utils import build_entry_url, build_odds_api_url, race_id_to_race_info
+
+
+async def scrape_odds_from_jra(
+    race_id: str,
+    config: ScrapingConfig | None = None,
+) -> pd.DataFrame:
+    """JRA公式サイトからオッズを取得する
+
+    PlaywrightでJRA公式サイトを操作し、最新の単勝・複勝オッズを取得する。
+    人気はオッズの昇順ランクで算出する。
+
+    Args:
+        race_id (str): レースID
+        config (ScrapingConfig | None): 設定オブジェクト
+
+    Returns:
+        pd.DataFrame: オッズデータ（ODDS_COLUMNSのカラム）
+            馬番順にソートされている
+
+    Raises:
+        DriverError: Playwrightの操作に失敗した場合
+        ParseError: HTMLテーブルの解析に失敗した場合
+    """
+    cfg = config or ScrapingConfig()
+    _, keibajo, kai, day, race = race_id_to_race_info(race_id)
+
+    try:
+        async with async_playwright() as playwright:
+            browser = await playwright.chromium.launch(headless=True)
+            context = await browser.new_context()
+            page = await context.new_page()
+
+            await page.goto(cfg.jra_url)
+            await page.get_by_role("link", name="オッズ", exact=True).click()
+            await page.get_by_role("link", name=f"{kai}回{keibajo}{day}日").click()
+            async with page.expect_navigation():
+                await page.get_by_role("link", name=f"{race}レース", exact=True).nth(0).click()
+
+            html = await page.content()
+            odds_df = _parse_jra_odds_table(html)
+
+            await context.close()
+            await browser.close()
+    except (ParseError, DriverError):
+        raise
+    except Exception as exc:
+        raise DriverError(f"JRAオッズページの操作に失敗しました: {exc}") from exc
+
+    return odds_df
 
 
 def scrape_odds_from_netkeiba(
@@ -140,6 +191,56 @@ def scrape_yoso_odds_from_netkeiba(
     finally:
         if driver is not None:
             driver.quit()
+
+
+def _parse_jra_odds_table(html: str) -> pd.DataFrame:
+    """JRAオッズページのHTMLからオッズテーブルを解析する
+
+    Args:
+        html (str): JRAオッズページのHTML文字列
+
+    Returns:
+        pd.DataFrame: オッズデータ（ODDS_COLUMNSのカラム）
+
+    Raises:
+        ParseError: テーブルの解析に失敗した場合
+    """
+    try:
+        raw_df = pd.read_html(StringIO(html))[0]
+    except (ValueError, IndexError) as exc:
+        raise ParseError(f"JRAオッズテーブルの読み取りに失敗しました: {exc}") from exc
+
+    try:
+        # 複勝カラム名を判定（7頭立て以下は2着払い）
+        show_column = "複勝（3着払い）"
+        if show_column not in raw_df.columns:
+            show_column = "複勝（2着払い）"
+
+        odds_df = raw_df[["馬番", "馬名", "単勝", show_column]].copy()
+        odds_df = odds_df.rename(columns={show_column: "複勝"})
+
+        # 複勝オッズを分割
+        odds_df["複勝最小オッズ"] = pd.to_numeric(
+            odds_df["複勝"].str.split("-").str[0], errors="coerce"
+        )
+        odds_df["複勝最大オッズ"] = pd.to_numeric(
+            odds_df["複勝"].str.split("-").str[1], errors="coerce"
+        )
+
+        # 単勝オッズを数値変換
+        odds_df["単勝オッズ"] = pd.to_numeric(odds_df["単勝"], errors="coerce")
+
+        # 人気を算出（オッズ昇順ランク）
+        odds_df["単勝人気"] = odds_df["単勝オッズ"].rank(ascending=True, method="min")
+        odds_df["複勝人気"] = odds_df["複勝最小オッズ"].rank(ascending=True, method="min")
+
+        # ODDS_COLUMNSのカラムで整形
+        result = odds_df[ODDS_COLUMNS].copy()
+
+        return result
+
+    except (KeyError, TypeError) as exc:
+        raise ParseError(f"JRAオッズテーブルの解析に失敗しました: {exc}") from exc
 
 
 def _fetch_odds_api(race_id: str, config: ScrapingConfig) -> dict[str, Any]:
