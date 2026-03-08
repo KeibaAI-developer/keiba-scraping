@@ -17,7 +17,8 @@ from selenium.webdriver.chrome.service import Service
 
 from scraping.config import KEIBAJO_TO_ID_DICT, PAST_PERFORMANCES_COLUMNS, ScrapingConfig
 from scraping.exceptions import DriverError, ParseError
-from scraping.utils import build_horse_info_url, calc_interval, set_chrome_options
+from scraping.url_builder import build_horse_info_url
+from scraping.utils import calc_interval, set_chrome_options
 
 
 class PastPerformancesScraper:

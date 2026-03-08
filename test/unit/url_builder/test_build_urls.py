@@ -3,7 +3,7 @@
 import pytest
 
 from scraping.config import ScrapingConfig
-from scraping.utils import (
+from scraping.url_builder import (
     build_entry_url,
     build_horse_info_url,
     build_horse_list_url,

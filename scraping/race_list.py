@@ -12,7 +12,8 @@ from bs4 import BeautifulSoup, Tag
 
 from scraping.config import AFFILIATION_MAP, RACE_LIST_COLUMNS, ScrapingConfig
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
-from scraping.utils import build_race_list_url, judge_turf_dirt, race_id_to_race_info
+from scraping.url_builder import build_race_list_url
+from scraping.utils import judge_turf_dirt, race_id_to_race_info
 
 
 class RaceListScraper:

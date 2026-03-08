@@ -16,12 +16,8 @@ from selenium.webdriver.chrome.service import Service
 
 from scraping.config import RACE_SCHEDULE_COLUMNS, ScrapingConfig
 from scraping.exceptions import DriverError
-from scraping.utils import (
-    build_today_race_list_url,
-    judge_turf_dirt,
-    race_id_to_race_info,
-    set_chrome_options,
-)
+from scraping.url_builder import build_today_race_list_url
+from scraping.utils import judge_turf_dirt, race_id_to_race_info, set_chrome_options
 
 
 class RaceScheduleScraper:

@@ -13,7 +13,8 @@ from bs4 import BeautifulSoup, Tag
 
 from scraping.config import JRA_GRADED_RACE_COLUMNS, ScrapingConfig
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
-from scraping.utils import build_jra_graded_race_url, judge_turf_dirt
+from scraping.url_builder import build_jra_graded_race_url
+from scraping.utils import judge_turf_dirt
 
 
 class JraGradedRaceScraper:
