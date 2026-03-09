@@ -1,11 +1,11 @@
 """テスト用HTMLフィクスチャ取得スクリプト
 
-test/fixtures/test_case.ymlに定義されているレースIDに対して、
+test/fixtures/race_test_cases.ymlに定義されているレースIDに対して、
 netkeibaの出馬表ページと結果ページのHTMLをrequestsで取得し、
 test/fixtures/html/にUTF-8で保存する。
 
 使用方法:
-    python test/scripts/fetch_fixtures.py
+    python test/scripts/fetch_html_fixtures.py
 """
 
 import os
@@ -16,7 +16,9 @@ import requests
 import yaml
 
 # テストケースYAMLファイルのパス
-TEST_CASE_YML_PATH = os.path.join(os.path.dirname(__file__), "..", "fixtures", "test_case.yml")
+TEST_CASE_YML_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "fixtures", "race_test_cases.yml"
+)
 
 # フィクスチャ保存先ディレクトリ
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "..", "fixtures", "html")
@@ -43,17 +45,17 @@ LOCAL_KEIBAJO_ID_MIN = 11
 
 def main() -> None:
     """テスト用HTMLフィクスチャを取得して保存する"""
-    # test_case.ymlを読み込む
+    # race_test_cases.ymlを読み込む
     yml_path = os.path.normpath(TEST_CASE_YML_PATH)
     if not os.path.exists(yml_path):
-        print(f"[ERROR] test_case.ymlが見つかりません: {yml_path}")
+        print(f"[ERROR] race_test_cases.ymlが見つかりません: {yml_path}")
         sys.exit(1)
 
     with open(yml_path, encoding="utf-8") as f:
         races = yaml.safe_load(f)
 
     if not races:
-        print("[ERROR] test_case.ymlにレース情報がありません")
+        print("[ERROR] race_test_cases.ymlにレース情報がありません")
         sys.exit(1)
 
     fixtures_dir = os.path.normpath(FIXTURES_DIR)
