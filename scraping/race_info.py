@@ -54,10 +54,9 @@ def scrape_race_info(
 
     # 必要な要素数をチェック
     if len(race_filtered_list) < 2:
-        _logger.error("レース情報の要素数が不足しています。HTML構造が変更された可能性があります。")
-        raise ParseError(
-            "レース情報の要素数が不足しています。HTML構造が変更された可能性があります。"
-        )
+        error_message = "レース情報の要素数が不足しています。HTML構造が変更された可能性があります。"
+        _logger.error(error_message)
+        raise ParseError(error_message)
 
     if "発走" not in race_filtered_list[1]:  # 2つ目の要素に"発走"が含まれていない場合
         local_grade = race_filtered_list[1]
@@ -243,10 +242,14 @@ def _format_race_info_list(race_filtered_list: list[str], logger: logging.Logger
             elif "馬場:" in item:  # レース前日で天候と馬場が不明な場合（地方）
                 race_info_list.append("")  # 空の要素を追加（天候分）
                 race_info_list.append("")  # 空の要素を追加（馬場分）
-            else:  # レース前日で天候と馬場が不明な場合（中央）
+            else:  # 出走確定前で天候と馬場が不明な場合（中央）
                 race_info_list.append("")  # 空の要素を追加（天候分）
                 race_info_list.append("")  # 空の要素を追加（馬場分）
-                race_info_list.append(item)
+                # 「1回」等の接尾辞を除去してから追加
+                value = (
+                    item.replace("発走", "").replace("回", "").replace("日目", "").replace("頭", "")
+                )
+                race_info_list.append(value)
         elif "馬場:" in item:
             race_info_list.append(item.split(":")[1])  # 馬場:を削除して追加
         elif i != 0 and "m" in item:  # レース名にmが含まれる場合を回避
@@ -343,8 +346,8 @@ def _build_race_info_dict(
         "曜日": day_of_week,
         "レース名": _safe_get(race_info_list, 0),
         "発走時刻": _safe_get(race_info_list, 1),
-        "天候": _safe_get(race_info_list, 5),
-        "馬場": _safe_get(race_info_list, 6),
+        "天候": _safe_get(race_info_list, 5) or None,
+        "馬場": _safe_get(race_info_list, 6) or None,
         "芝ダ": _safe_get(race_info_list, 2),
         "距離": _to_int(_safe_get(race_info_list, 3)),
         "左右": _judge_direction(course_raw),
@@ -399,14 +402,21 @@ def _validate_race_info_dict(
     if not isinstance(start_time, str) or not re.fullmatch(r"\d{1,2}:\d{2}", start_time):
         errors.append(f"発走時刻がHH:MM形式ではありません: {start_time}")
 
-    # 天候: 晴、曇、雨、小雨、雪、小雪、空文字列
-    weather = race_info.get("天候", "")
-    if weather not in ("晴", "曇", "雨", "小雨", "雪", "小雪", ""):
+    # 天候: 晴、曇、雨、小雨、雪、小雪、None（出走確定前）
+    weather = race_info.get("天候")
+    if weather is not None and weather not in ("晴", "曇", "雨", "小雨", "雪", "小雪"):
         errors.append(f"天候が不正です: {weather}")
 
-    # 馬場: 良、稍重、稍、重、不、不良、空文字列
-    track_condition = race_info.get("馬場", "")
-    if track_condition not in ("良", "稍重", "稍", "重", "不", "不良", ""):
+    # 馬場: 良、稍重、稍、重、不、不良、None（出走確定前）
+    track_condition = race_info.get("馬場")
+    if track_condition is not None and track_condition not in (
+        "良",
+        "稍重",
+        "稍",
+        "重",
+        "不",
+        "不良",
+    ):
         errors.append(f"馬場が不正です: {track_condition}")
 
     # 芝ダ: 芝、ダ、障を含む、もしくは空文字列

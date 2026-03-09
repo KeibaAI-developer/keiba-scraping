@@ -59,3 +59,37 @@ def test_derby_2025_race_info() -> None:
     assert row["距離"] == 2400
     assert row["競馬場"] == "東京"
     assert row["グレード"] == "G1"
+
+
+# ---------------------------------------------------------------------------
+# 正常系: 出走確定前のレース情報
+# ---------------------------------------------------------------------------
+def test_pre_confirm_kinko_sho_race_info() -> None:
+    """出走確定前の金鯱賞のレース情報が正しいこと"""
+    scraper = create_scraper_from_fixture("202607010211")
+    race_info_df = scraper.get_race_info()
+
+    row = race_info_df.iloc[0]
+    assert row["レース名"] == "金鯱賞"
+    assert row["芝ダ"] == "芝"
+    assert row["距離"] == 2000
+    assert row["競馬場"] == "中京"
+    assert row["回"] == 1
+    assert row["開催日"] == 2
+    assert pd.isna(row["天候"])
+    assert pd.isna(row["馬場"])
+    assert row["頭数"] == 14
+    assert row["重量種別"] == "別定"
+
+
+def test_pre_confirm_spring_s_race_info() -> None:
+    """出走確定前のスプリングSのレース情報が正しいこと"""
+    scraper = create_scraper_from_fixture("202606020611")
+    race_info_df = scraper.get_race_info()
+
+    row = race_info_df.iloc[0]
+    assert row["レース名"] == "スプリングS"
+    assert row["競馬場"] == "中山"
+    assert row["回"] == 2
+    assert pd.isna(row["天候"])
+    assert pd.isna(row["馬場"])
