@@ -166,11 +166,11 @@ ENTRY_COLUMNS: list[str] = [
 ]
 
 # 出馬表のNaN不可カラム
+# 枠・馬番は出走確定前（想定段階）ではNaNになる
+# 騎手IDは騎手未確定（"○○"）の場合NaNになる
 ENTRY_NON_NAN_COLUMNS: list[str] = [
     "レースID",
     "出走区分",
-    "枠",
-    "馬番",
     "馬名",
     "性別",
     "年齢",
@@ -179,7 +179,6 @@ ENTRY_NON_NAN_COLUMNS: list[str] = [
     "所属",
     "厩舎",
     "馬ID",
-    "騎手ID",
     "厩舎ID",
 ]
 

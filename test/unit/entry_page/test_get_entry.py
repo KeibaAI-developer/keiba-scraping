@@ -96,11 +96,13 @@ def test_horse_id_10_digits(race_id: str) -> None:
 
 @pytest.mark.parametrize("race_id", ENTRY_RACE_IDS, ids=ENTRY_RACE_IDS)
 def test_jockey_id_5_digits(race_id: str) -> None:
-    """騎手IDが5桁の文字列であること"""
+    """騎手IDが5桁の文字列であること（騎手未確定のNaNは除く）"""
     scraper = create_scraper_from_fixture(race_id)
     entry_df = scraper.get_entry()
 
     for jockey_id in entry_df["騎手ID"]:
+        if pd.isna(jockey_id):
+            continue
         assert len(str(jockey_id)) == 5, f"騎手IDが5桁ではありません: {jockey_id}"
 
 
@@ -382,3 +384,70 @@ def test_validation_error_on_invalid_entry_status() -> None:
     ):
         with pytest.raises(ParseError, match="出走区分が不正です"):
             scraper.get_entry()
+
+
+# ---------------------------------------------------------------------------
+# 正常系: 出走確定前（想定段階）
+# ---------------------------------------------------------------------------
+def test_pre_confirm_waku_umaban_nan() -> None:
+    """出走確定前は枠・馬番が全てNaNであること"""
+    scraper = create_scraper_from_fixture("202607010211")
+    entry_df = scraper.get_entry()
+
+    assert entry_df["枠"].isna().all()
+    assert entry_df["馬番"].isna().all()
+
+
+def test_pre_confirm_weight_nan() -> None:
+    """出走確定前は馬体重・増減が全てNaNであること"""
+    scraper = create_scraper_from_fixture("202607010211")
+    entry_df = scraper.get_entry()
+
+    assert entry_df["馬体重"].isna().all()
+    assert entry_df["増減"].isna().all()
+
+
+def test_pre_confirm_jockey_unconfirmed() -> None:
+    """出走確定前の騎手未確定馬は騎手名が○○、騎手IDがNaNであること"""
+    scraper = create_scraper_from_fixture("202607010211")
+    entry_df = scraper.get_entry()
+
+    unconfirmed = entry_df[entry_df["騎手"] == "○○"]
+    assert len(unconfirmed) >= 1
+    assert unconfirmed["騎手ID"].isna().all()
+
+
+def test_pre_confirm_jockey_confirmed() -> None:
+    """出走確定前でも騎手が確定している馬は騎手IDが取得できること"""
+    scraper = create_scraper_from_fixture("202607010211")
+    entry_df = scraper.get_entry()
+
+    confirmed = entry_df[entry_df["騎手"] != "○○"]
+    assert confirmed["騎手ID"].notna().all()
+    for jockey_id in confirmed["騎手ID"]:
+        assert len(str(jockey_id)) == 5
+
+
+def test_pre_confirm_horse_id_valid() -> None:
+    """出走確定前でも馬IDは全て10桁であること"""
+    scraper = create_scraper_from_fixture("202607010211")
+    entry_df = scraper.get_entry()
+
+    for horse_id in entry_df["馬ID"]:
+        assert len(str(horse_id)) == 10
+
+
+def test_pre_confirm_row_count() -> None:
+    """出走確定前の頭数が正しいこと"""
+    scraper = create_scraper_from_fixture("202607010211")
+    entry_df = scraper.get_entry()
+
+    assert len(entry_df) == 14
+
+
+def test_pre_confirm_all_shutsuba() -> None:
+    """出走確定前は全馬の出走区分が出走であること"""
+    scraper = create_scraper_from_fixture("202607010211")
+    entry_df = scraper.get_entry()
+
+    assert (entry_df["出走区分"] == "出走").all()
