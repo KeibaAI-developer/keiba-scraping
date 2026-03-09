@@ -33,7 +33,7 @@ from scraping.config import (
 )
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.race_info import scrape_race_info
-from scraping.utils import build_result_url
+from scraping.url_builder import build_result_url
 
 
 class ResultPageScraper:

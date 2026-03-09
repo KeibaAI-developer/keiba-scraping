@@ -18,7 +18,8 @@ from selenium.webdriver.common.by import By
 
 from scraping.config import ODDS_COLUMNS, YOSO_ODDS_COLUMNS, ScrapingConfig
 from scraping.exceptions import DriverError, NetworkError, PageNotFoundError, ParseError
-from scraping.utils import build_entry_url, build_odds_api_url, race_id_to_race_info
+from scraping.url_builder import build_entry_url, build_odds_api_url
+from scraping.utils import race_id_to_race_info
 
 
 async def scrape_odds_from_jra(

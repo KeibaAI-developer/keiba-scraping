@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup, Tag
 
 from scraping.config import AFFILIATION_MAP, HORSE_INFO_COLUMNS, ScrapingConfig
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
-from scraping.utils import build_horse_list_url
+from scraping.url_builder import build_horse_list_url
 
 
 class HorseInfoScraper:
