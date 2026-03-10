@@ -96,7 +96,8 @@ class HorseInfoScraper:
             )
             html.raise_for_status()
         except requests.exceptions.HTTPError as exc:
-            if html.status_code == 404:
+            status_code = exc.response.status_code if exc.response is not None else None
+            if status_code == 404:
                 self._logger.error("馬情報ページが見つかりません: %s", url)
                 raise PageNotFoundError(f"馬情報ページが見つかりません: {url}") from exc
             self._logger.error("HTTPエラーが発生しました: %s", exc)
@@ -215,7 +216,8 @@ class HorseInfoScraper:
             )
             html.raise_for_status()
         except requests.exceptions.HTTPError as exc:
-            if html.status_code == 404:
+            status_code = exc.response.status_code if exc.response is not None else None
+            if status_code == 404:
                 self._logger.error("馬情報ページが見つかりません: %s", url)
                 raise PageNotFoundError(f"馬情報ページが見つかりません: {url}") from exc
             self._logger.error("HTTPエラーが発生しました: %s", exc)

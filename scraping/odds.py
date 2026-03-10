@@ -12,14 +12,13 @@ import pandas as pd
 import requests
 from playwright.async_api import async_playwright
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
 from scraping.config import ODDS_COLUMNS, YOSO_ODDS_COLUMNS, ScrapingConfig
 from scraping.exceptions import DriverError, NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_entry_url, build_odds_api_url
-from scraping.utils import race_id_to_race_info
+from scraping.utils import race_id_to_race_info, set_chrome_options
 
 
 async def scrape_odds_from_jra(
@@ -161,7 +160,7 @@ def scrape_yoso_odds_from_netkeiba(
     url = build_entry_url(race_id, cfg)
 
     # ChromeDriverを起動
-    options = _set_chrome_options()
+    options = set_chrome_options()
     service = Service(cfg.chrome_driver_path) if cfg.chrome_driver_path else Service()
     driver = None
 
@@ -421,17 +420,3 @@ def _parse_ninki_value(value: str | None) -> float:
         return ninki
     except ValueError:
         return np.nan
-
-
-def _set_chrome_options() -> Options:
-    """ChromeDriverの初期設定を行う
-
-    Returns:
-        Options: Chromeの起動オプション
-    """
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    return options
