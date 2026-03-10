@@ -78,7 +78,7 @@ def scrape_race_info(
     # 地方重賞の場合グレードを更新
     if grade_icon:
         race_info_df.at[0, "グレード"] = local_grade
-    elif race_info_df.at[0, "競争条件"] == "オープン":
+    elif race_info_df.at[0, "競走条件"] == "オープン":
         # 中央オープンの場合グレードアイコンを読み取る
         race_info_df = _update_grade_from_icon(soup, race_info_df)
 

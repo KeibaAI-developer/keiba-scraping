@@ -279,7 +279,7 @@ def test_status_normal_race() -> None:
 
 
 def test_status_chuushi() -> None:
-    """鳴尾記念2023で競争中止馬（タリフライン）の出走区分が"中止"であること"""
+    """鳴尾記念2023で競走中止馬（タリフライン）の出走区分が"中止"であること"""
     scraper = create_scraper_from_fixture("202306050911")
     result_df = scraper.get_result()
 
@@ -319,10 +319,10 @@ def test_status_count_chuushi_torikeshi() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 正常系: 競争中止馬のNaN条件
+# 正常系: 競走中止馬のNaN条件
 # ---------------------------------------------------------------------------
 def test_chuushi_has_weight_but_nan_time() -> None:
-    """競争中止馬（タリフライン）は馬体重ありだがタイム・後3FがNaNであること"""
+    """競走中止馬（タリフライン）は馬体重ありだがタイム・後3FがNaNであること"""
     scraper = create_scraper_from_fixture("202306050911")
     result_df = scraper.get_result()
 
@@ -335,7 +335,7 @@ def test_chuushi_has_weight_but_nan_time() -> None:
 
 
 def test_chuushi_has_popularity_and_odds() -> None:
-    """競争中止馬（タリフライン）は人気・オッズが存在すること"""
+    """競走中止馬（タリフライン）は人気・オッズが存在すること"""
     scraper = create_scraper_from_fixture("202306050911")
     result_df = scraper.get_result()
 
@@ -345,7 +345,7 @@ def test_chuushi_has_popularity_and_odds() -> None:
 
 
 def test_chuushi_has_corner_positions() -> None:
-    """競争中止馬（タリフライン）はコーナー通過順が存在すること"""
+    """競走中止馬（タリフライン）はコーナー通過順が存在すること"""
     scraper = create_scraper_from_fixture("202306050911")
     result_df = scraper.get_result()
 
@@ -491,7 +491,7 @@ def test_third_place_tie() -> None:
 # 正常系: 障害レース
 # ---------------------------------------------------------------------------
 def test_steeplechase_chuushi() -> None:
-    """中山大障害2024で競争中止馬が3頭いること"""
+    """中山大障害2024で競走中止馬が3頭いること"""
     scraper = create_scraper_from_fixture("202406050710")
     result_df = scraper.get_result()
 
