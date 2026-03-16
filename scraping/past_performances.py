@@ -195,6 +195,11 @@ class PastPerformancesScraper:
         # レースID・主催・間隔日数の追加
         umabashira_df = _add_race_info(umabashira_df)
 
+        # 異常区分の抽出（着順の数値変換前に行う）
+        umabashira_df["異常区分"] = umabashira_df["着順"].apply(_extract_abnormality)
+        # 降着の場合、着順から数値部分を抽出する（例: "4(降)" → "4"）
+        umabashira_df["着順"] = umabashira_df["着順"].apply(_normalize_order)
+
         # 型変換
         umabashira_df["回"] = pd.to_numeric(umabashira_df["回"], errors="coerce")
         umabashira_df["開催日"] = pd.to_numeric(umabashira_df["開催日"], errors="coerce")
@@ -499,3 +504,48 @@ def _is_katakana(text: str) -> bool:
         bool: 全てカタカナならTrue
     """
     return re.match(r"^[ァ-ヶー]+$", text) is not None
+
+
+_ABNORMALITY_MAP: dict[str, str] = {
+    "中": "中止",
+    "取": "取消",
+    "除": "除外",
+    "失": "失格",
+}
+
+
+def _extract_abnormality(order_value: object) -> str:
+    """着順の値から異常区分を判定する
+
+    Args:
+        order_value (object): 着順カラムの値（"1", "中", "4(降)" 等）
+
+    Returns:
+        str: 異常区分（"中止", "取消", "除外", "失格", "降着", ""）
+    """
+    text = str(order_value).strip()
+    if text in _ABNORMALITY_MAP:
+        return _ABNORMALITY_MAP[text]
+    if "降" in text:
+        return "降着"
+    return ""
+
+
+def _normalize_order(order_value: object) -> str:
+    """着順の値を数値変換可能な形に正規化する
+
+    降着の場合は数値部分を抽出する（"4(降)" → "4"）。
+    それ以外はそのまま返す。
+
+    Args:
+        order_value (object): 着順カラムの値
+
+    Returns:
+        str: 正規化された着順値
+    """
+    text = str(order_value).strip()
+    if "降" in text:
+        match = re.search(r"(\d+)", text)
+        if match:
+            return match.group(1)
+    return text

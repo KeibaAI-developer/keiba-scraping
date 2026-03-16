@@ -417,6 +417,7 @@ PAST_PERFORMANCES_COLUMNS: list[str] = [
     "単勝オッズ",
     "人気",
     "着順",
+    "異常区分",
     "騎手",
     "騎手ID",
     "斤量",
