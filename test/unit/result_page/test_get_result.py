@@ -48,7 +48,7 @@ def test_non_nan_columns_valid(race_id: str) -> None:
 
     non_nan_columns = [
         "レースID",
-        "出走区分",
+        "異常区分",
         "枠",
         "馬番",
         "馬名",
@@ -72,7 +72,7 @@ def test_weight_non_nan_except_cancel(race_id: str) -> None:
     scraper = create_scraper_from_fixture(race_id)
     result_df = scraper.get_result()
 
-    non_cancel = result_df[result_df["出走区分"] != "取消"]
+    non_cancel = result_df[result_df["異常区分"] != "取消"]
     assert non_cancel["馬体重"].notna().all(), "出走取消以外の馬体重にNaNがあります"
 
 
@@ -137,7 +137,7 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202505021211",
         "馬番": 13,
         "馬名": "クロワデュノール",
-        "出走区分": "出走",
+        "異常区分": "",
         "着順": 1,
         "枠": 7,
         "性別": "牡",
@@ -165,7 +165,7 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202505021211",
         "馬番": 15,
         "馬名": "ファウストラーゼン",
-        "出走区分": "出走",
+        "異常区分": "",
         "着順": 18,
         "枠": 7,
         "性別": "牡",
@@ -188,7 +188,7 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202306050911",
         "馬番": 13,
         "馬名": "レガレイラ",
-        "出走区分": "出走",
+        "異常区分": "",
         "着順": 1,
         "枠": 7,
         "性別": "牝",
@@ -200,7 +200,7 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202505020607",
         "馬番": 1,
         "馬名": "シンハナーダ",
-        "出走区分": "出走",
+        "異常区分": "",
         "着順": 1,
         "所属": "美浦",
     },
@@ -209,8 +209,30 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202406050710",
         "馬番": 8,
         "馬名": "ニシノデイジー",
-        "出走区分": "出走",
+        "異常区分": "",
         "着順": 1,
+    },
+    # 失格馬(NHKマイルC2012 マウントシャスタ)
+    {
+        "race_id": "201205020611",
+        "馬番": 8,
+        "馬名": "マウントシャスタ",
+        "異常区分": "失格",
+        "着順": np.nan,
+        "人気": 2,
+        "単勝オッズ": 3.7,
+    },
+    # 降着馬(高松宮記念2020 クリノガウディー)
+    {
+        "race_id": "202007010811",
+        "馬番": 11,
+        "馬名": "クリノガウディー",
+        "異常区分": "降着",
+        "着順": 4,
+        "着差": "1位降着",
+        "タイム": "1:08.7",
+        "人気": 15,
+        "単勝オッズ": 64.6,
     },
 ]
 
@@ -251,6 +273,8 @@ EXPECTED_ROW_COUNTS: list[dict[str, Any]] = [
     {"race_id": "202504030411", "expected_rows": 17},
     {"race_id": "202009050712", "expected_rows": 18},
     {"race_id": "201005030211", "expected_rows": 18},
+    {"race_id": "201205020611", "expected_rows": 18},
+    {"race_id": "202007010811", "expected_rows": 18},
 ]
 
 
@@ -268,54 +292,54 @@ def test_row_count(case: dict[str, Any]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 正常系: 出走区分
+# 正常系: 異常区分
 # ---------------------------------------------------------------------------
 def test_status_normal_race() -> None:
-    """通常レース（ダービー2025）では全馬の出走区分が"出走"であること"""
+    """通常レース（ダービー2025）では全馬の異常区分が空文字であること"""
     scraper = create_scraper_from_fixture("202505021211")
     result_df = scraper.get_result()
 
-    assert (result_df["出走区分"] == "出走").all()
+    assert (result_df["異常区分"] == "").all()
 
 
 def test_status_chuushi() -> None:
-    """鳴尾記念2023で競走中止馬（タリフライン）の出走区分が"中止"であること"""
+    """鳴尾記念2023で競走中止馬（タリフライン）の異常区分が"中止"であること"""
     scraper = create_scraper_from_fixture("202306050911")
     result_df = scraper.get_result()
 
     tari = result_df[result_df["馬名"] == "タリフライン"].iloc[0]
-    assert tari["出走区分"] == "中止"
+    assert tari["異常区分"] == "中止"
 
 
 def test_status_torikeshi() -> None:
-    """鳴尾記念2023で出走取消馬の出走区分が"取消"であること"""
+    """鳴尾記念2023で出走取消馬の異常区分が"取消"であること"""
     scraper = create_scraper_from_fixture("202306050911")
     result_df = scraper.get_result()
 
     gonba = result_df[result_df["馬名"] == "ゴンバデカーブース"].iloc[0]
-    assert gonba["出走区分"] == "取消"
+    assert gonba["異常区分"] == "取消"
 
     sunrise = result_df[result_df["馬名"] == "サンライズアース"].iloc[0]
-    assert sunrise["出走区分"] == "取消"
+    assert sunrise["異常区分"] == "取消"
 
 
 def test_status_jogai() -> None:
-    """ラジオNIKKEI賞2025で競走除外馬（クイーンズウォーク）の出走区分が"除外"であること"""
+    """ラジオNIKKEI賞2025で競走除外馬（クイーンズウォーク）の異常区分が"除外"であること"""
     scraper = create_scraper_from_fixture("202504030411")
     result_df = scraper.get_result()
 
     queen = result_df[result_df["馬名"] == "クイーンズウォーク"].iloc[0]
-    assert queen["出走区分"] == "除外"
+    assert queen["異常区分"] == "除外"
 
 
 def test_status_count_chuushi_torikeshi() -> None:
-    """鳴尾記念2023で中止1頭・取消2頭・出走15頭であること"""
+    """鳴尾記念2023で中止1頭・取消2頭・正常15頭であること"""
     scraper = create_scraper_from_fixture("202306050911")
     result_df = scraper.get_result()
 
-    assert (result_df["出走区分"] == "出走").sum() == 15
-    assert (result_df["出走区分"] == "取消").sum() == 2
-    assert (result_df["出走区分"] == "中止").sum() == 1
+    assert (result_df["異常区分"] == "").sum() == 15
+    assert (result_df["異常区分"] == "取消").sum() == 2
+    assert (result_df["異常区分"] == "中止").sum() == 1
 
 
 # ---------------------------------------------------------------------------
@@ -495,10 +519,104 @@ def test_steeplechase_chuushi() -> None:
     scraper = create_scraper_from_fixture("202406050710")
     result_df = scraper.get_result()
 
-    chuushi = result_df[result_df["出走区分"] == "中止"]
+    chuushi = result_df[result_df["異常区分"] == "中止"]
     assert len(chuushi) == 3
     expected_names = {"マイネルグロン", "ダイシンクローバー", "ロードトゥフェイム"}
     assert set(chuushi["馬名"].tolist()) == expected_names
+
+
+# ---------------------------------------------------------------------------
+# 正常系: 失格
+# ---------------------------------------------------------------------------
+def test_shikkaku_ijo_kubun() -> None:
+    """NHKマイルC2012で失格馬（マウントシャスタ）の異常区分が"失格"であること"""
+    scraper = create_scraper_from_fixture("201205020611")
+    result_df = scraper.get_result()
+
+    mount = result_df[result_df["馬名"] == "マウントシャスタ"].iloc[0]
+    assert mount["異常区分"] == "失格"
+
+
+def test_shikkaku_has_nan_chakujun() -> None:
+    """失格馬（マウントシャスタ）の着順がNaNであること"""
+    scraper = create_scraper_from_fixture("201205020611")
+    result_df = scraper.get_result()
+
+    mount = result_df[result_df["馬名"] == "マウントシャスタ"].iloc[0]
+    assert pd.isna(mount["着順"])
+    # 失格馬は走破しているためタイム・後3Fは存在する
+    assert mount["タイム"] == "1:35.3"
+    assert mount["後3F"] == pytest.approx(34.7)
+
+
+def test_shikkaku_has_popularity_and_odds() -> None:
+    """失格馬（マウントシャスタ）は人気・オッズが存在すること"""
+    scraper = create_scraper_from_fixture("201205020611")
+    result_df = scraper.get_result()
+
+    mount = result_df[result_df["馬名"] == "マウントシャスタ"].iloc[0]
+    assert mount["人気"] == 2
+    assert mount["単勝オッズ"] == pytest.approx(3.7)
+
+
+def test_shikkaku_count() -> None:
+    """NHKマイルC2012で失格1頭・中止1頭・正常16頭であること"""
+    scraper = create_scraper_from_fixture("201205020611")
+    result_df = scraper.get_result()
+
+    assert (result_df["異常区分"] == "").sum() == 16
+    assert (result_df["異常区分"] == "失格").sum() == 1
+    assert (result_df["異常区分"] == "中止").sum() == 1
+
+
+# ---------------------------------------------------------------------------
+# 正常系: 降着
+# ---------------------------------------------------------------------------
+def test_kochaku_ijo_kubun() -> None:
+    """高松宮記念2020で降着馬（クリノガウディー）の異常区分が"降着"であること"""
+    scraper = create_scraper_from_fixture("202007010811")
+    result_df = scraper.get_result()
+
+    kurino = result_df[result_df["馬名"] == "クリノガウディー"].iloc[0]
+    assert kurino["異常区分"] == "降着"
+
+
+def test_kochaku_chakujun_is_confirmed() -> None:
+    """降着馬（クリノガウディー）の着順が確定着順（4着）であること"""
+    scraper = create_scraper_from_fixture("202007010811")
+    result_df = scraper.get_result()
+
+    kurino = result_df[result_df["馬名"] == "クリノガウディー"].iloc[0]
+    assert kurino["着順"] == 4
+
+
+def test_kochaku_chakusa_text() -> None:
+    """降着馬（クリノガウディー）の着差が"1位降着"であること"""
+    scraper = create_scraper_from_fixture("202007010811")
+    result_df = scraper.get_result()
+
+    kurino = result_df[result_df["馬名"] == "クリノガウディー"].iloc[0]
+    assert kurino["着差"] == "1位降着"
+
+
+def test_kochaku_has_time_and_odds() -> None:
+    """降着馬（クリノガウディー）はタイム・人気・オッズが存在すること"""
+    scraper = create_scraper_from_fixture("202007010811")
+    result_df = scraper.get_result()
+
+    kurino = result_df[result_df["馬名"] == "クリノガウディー"].iloc[0]
+    assert kurino["タイム"] == "1:08.7"
+    assert kurino["人気"] == 15
+    assert kurino["単勝オッズ"] == pytest.approx(64.6)
+
+
+def test_kochaku_other_horses_normal() -> None:
+    """降着レースで降着馬以外の異常区分が空文字であること"""
+    scraper = create_scraper_from_fixture("202007010811")
+    result_df = scraper.get_result()
+
+    non_kochaku = result_df[result_df["馬名"] != "クリノガウディー"]
+    assert (non_kochaku["異常区分"] == "").all()
 
 
 # ---------------------------------------------------------------------------
@@ -536,15 +654,15 @@ def test_validation_error_on_invalid_affiliation() -> None:
         scraper.get_result()
 
 
-def test_validation_error_on_invalid_race_status() -> None:
-    """出走区分が不正な場合にParseErrorが発生すること"""
+def test_validation_error_on_invalid_ijo_kubun() -> None:
+    """異常区分が不正な場合にParseErrorが発生すること"""
     from scraping.exceptions import ParseError
 
     scraper = create_scraper_from_fixture("202505021211")
 
     with patch(
-        "scraping.result_page._classify_race_status",
+        "scraping.result_page._classify_ijo_kubun",
         new=lambda _: "不明",
     ):
-        with pytest.raises(ParseError, match="出走区分が不正です"):
+        with pytest.raises(ParseError, match="異常区分が不正です"):
             scraper.get_result()

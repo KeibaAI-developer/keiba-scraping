@@ -210,7 +210,7 @@ SHUTUBA_RAW_COLUMNS: list[str] = [
 # レース結果のカラム
 RESULT_COLUMNS: list[str] = [
     "レースID",
-    "出走区分",
+    "異常区分",
     "着順",
     "枠",
     "馬番",
@@ -237,13 +237,13 @@ RESULT_COLUMNS: list[str] = [
     "厩舎ID",
 ]
 
-# 出走区分の有効値
-VALID_RACE_STATUSES: set[str] = {"出走", "取消", "除外", "中止"}
+# 異常区分の有効値
+VALID_IJO_KUBUN: set[str] = {"", "取消", "除外", "中止", "失格", "降着"}
 
 # NaN不可カラム（全行で値が必須）
 NON_NAN_COLUMNS: list[str] = [
     "レースID",
-    "出走区分",
+    "異常区分",
     "枠",
     "馬番",
     "馬名",

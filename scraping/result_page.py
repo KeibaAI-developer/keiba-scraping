@@ -27,7 +27,7 @@ from scraping.config import (
     TRIO_PAYOFF_COLUMNS,
     VALID_AFFILIATIONS,
     VALID_GENDERS,
-    VALID_RACE_STATUSES,
+    VALID_IJO_KUBUN,
     WIN_PAYOFF_COLUMNS,
     ScrapingConfig,
 )
@@ -273,7 +273,7 @@ class ResultPageScraper:
         result_df = result_df.rename(columns=lambda col: col.replace(" ", ""))
 
         # カラムの追加
-        result_df["出走区分"] = result_df["着順"].apply(_classify_race_status)
+        result_df["異常区分"] = result_df["着順"].apply(_classify_ijo_kubun)
         result_df["レースID"] = self.race_id
 
         # 所属カラムの追加（厩舎の先頭2文字=所属）
@@ -304,6 +304,11 @@ class ResultPageScraper:
         # コーナー通過順を1〜4コーナーに分割
         result_df = _split_corner_passing_order(result_df)
 
+        # RESULT_COLUMNSに必要なカラムが揃っているか確認
+        missing_cols = set(RESULT_COLUMNS) - set(result_df.columns)
+        if missing_cols:
+            self._logger.error("必要なカラムが不足しています: %s", sorted(missing_cols))
+            raise ValueError(f"必要なカラムが不足しています: {sorted(missing_cols)}")
         # 型変換
         result_df["着順"] = pd.to_numeric(result_df["着順"], errors="coerce")
         result_df["斤量"] = pd.to_numeric(result_df["斤量"], errors="coerce").astype(float)
@@ -312,12 +317,10 @@ class ResultPageScraper:
         result_df["後3F"] = pd.to_numeric(result_df["後3F"], errors="coerce")
         result_df["馬体重"] = pd.to_numeric(result_df["馬体重"], errors="coerce")
         result_df["増減"] = pd.to_numeric(result_df["増減"], errors="coerce")
-
-        # RESULT_COLUMNSに必要なカラムが揃っているか確認
-        missing_cols = set(RESULT_COLUMNS) - set(result_df.columns)
-        if missing_cols:
-            self._logger.error("必要なカラムが不足しています: %s", sorted(missing_cols))
-            raise ValueError(f"必要なカラムが不足しています: {sorted(missing_cols)}")
+        # 着差から降着を検出して異常区分に反映
+        kochaku_pattern = r"^\d+位降着$"
+        kochaku_mask = result_df["着差"].str.match(kochaku_pattern, na=False)
+        result_df.loc[kochaku_mask, "異常区分"] = "降着"
         result_df = result_df[RESULT_COLUMNS]  # RESULT_COLUMNSの順序に並べ替え
 
         # バリデーション
@@ -465,14 +468,14 @@ class ResultPageScraper:
                 self._logger.error("'%s'にNaNが含まれています: 馬番%s", col, umaban_list)
                 raise ParseError(f"'{col}'にNaNが含まれています: 馬番{umaban_list}")
 
-        # 出走区分のバリデーション
-        invalid_statuses = set(df["出走区分"].unique()) - VALID_RACE_STATUSES
+        # 異常区分のバリデーション
+        invalid_statuses = set(df["異常区分"].unique()) - VALID_IJO_KUBUN
         if invalid_statuses:
-            self._logger.error("出走区分が不正です: %s", invalid_statuses)
-            raise ParseError(f"出走区分が不正です: {invalid_statuses}")
+            self._logger.error("異常区分が不正です: %s", invalid_statuses)
+            raise ParseError(f"異常区分が不正です: {invalid_statuses}")
 
         # 馬体重は出走取消以外はNaN不可
-        non_cancel_mask = df["出走区分"] != "取消"
+        non_cancel_mask = df["異常区分"] != "取消"
         weight_nan = df.loc[non_cancel_mask, "馬体重"].isna()
         if weight_nan.any():
             umaban_list = df.loc[non_cancel_mask & df["馬体重"].isna(), "馬番"].tolist()
@@ -492,17 +495,17 @@ class ResultPageScraper:
             raise ParseError(f"所属が不正です: {invalid_affiliations}")
 
 
-def _classify_race_status(chakujun: object) -> str:
-    """着順テキストから出走区分を判定する
+def _classify_ijo_kubun(chakujun: object) -> str:
+    """着順テキストから異常区分を判定する
 
     Args:
-        chakujun (object): 着順の値（数字 or "取消"/"除外"/"中止"）
+        chakujun (object): 着順の値（数字 or "取消"/"除外"/"中止"/"失格"）
 
     Returns:
-        str: 出走区分（"出走", "取消", "除外", "中止"のいずれか）
+        str: 異常区分（"", "取消", "除外", "中止", "失格"のいずれか）
     """
     text = str(chakujun)
-    return text if text in {"取消", "除外", "中止"} else "出走"
+    return text if text in {"取消", "除外", "中止", "失格"} else ""
 
 
 def _add_id_from_table(soup: BeautifulSoup, df: pd.DataFrame) -> pd.DataFrame:
