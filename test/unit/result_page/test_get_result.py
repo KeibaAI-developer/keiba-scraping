@@ -572,7 +572,7 @@ def test_shikkaku_count() -> None:
 # ---------------------------------------------------------------------------
 # 正常系: 降着
 # ---------------------------------------------------------------------------
-def test_kokaku_ijo_kubun() -> None:
+def test_kochaku_ijo_kubun() -> None:
     """高松宮記念2020で降着馬（クリノガウディー）の異常区分が"降着"であること"""
     scraper = create_scraper_from_fixture("202007010811")
     result_df = scraper.get_result()
@@ -581,7 +581,7 @@ def test_kokaku_ijo_kubun() -> None:
     assert kurino["異常区分"] == "降着"
 
 
-def test_kokaku_chakujun_is_confirmed() -> None:
+def test_kochaku_chakujun_is_confirmed() -> None:
     """降着馬（クリノガウディー）の着順が確定着順（4着）であること"""
     scraper = create_scraper_from_fixture("202007010811")
     result_df = scraper.get_result()
@@ -590,7 +590,7 @@ def test_kokaku_chakujun_is_confirmed() -> None:
     assert kurino["着順"] == 4
 
 
-def test_kokaku_chakusa_text() -> None:
+def test_kochaku_chakusa_text() -> None:
     """降着馬（クリノガウディー）の着差が"1位降着"であること"""
     scraper = create_scraper_from_fixture("202007010811")
     result_df = scraper.get_result()
@@ -599,7 +599,7 @@ def test_kokaku_chakusa_text() -> None:
     assert kurino["着差"] == "1位降着"
 
 
-def test_kokaku_has_time_and_odds() -> None:
+def test_kochaku_has_time_and_odds() -> None:
     """降着馬（クリノガウディー）はタイム・人気・オッズが存在すること"""
     scraper = create_scraper_from_fixture("202007010811")
     result_df = scraper.get_result()
@@ -610,13 +610,13 @@ def test_kokaku_has_time_and_odds() -> None:
     assert kurino["単勝オッズ"] == pytest.approx(64.6)
 
 
-def test_kokaku_other_horses_normal() -> None:
+def test_kochaku_other_horses_normal() -> None:
     """降着レースで降着馬以外の異常区分が空文字であること"""
     scraper = create_scraper_from_fixture("202007010811")
     result_df = scraper.get_result()
 
-    non_kokaku = result_df[result_df["馬名"] != "クリノガウディー"]
-    assert (non_kokaku["異常区分"] == "").all()
+    non_kochaku = result_df[result_df["馬名"] != "クリノガウディー"]
+    assert (non_kochaku["異常区分"] == "").all()
 
 
 # ---------------------------------------------------------------------------
@@ -654,7 +654,7 @@ def test_validation_error_on_invalid_affiliation() -> None:
         scraper.get_result()
 
 
-def test_validation_error_on_invalid_race_status() -> None:
+def test_validation_error_on_invalid_ijo_kubun() -> None:
     """異常区分が不正な場合にParseErrorが発生すること"""
     from scraping.exceptions import ParseError
 

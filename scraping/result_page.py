@@ -304,6 +304,11 @@ class ResultPageScraper:
         # コーナー通過順を1〜4コーナーに分割
         result_df = _split_corner_passing_order(result_df)
 
+        # RESULT_COLUMNSに必要なカラムが揃っているか確認
+        missing_cols = set(RESULT_COLUMNS) - set(result_df.columns)
+        if missing_cols:
+            self._logger.error("必要なカラムが不足しています: %s", sorted(missing_cols))
+            raise ValueError(f"必要なカラムが不足しています: {sorted(missing_cols)}")
         # 型変換
         result_df["着順"] = pd.to_numeric(result_df["着順"], errors="coerce")
         result_df["斤量"] = pd.to_numeric(result_df["斤量"], errors="coerce").astype(float)
@@ -313,14 +318,9 @@ class ResultPageScraper:
         result_df["馬体重"] = pd.to_numeric(result_df["馬体重"], errors="coerce")
         result_df["増減"] = pd.to_numeric(result_df["増減"], errors="coerce")
         # 着差から降着を検出して異常区分に反映
-        kokaku_pattern = r"^\d+位降着$"
-        kokaku_mask = result_df["着差"].str.match(kokaku_pattern, na=False)
-        result_df.loc[kokaku_mask, "異常区分"] = "降着"
-        # RESULT_COLUMNSに必要なカラムが揃っているか確認
-        missing_cols = set(RESULT_COLUMNS) - set(result_df.columns)
-        if missing_cols:
-            self._logger.error("必要なカラムが不足しています: %s", sorted(missing_cols))
-            raise ValueError(f"必要なカラムが不足しています: {sorted(missing_cols)}")
+        kochaku_pattern = r"^\d+位降着$"
+        kochaku_mask = result_df["着差"].str.match(kochaku_pattern, na=False)
+        result_df.loc[kochaku_mask, "異常区分"] = "降着"
         result_df = result_df[RESULT_COLUMNS]  # RESULT_COLUMNSの順序に並べ替え
 
         # バリデーション
