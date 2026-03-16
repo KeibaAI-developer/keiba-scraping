@@ -150,6 +150,8 @@ EXPECTED_ROW_COUNTS: list[dict[str, Any]] = [
     {"horse_id": "2021105414", "expected_rows": 12},
     {"horse_id": "2021104825", "expected_rows": 9},
     {"horse_id": "2021105727", "expected_rows": 14},
+    {"horse_id": "2016103690", "expected_rows": 33},
+    {"horse_id": "2009106130", "expected_rows": 20},
 ]
 
 
