@@ -228,10 +228,10 @@ class ResultPageScraper:
         """
         # レース情報を取得してレースタイプを判定
         race_info_df = self.get_race_info()
-        shiba_da = str(race_info_df["芝ダ"].iloc[0])
+        race_type = str(race_info_df["レース種別"].iloc[0])
         direction = str(race_info_df["左右"].iloc[0])
 
-        if "障" in shiba_da:
+        if race_type == "障害":
             # 障害レースにはラップタイムなし（レースID以外はNaN）
             data: dict[str, object] = {"レースID": self.race_id}
             result_df = pd.DataFrame([data])

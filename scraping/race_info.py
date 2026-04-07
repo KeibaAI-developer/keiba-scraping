@@ -320,6 +320,11 @@ def _build_race_info_dict(
     コース生値（例: "左 C", "右 外 B", "直線 A"）を「左右」「コース」「内外」に分割して辞書に格納する。
     距離・回・開催日は_format_race_info_listで整形済みの数値文字列をintに変換する。
 
+    障害レースの場合:
+        芝ダ(2)には"障"が含まれ、コース生値(4)には芝/ダの情報（例: "芝"）が格納される。
+        "レース種別"を"障害"に設定し、"芝ダ"にはコース生値から抽出した"芝"または"ダ"を格納する。
+        左右・コース・内外は空文字列になる。
+
     Args:
         race_id (str): レースID
         race_info_list (list[str]): _format_race_info_listの出力
@@ -338,7 +343,25 @@ def _build_race_info_dict(
         """数値文字列をintに変換する。空文字の場合は0"""
         return int(value) if value else 0
 
+    turf_dirt_raw = _safe_get(race_info_list, 2)
     course_raw = _safe_get(race_info_list, 4)
+
+    # 障害レースの判定: 芝ダの生値に「障」が含まれる場合は障害レース
+    if "障" in turf_dirt_raw:
+        race_type = "障害"
+        # 障害レースの場合、実際の芝/ダはcourse_rawに格納されている（例: "芝", "芝 ダート"）
+        if "芝" in course_raw:
+            turf_dirt = "芝"
+        elif "ダ" in course_raw:
+            turf_dirt = "ダ"
+        else:
+            turf_dirt = turf_dirt_raw
+        # 障害レースにはコース方向情報がないため空にする
+        course_for_direction = ""
+    else:
+        race_type = "平地"
+        turf_dirt = turf_dirt_raw
+        course_for_direction = course_raw
 
     return {
         "レースID": race_id,
@@ -348,11 +371,12 @@ def _build_race_info_dict(
         "発走時刻": _safe_get(race_info_list, 1),
         "天候": _safe_get(race_info_list, 5) or None,
         "馬場": _safe_get(race_info_list, 6) or None,
-        "芝ダ": _safe_get(race_info_list, 2),
+        "レース種別": race_type,
+        "芝ダ": turf_dirt,
         "距離": _to_int(_safe_get(race_info_list, 3)),
-        "左右": _judge_direction(course_raw),
-        "コース": _judge_abcd(course_raw),
-        "内外": _judge_course_inout(course_raw),
+        "左右": _judge_direction(course_for_direction),
+        "コース": _judge_abcd(course_for_direction),
+        "内外": _judge_course_inout(course_for_direction),
         "競馬場": _safe_get(race_info_list, 8),
         "回": _to_int(_safe_get(race_info_list, 7)),
         "開催日": _to_int(_safe_get(race_info_list, 9)),
@@ -419,10 +443,15 @@ def _validate_race_info_dict(
     ):
         errors.append(f"馬場が不正です: {track_condition}")
 
-    # 芝ダ: 芝、ダ、障を含む、もしくは空文字列
+    # レース種別: 平地、障害のいずれか
+    race_type = race_info.get("レース種別", "")
+    if race_type not in ("平地", "障害"):
+        errors.append(f"レース種別が不正です: {race_type}")
+
+    # 芝ダ: 芝、ダのいずれか、もしくは空文字列
     track_type = race_info.get("芝ダ", "")
     if isinstance(track_type, str) and track_type != "":
-        if "芝" not in track_type and "ダ" not in track_type and "障" not in track_type:
+        if track_type not in ("芝", "ダ"):
             errors.append(f"芝ダが不正です: {track_type}")
 
     # 距離、回、開催日、頭数: 正であること
