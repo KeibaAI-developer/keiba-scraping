@@ -380,6 +380,19 @@ def test_chuushi_has_corner_positions() -> None:
     assert tari["4コーナー通過順"] == 10
 
 
+def test_chuushi_fewer_corners_filled_from_left() -> None:
+    """競走中止馬で正常馬より通過コーナー数が少ない場合、左から埋められること"""
+    scraper = create_scraper_from_fixture("202406050710")
+    result_df = scraper.get_result()
+
+    # マイネルグロン(馬番=1): 4コーナーレースで3コーナーまで通過して中止
+    maineru = result_df[result_df["馬番"] == 1].iloc[0]
+    assert maineru["1コーナー通過順"] == 1
+    assert maineru["2コーナー通過順"] == 1
+    assert maineru["3コーナー通過順"] == 3
+    assert pd.isna(maineru["4コーナー通過順"])
+
+
 # ---------------------------------------------------------------------------
 # 正常系: 出走取消馬のNaN条件
 # ---------------------------------------------------------------------------
