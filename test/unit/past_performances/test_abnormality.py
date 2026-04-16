@@ -27,10 +27,10 @@ ABNORMALITY_CASES: list[dict[str, Any]] = [
         "expected_abnormality": "取消",
         "description": "ゴンバデカーブース_取消",
     },
-    # クイーンズウォーク: 競走除外 (index=1)
+    # クイーンズウォーク: 競走除外 (index=2)
     {
         "horse_id": "2021105414",
-        "row_index": 1,
+        "row_index": 2,
         "expected_abnormality": "除外",
         "description": "クイーンズウォーク_除外",
     },
