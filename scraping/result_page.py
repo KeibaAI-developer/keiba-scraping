@@ -228,10 +228,10 @@ class ResultPageScraper:
         """
         # レース情報を取得してレースタイプを判定
         race_info_df = self.get_race_info()
-        shiba_da = str(race_info_df["芝ダ"].iloc[0])
+        race_type = str(race_info_df["レース種別"].iloc[0])
         direction = str(race_info_df["左右"].iloc[0])
 
-        if "障" in shiba_da:
+        if race_type == "障害":
             # 障害レースにはラップタイムなし（レースID以外はNaN）
             data: dict[str, object] = {"レースID": self.race_id}
             result_df = pd.DataFrame([data])
@@ -583,6 +583,9 @@ def _split_corner_passing_order(df: pd.DataFrame) -> pd.DataFrame:
     "11-11-10-11" → 1コーナー=11, 2コーナー=11, 3コーナー=10, 4コーナー=11
     "14-15" → 1コーナー=NaN, 2コーナー=NaN, 3コーナー=14, 4コーナー=15
 
+    競走中止馬で正常馬より通過コーナー数が少ない場合は左から埋める:
+    正常馬が4コーナーのレースで中止馬の通過数が3→ 1コーナー=part[0], 2コーナー=part[1], 3コーナー=part[2], 4コーナー=NaN
+
     Args:
         df (pd.DataFrame): コーナー通過順カラムを持つDataFrame
 
@@ -599,13 +602,40 @@ def _split_corner_passing_order(df: pd.DataFrame) -> pd.DataFrame:
     mask = df["コーナー通過順"].notna()
     if mask.any():
         parts_series = df.loc[mask, "コーナー通過順"].astype(str).str.split("-")
+
+        # 正常馬（競走中止以外）のコーナー通過数を求める
+        # これによりレース距離でのコーナー開始位置（first_corner_idx）が決まる
+        normal_parts_count: int | None = None
+        first_corner_idx = 0
+        if "異常区分" in df.columns:
+            normal_mask = mask & (df["異常区分"] != "中止")
+            if normal_mask.any():
+                normal_parts_count = int(
+                    df.loc[normal_mask, "コーナー通過順"]
+                    .astype(str)
+                    .str.split("-")
+                    .apply(len)
+                    .max()
+                )
+                first_corner_idx = 4 - normal_parts_count
+
         for idx in parts_series.index:
             parts = parts_series[idx]
-            # 右から順に4コーナー, 3コーナー, 2コーナー, 1コーナーの順に埋める
-            for i, corner_name in enumerate(reversed(corner_names)):
-                pos = len(parts) - 1 - i
-                if pos >= 0:
-                    df.loc[idx, corner_name] = parts[pos]
+            is_chuushi = "異常区分" in df.columns and df.loc[idx, "異常区分"] == "中止"
+
+            if is_chuushi and normal_parts_count is not None and len(parts) < normal_parts_count:
+                # 競走中止馬で正常馬より通過コーナー数が少ない場合: 左から埋める
+                # 正常馬の最初のコーナー位置から順に割り当てる
+                for i, part in enumerate(parts):
+                    corner_idx = first_corner_idx + i
+                    if 0 <= corner_idx < 4:
+                        df.loc[idx, corner_names[corner_idx]] = part
+            else:
+                # 右から順に4コーナー, 3コーナー, 2コーナー, 1コーナーの順に埋める
+                for i, corner_name in enumerate(reversed(corner_names)):
+                    pos = len(parts) - 1 - i
+                    if pos >= 0:
+                        df.loc[idx, corner_name] = parts[pos]
 
     # 数値型に変換
     for col_name in corner_names:

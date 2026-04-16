@@ -137,7 +137,8 @@ def test_scrape_race_info_has_non_empty_values(
     row = result.iloc[0]
 
     assert row["レース名"] != ""
-    assert row["芝ダ"] in ["芝", "ダ", "障"]
+    assert row["レース種別"] in ["平地", "障害"]
+    assert row["芝ダ"] in ["芝", "ダ"]
     assert isinstance(row["距離"], (int, np.integer))
     assert row["距離"] > 0
     assert row["競馬場"] != ""
@@ -268,7 +269,8 @@ EXPECTED_VALUES: list[dict[str, Any]] = [
         "race_id": "202406050710",
         "page_type": "result",
         "レース名": "中山大障害",
-        "芝ダ": "障",
+        "レース種別": "障害",
+        "芝ダ": "芝",
         "距離": 4100,
         "競馬場": "中山",
         "競走条件": "オープン",
@@ -496,3 +498,41 @@ def test_scrape_race_info_validation_error_on_invalid_track_condition() -> None:
     )
     with pytest.raises(ParseError, match="馬場が不正です"):
         scrape_race_info(soup, "202505021211")
+
+
+# ---------------------------------------------------------------------------
+# 正常系: レース種別の検証
+# ---------------------------------------------------------------------------
+def test_scrape_race_info_race_type_flat() -> None:
+    """平地レースでレース種別が「平地」であることを確認する"""
+    soup = _load_soup("result_202505021211.html")
+    result = scrape_race_info(soup, "202505021211")
+
+    assert result["レース種別"].iloc[0] == "平地"
+
+
+def test_scrape_race_info_race_type_obstacle() -> None:
+    """障害レースでレース種別が「障害」であることを確認する"""
+    soup = _load_soup("result_202406050710.html")
+    result = scrape_race_info(soup, "202406050710")
+
+    assert result["レース種別"].iloc[0] == "障害"
+
+
+def test_scrape_race_info_obstacle_turf_dirt_is_turf() -> None:
+    """障害レース（中山大障害）で芝ダが「芝」であることを確認する"""
+    soup = _load_soup("result_202406050710.html")
+    result = scrape_race_info(soup, "202406050710")
+
+    assert result["芝ダ"].iloc[0] == "芝"
+
+
+def test_scrape_race_info_obstacle_entry_and_result_match() -> None:
+    """障害レースの出馬表と結果ページで同じレース情報が抽出されることを確認する"""
+    entry_soup = _load_soup("entry_202406050710.html")
+    result_soup = _load_soup("result_202406050710.html")
+
+    entry_df = scrape_race_info(entry_soup, "202406050710")
+    result_df = scrape_race_info(result_soup, "202406050710")
+
+    pd.testing.assert_frame_equal(entry_df, result_df)
