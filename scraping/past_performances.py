@@ -15,7 +15,12 @@ from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 
-from scraping.config import KEIBAJO_TO_ID_DICT, PAST_PERFORMANCES_COLUMNS, ScrapingConfig
+from scraping.config import (
+    HORSE_BASIC_INFO_COLUMNS,
+    KEIBAJO_TO_ID_DICT,
+    PAST_PERFORMANCES_COLUMNS,
+    ScrapingConfig,
+)
 from scraping.exceptions import DriverError, ParseError
 from scraping.url_builder import build_horse_info_url
 from scraping.utils import calc_interval, set_chrome_options
@@ -77,6 +82,20 @@ class PastPerformancesScraper:
             driver.quit()
 
         self.soup = BeautifulSoup(self.html_text, "html.parser")
+
+    def get_horse_basic_info(self) -> pd.DataFrame:
+        """馬の基本情報を取得する
+
+        馬情報ページのHTMLから馬の基本情報をスクレイピングし、
+        HORSE_BASIC_INFO_COLUMNSのカラムを持つ1行のDataFrameを返す。
+
+        Returns:
+            pd.DataFrame: 馬の基本情報のDataFrame（HORSE_BASIC_INFO_COLUMNSのカラム、1行）
+
+        Raises:
+            ParseError: HTML解析に失敗した場合
+        """
+        return self._scrape_horse_basic_info()
 
     def get_past_performances(self) -> pd.DataFrame:
         """馬柱データを取得する
@@ -239,6 +258,197 @@ class PastPerformancesScraper:
 
         return umabashira_df
 
+    def _scrape_horse_basic_info(self) -> pd.DataFrame:
+        """馬の基本情報をスクレイピングする
+
+        Returns:
+            pd.DataFrame: 馬の基本情報のDataFrame（HORSE_BASIC_INFO_COLUMNSのカラム、1行）
+
+        Raises:
+            ParseError: HTML解析に失敗した場合
+        """
+        data: dict[str, object] = {}
+        data["馬名"] = self._parse_horse_name()
+        gender, age = self._parse_gender_and_age()
+        data["性別"] = gender
+        data["年齢"] = age
+        self._parse_prof_table(data)
+        self._parse_blood_table(data)
+        missing_cols = set(HORSE_BASIC_INFO_COLUMNS) - set(data.keys())
+        if missing_cols:
+            self._logger.error("基本情報の取得に失敗しました。不足カラム: %s", sorted(missing_cols))
+            raise ParseError(f"基本情報の取得に失敗しました。不足カラム: {sorted(missing_cols)}")
+        return pd.DataFrame([{col: data[col] for col in HORSE_BASIC_INFO_COLUMNS}])
+
+    def _parse_horse_name(self) -> str:
+        """horse_titleのh1タグから馬名を取得する
+
+        Returns:
+            str: 馬名
+
+        Raises:
+            ParseError: horse_titleまたはh1が見つからない場合
+        """
+        horse_title = self.soup.find("div", class_="horse_title")
+        if not isinstance(horse_title, Tag):
+            raise ParseError("horse_titleが見つかりません")
+        h1 = horse_title.find("h1")
+        if not isinstance(h1, Tag):
+            raise ParseError("馬名のh1タグが見つかりません")
+        return h1.get_text(strip=True)
+
+    def _parse_gender_and_age(self) -> tuple[str, int | float]:
+        """txt_01から性別と年齢を取得する
+
+        Returns:
+            str: 性別（"牡"/"牝"/"セ"）
+            int | float: 年齢（年齢が含まれない場合はNaN）
+
+        Raises:
+            ParseError: horse_titleまたはtxt_01が見つからない場合、性別が判定できない場合
+        """
+        horse_title = self.soup.find("div", class_="horse_title")
+        if not isinstance(horse_title, Tag):
+            raise ParseError("horse_titleが見つかりません")
+        txt_01 = horse_title.find("p", class_="txt_01")
+        if not isinstance(txt_01, Tag):
+            raise ParseError("txt_01が見つかりません")
+        text = txt_01.get_text(strip=True)
+        gender_match = re.search(r"(牡|牝|セ)", text)
+        if not gender_match:
+            raise ParseError(f"性別を判定できません: {text}")
+        gender = gender_match.group(1)
+        age_match = re.search(r"(\d+)歳", text)
+        age: int | float = int(age_match.group(1)) if age_match else np.nan
+        return gender, age
+
+    def _parse_prof_table(self, data: dict[str, object]) -> None:
+        """db_prof_tableから基本情報を取得してdataに格納する
+
+        Args:
+            data (dict[str, object]): 結果を格納する辞書
+
+        Raises:
+            ParseError: db_prof_tableが見つからない場合
+        """
+        table = self.soup.find("table", class_="db_prof_table")
+        if not isinstance(table, Tag):
+            raise ParseError("db_prof_tableが見つかりません")
+
+        for row in table.find_all("tr"):
+            th = row.find("th")
+            td = row.find("td")
+            if not isinstance(th, Tag) or not isinstance(td, Tag):
+                continue
+            key = th.get_text(strip=True)
+
+            if key == "生年月日":
+                data["生年月日"] = _parse_birthday(td.get_text(strip=True))
+
+            elif key == "調教師":
+                a_tag = td.find("a")
+                if isinstance(a_tag, Tag):
+                    data["調教師"] = a_tag.get_text(strip=True)
+                    href = str(a_tag.get("href", ""))
+                    match = re.search(r"/trainer/(\w+)/", href)
+                    data["調教師ID"] = match.group(1) if match else np.nan
+                td_text = td.get_text(strip=True)
+                affil_match = re.search(r"\(([^)]+)\)", td_text)
+                data["所属"] = affil_match.group(1) if affil_match else np.nan
+
+            elif key == "馬主":
+                a_tag = td.find("a")
+                if isinstance(a_tag, Tag):
+                    data["馬主"] = a_tag.get_text(strip=True)
+                    href = str(a_tag.get("href", ""))
+                    match = re.search(r"/owner/(\w+)/", href)
+                    data["馬主ID"] = match.group(1) if match else np.nan
+
+            elif key == "募集情報":
+                a_tag = td.find("a", class_="OwnerUnitPrice")
+                data["募集情報"] = a_tag.get_text(strip=True) if isinstance(a_tag, Tag) else np.nan
+
+            elif key == "生産者":
+                a_tag = td.find("a")
+                if isinstance(a_tag, Tag):
+                    data["生産者"] = a_tag.get_text(strip=True)
+                    href = str(a_tag.get("href", ""))
+                    match = re.search(r"/breeder/(\w+)/", href)
+                    data["生産者ID"] = match.group(1) if match else np.nan
+
+            elif key == "産地":
+                data["産地"] = td.get_text(strip=True)
+
+            elif key == "セリ取引価格":
+                data["セリ取引価格"] = _parse_prize(td.get_text(strip=True))
+
+            elif key == "獲得賞金 (中央)":
+                data["獲得賞金 (中央)"] = _parse_prize(td.get_text(strip=True))
+
+            elif key == "獲得賞金 (地方)":
+                data["獲得賞金 (地方)"] = _parse_prize(td.get_text(strip=True))
+
+            elif key == "通算成績":
+                text = td.get_text(strip=True)
+                match = re.search(r"\[(\d+-\d+-\d+-\d+)\]", text)
+                data["通算成績"] = match.group(1) if match else np.nan
+
+            elif key == "主な勝鞍":
+                a_tags = td.find_all("a")
+                data["主な勝鞍"] = a_tags[0].get_text(strip=True) if a_tags else np.nan
+
+            elif key == "近親馬":
+                a_tags = td.find_all("a")
+                texts = [a.get_text(strip=True) for a in a_tags if a.get_text(strip=True)]
+                data["近親馬"] = "、".join(texts) if texts else np.nan
+
+        if "募集情報" not in data:
+            data["募集情報"] = np.nan
+
+    def _parse_blood_table(self, data: dict[str, object]) -> None:
+        """blood_tableから血統情報を取得してdataに格納する
+
+        Args:
+            data (dict[str, object]): 結果を格納する辞書
+
+        Raises:
+            ParseError: blood_tableが見つからない場合、または行数が不足する場合
+        """
+        blood_table = self.soup.find("table", class_="blood_table")
+        if not isinstance(blood_table, Tag):
+            raise ParseError("blood_tableが見つかりません")
+        rows = blood_table.find_all("tr")
+        if len(rows) < 4:
+            raise ParseError(f"blood_tableの行数が不足しています: {len(rows)}")
+
+        def get_name_and_id(td: Tag) -> tuple[str, str]:
+            a = td.find("a")
+            if not isinstance(a, Tag):
+                return "", ""
+            name = a.get_text(strip=True)
+            href = str(a.get("href", ""))
+            match = re.search(r"/horse/ped/([^/]+)/", href)
+            horse_id = match.group(1) if match else ""
+            return name, horse_id
+
+        row0_tds = rows[0].find_all("td")
+        row1_tds = rows[1].find_all("td")
+        row2_tds = rows[2].find_all("td")
+        row3_tds = rows[3].find_all("td")
+
+        if row0_tds:
+            data["父"], data["父ID"] = get_name_and_id(row0_tds[0])
+        if len(row0_tds) > 1:
+            data["父父"], data["父父ID"] = get_name_and_id(row0_tds[1])
+        if row1_tds:
+            data["父母"], data["父母ID"] = get_name_and_id(row1_tds[0])
+        if row2_tds:
+            data["母"], data["母ID"] = get_name_and_id(row2_tds[0])
+        if len(row2_tds) > 1:
+            data["母父"], data["母父ID"] = get_name_and_id(row2_tds[1])
+        if row3_tds:
+            data["母母"], data["母母ID"] = get_name_and_id(row3_tds[0])
+
     def _add_jockey_id(self, df: pd.DataFrame) -> pd.DataFrame:
         """馬柱テーブルに騎手IDカラムを追加する
 
@@ -386,6 +596,48 @@ class PastPerformancesScraper:
         if missing_columns:
             self._logger.error("%s 必須カラムが不足しています: %s", context, missing_columns)
             raise ParseError(f"{context} 必須カラムが不足しています: {missing_columns}")
+
+
+def _parse_birthday(date_text: str) -> int:
+    """生年月日テキストをyyyymmdd形式の整数に変換する
+
+    Args:
+        date_text (str): "2022年1月10日" などの生年月日テキスト
+
+    Returns:
+        int: yyyymmdd形式の整数（例: 20220110）
+
+    Raises:
+        ParseError: 生年月日のフォーマットが不正な場合
+    """
+    match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", date_text)
+    if not match:
+        raise ParseError(f"生年月日のフォーマットが不正です: {date_text}")
+    year = int(match.group(1))
+    month = int(match.group(2))
+    day = int(match.group(3))
+    return int(f"{year}{month:02d}{day:02d}")
+
+
+def _parse_prize(text: str) -> int | float:
+    """賞金・取引価格テキストを万円単位の整数に変換する
+
+    "9億6,179万円" → 96179, "0万円" → 0, "176万円 (セール名)" → 176, "-" → NaN
+
+    Args:
+        text (str): 賞金テキスト
+
+    Returns:
+        int | float: 万円単位の整数。パース不能の場合はNaN
+    """
+    cleaned = text.strip().replace(",", "").replace("，", "")
+    match_oku = re.search(r"(\d+)億", cleaned)
+    match_man = re.search(r"(\d+)万円", cleaned)
+    if not match_oku and not match_man:
+        return np.nan
+    oku = int(match_oku.group(1)) if match_oku else 0
+    man = int(match_man.group(1)) if match_man else 0
+    return oku * 10000 + man
 
 
 def _extract_turf_dirt(distance_text: str) -> str:
