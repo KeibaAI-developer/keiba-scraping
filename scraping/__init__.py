@@ -19,6 +19,7 @@ from scraping.config import (
     ENTRY_NON_NAN_COLUMNS,
     EXACTA_PAYOFF_COLUMNS,
     GRADE_DICT,
+    HORSE_BASIC_INFO_COLUMNS,
     HORSE_INFO_COLUMNS,
     ID_TO_KEIBAJO_DICT,
     JRA_GRADED_RACE_COLUMNS,
@@ -53,13 +54,13 @@ from scraping.exceptions import (
     ScrapingError,
 )
 from scraping.horse_info import HorseInfoScraper
+from scraping.horse_page import HorsePageScraper
 from scraping.jra_graded_race import JraGradedRaceScraper
 from scraping.odds import (
     scrape_odds_from_jra,
     scrape_odds_from_netkeiba,
     scrape_yoso_odds_from_netkeiba,
 )
-from scraping.past_performances import PastPerformancesScraper
 from scraping.race_info import scrape_race_info
 from scraping.race_list import RaceListScraper
 from scraping.race_schedule import RaceScheduleScraper
@@ -108,6 +109,7 @@ __all__ = [
     "TRIFECTA_PAYOFF_COLUMNS",
     "LAP_TIME_COLUMNS",
     "PAST_PERFORMANCES_COLUMNS",
+    "HORSE_BASIC_INFO_COLUMNS",
     "HORSE_INFO_COLUMNS",
     "AFFILIATION_MAP",
     "RACE_LIST_COLUMNS",
@@ -142,8 +144,8 @@ __all__ = [
     "EntryPageScraper",
     # result_page
     "ResultPageScraper",
-    # past_performances
-    "PastPerformancesScraper",
+    # horse_page
+    "HorsePageScraper",
     # race_list
     "RaceListScraper",
     # race_schedule

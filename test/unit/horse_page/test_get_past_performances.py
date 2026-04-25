@@ -1,4 +1,4 @@
-"""PastPerformancesScraper.get_past_performances()の単体テスト
+"""HorsePageScraper.get_past_performances()の単体テスト
 
 Selenium WebDriverをモックし、フィクスチャHTMLを返すようにしてテストする。
 馬柱テーブルの取得・カラム構成・主要値を検証する。
@@ -14,7 +14,7 @@ import pytest
 
 from scraping.config import PAST_PERFORMANCES_COLUMNS
 from scraping.exceptions import DriverError, ParseError
-from scraping.past_performances import PastPerformancesScraper
+from scraping.horse_page import HorsePageScraper
 
 from .conftest import collect_fixture_horse_ids, create_scraper_from_fixture
 
@@ -460,8 +460,8 @@ def test_new_horse_returns_empty_dataframe() -> None:
     mock_driver = MagicMock()
     mock_driver.page_source = empty_html
 
-    with patch("scraping.past_performances.webdriver.Chrome", return_value=mock_driver):
-        scraper = PastPerformancesScraper("9999999999")
+    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
+        scraper = HorsePageScraper("9999999999")
 
     df = scraper.get_past_performances()
 
@@ -476,11 +476,11 @@ def test_new_horse_returns_empty_dataframe() -> None:
 def test_driver_error_on_startup_failure() -> None:
     """ChromeDriverの起動に失敗した場合にDriverErrorが発生すること"""
     with patch(
-        "scraping.past_performances.webdriver.Chrome",
+        "scraping.horse_page.webdriver.Chrome",
         side_effect=Exception("ChromeDriver not found"),
     ):
         with pytest.raises(DriverError, match="ChromeDriverの起動に失敗しました"):
-            PastPerformancesScraper("2022105081")
+            HorsePageScraper("2022105081")
 
 
 # ---------------------------------------------------------------------------
@@ -492,8 +492,8 @@ def test_no_html_table_raises_parse_error() -> None:
     mock_driver = MagicMock()
     mock_driver.page_source = no_table_html
 
-    with patch("scraping.past_performances.webdriver.Chrome", return_value=mock_driver):
-        scraper = PastPerformancesScraper("9999999998")
+    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
+        scraper = HorsePageScraper("9999999998")
 
     with pytest.raises(ParseError, match="HTML内にテーブルが見つかりません"):
         scraper.get_past_performances()
@@ -519,8 +519,8 @@ def test_missing_required_columns_raises_parse_error() -> None:
     mock_driver = MagicMock()
     mock_driver.page_source = missing_cols_html
 
-    with patch("scraping.past_performances.webdriver.Chrome", return_value=mock_driver):
-        scraper = PastPerformancesScraper("9999999997")
+    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
+        scraper = HorsePageScraper("9999999997")
 
     with pytest.raises(ParseError, match="必須カラムが不足しています"):
         scraper.get_past_performances()
@@ -555,8 +555,8 @@ def test_invalid_turf_dirt_raises_parse_error() -> None:
     mock_driver = MagicMock()
     mock_driver.page_source = invalid_distance_html
 
-    with patch("scraping.past_performances.webdriver.Chrome", return_value=mock_driver):
-        scraper = PastPerformancesScraper("9999999996")
+    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
+        scraper = HorsePageScraper("9999999996")
 
     with pytest.raises(ParseError, match="芝/ダ/障を判定できません"):
         scraper.get_past_performances()

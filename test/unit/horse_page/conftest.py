@@ -1,13 +1,13 @@
-"""past_performancesテスト共通設定
+"""horse_pageテスト共通設定
 
-past_performancesテストで使用する共通のヘルパー関数を定義する。
+horse_pageテストで使用する共通のヘルパー関数を定義する。
 """
 
 import glob
 import os
 from unittest.mock import MagicMock, patch
 
-from scraping.past_performances import PastPerformancesScraper
+from scraping.horse_page import HorsePageScraper
 
 # フィクスチャHTMLのディレクトリ
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "fixtures", "html")
@@ -27,8 +27,8 @@ def load_html(fixture_filename: str) -> str:
         return f.read()
 
 
-def create_scraper_from_fixture(horse_id: str) -> PastPerformancesScraper:
-    """フィクスチャHTMLからPastPerformancesScraperを生成する
+def create_scraper_from_fixture(horse_id: str) -> HorsePageScraper:
+    """フィクスチャHTMLからHorsePageScraperを生成する
 
     Selenium WebDriverをモックし、フィクスチャHTMLのpage_sourceを返すようにする。
 
@@ -36,7 +36,7 @@ def create_scraper_from_fixture(horse_id: str) -> PastPerformancesScraper:
         horse_id (str): 馬ID
 
     Returns:
-        PastPerformancesScraper: フィクスチャHTMLベースのスクレイパー
+        HorsePageScraper: フィクスチャHTMLベースのスクレイパー
     """
     fixture_filename = f"past_performances_{horse_id}.html"
     html_text = load_html(fixture_filename)
@@ -44,8 +44,8 @@ def create_scraper_from_fixture(horse_id: str) -> PastPerformancesScraper:
     mock_driver = MagicMock()
     mock_driver.page_source = html_text
 
-    with patch("scraping.past_performances.webdriver.Chrome", return_value=mock_driver):
-        scraper = PastPerformancesScraper(horse_id)
+    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
+        scraper = HorsePageScraper(horse_id)
 
     return scraper
 
