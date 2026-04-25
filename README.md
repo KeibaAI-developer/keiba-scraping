@@ -10,6 +10,7 @@
 - 出馬表（出走馬の枠番、馬番、騎手、斤量等）
 - レース結果（着順、タイム、払い戻し、ラップタイム等）
 - 馬柱（過去の競走成績）
+- 馬基本情報（生年月日、血統、調教師、通算成績等）
 - 馬情報（馬名、血統、厩舎、総賞金等）
 - オッズ（単勝・複勝オッズ、予想オッズ）
 - レース一覧（年間のレース検索結果）
@@ -100,15 +101,16 @@ playwright install chromium
 
 ---
 
-### 馬情報ページ（馬柱）
+### 馬情報ページ
 
 - **サンプルURL**: `https://db.netkeiba.com/horse/2022105081`
-- **API**: `PastPerformancesScraper(horse_id: str)` （Selenium使用）
-- **サンプルコード**: [example/example_past_performances.py](example/example_past_performances.py)
+- **API**: `HorsePageScraper(horse_id: str)` （Selenium使用）
+- **サンプルコード**: [example/example_horse_page.py](example/example_horse_page.py)
 
 | 関数 | 説明 | カラム定義 |
 |------|------|------------|
 | `get_past_performances()` | 馬柱 | [SCHEMA.md#馬柱](doc/SCHEMA.md#馬柱) |
+| `get_horse_basic_info()` | 馬基本情報 | [SCHEMA.md#馬基本情報](doc/SCHEMA.md#馬基本情報) |
 
 ---
 
