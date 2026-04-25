@@ -1,4 +1,4 @@
-"""PastPerformancesScraper.get_horse_basic_info()の単体テスト
+"""HorsePageScraper.get_horse_basic_info()の単体テスト
 
 Selenium WebDriverをモックし、フィクスチャHTMLを返すようにしてテストする。
 馬の基本情報の取得・カラム構成・主要値を検証する。
@@ -9,7 +9,7 @@ import pytest
 
 from scraping.config import HORSE_BASIC_INFO_COLUMNS
 from scraping.exceptions import ParseError
-from scraping.past_performances import PastPerformancesScraper
+from scraping.horse_page import HorsePageScraper
 
 from .conftest import create_scraper_from_fixture
 
@@ -345,8 +345,8 @@ def test_missing_horse_title_raises_parse_error() -> None:
 
     mock_driver = MagicMock()
     mock_driver.page_source = minimal_html
-    with patch("scraping.past_performances.webdriver.Chrome", return_value=mock_driver):
-        scraper = PastPerformancesScraper("9999999999")
+    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
+        scraper = HorsePageScraper("9999999999")
 
     with pytest.raises(ParseError, match="horse_titleが見つかりません"):
         scraper.get_horse_basic_info()
@@ -363,8 +363,8 @@ def test_missing_prof_table_raises_parse_error() -> None:
 
     mock_driver = MagicMock()
     mock_driver.page_source = minimal_html
-    with patch("scraping.past_performances.webdriver.Chrome", return_value=mock_driver):
-        scraper = PastPerformancesScraper("9999999998")
+    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
+        scraper = HorsePageScraper("9999999998")
 
     with pytest.raises(ParseError, match="db_prof_tableが見つかりません"):
         scraper.get_horse_basic_info()
@@ -394,8 +394,8 @@ def test_missing_blood_table_raises_parse_error() -> None:
 
     mock_driver = MagicMock()
     mock_driver.page_source = minimal_html
-    with patch("scraping.past_performances.webdriver.Chrome", return_value=mock_driver):
-        scraper = PastPerformancesScraper("9999999997")
+    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
+        scraper = HorsePageScraper("9999999997")
 
     with pytest.raises(ParseError, match="blood_tableが見つかりません"):
         scraper.get_horse_basic_info()

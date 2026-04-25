@@ -386,7 +386,7 @@ LAP_TIME_COLUMNSに定義されたカラムを持つDataFrame。
 
 ## 馬基本情報
 
-`PastPerformancesScraper.get_horse_basic_info()`メソッドが返すDataFrameの仕様。
+`HorsePageScraper.get_horse_basic_info()`メソッドが返すDataFrameの仕様。
 HORSE_BASIC_INFO_COLUMNSに定義されたカラムを持つ1行のDataFrame。
 
 | カラム名         | 型           | 説明                                  | NaNになる条件                        | 例                     |
@@ -425,7 +425,7 @@ HORSE_BASIC_INFO_COLUMNSに定義されたカラムを持つ1行のDataFrame。
 
 ## 馬柱
 
-`PastPerformancesScraper.get_past_performances()`メソッドが返すDataFrameの仕様。
+`HorsePageScraper.get_past_performances()`メソッドが返すDataFrameの仕様。
 PAST_PERFORMANCES_COLUMNSに定義されたカラムを持つDataFrame。
 
 | カラム名          | 型    | 説明                                    | NaNになる条件                                             | 例             |

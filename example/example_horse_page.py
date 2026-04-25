@@ -1,17 +1,17 @@
-"""馬柱スクレイパーのサンプルスクリプト
+"""馬ページスクレイパーのサンプルスクリプト
 
-指定したhorse_idの馬情報ページから馬柱（過去の出走成績）を取得して表示する。
+指定したhorse_idの馬情報ページから馬柱（過去の出走成績）および馬の基本情報を取得して表示する。
 Seleniumを使用するため、Chrome/ChromeDriverが必要。
 """
 
 from scraping.config import ScrapingConfig
-from scraping.past_performances import PastPerformancesScraper
+from scraping.horse_page import HorsePageScraper
 
 
 def main() -> None:
     """メイン処理
 
-    horse_idを指定してPastPerformancesScraperで馬情報ページをスクレイピングし、
+    horse_idを指定してHorsePageScraperで馬情報ページをスクレイピングし、
     馬柱データを表示する。
     """
     # スクレイピング対象のhorse_id
@@ -24,8 +24,8 @@ def main() -> None:
     print("=" * 80)
 
     try:
-        # PastPerformancesScraperを生成（Seleniumでページ取得が行われる）
-        scraper = PastPerformancesScraper(horse_id, config)
+        # HorsePageScraperを生成（Seleniumでページ取得が行われる）
+        scraper = HorsePageScraper(horse_id, config)
 
         # 馬柱データ
         print("\n【馬柱データ】")

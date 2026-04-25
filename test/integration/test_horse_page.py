@@ -1,7 +1,7 @@
-"""PastPerformancesScraperの結合テスト
+"""HorsePageScraperの結合テスト
 
 フィクスチャは使用せず、実際にnetkeibaにアクセスしてスクレイピングを行い、
-PastPerformancesScraperの各パブリックメソッドが正しく動作することを確認する。
+HorsePageScraperの各パブリックメソッドが正しく動作することを確認する。
 netkeibaのHTML構造の仕様変更に気づきやすくすることが目的。
 
 ネットワーク接続が必要なため、@pytest.mark.networkマーカーを付与する。
@@ -17,7 +17,7 @@ import pandas as pd
 import pytest
 
 from scraping.config import PAST_PERFORMANCES_COLUMNS
-from scraping.past_performances import PastPerformancesScraper
+from scraping.horse_page import HorsePageScraper
 
 # テスト間のリクエスト間隔（秒）: Seleniumなので長めに設定
 REQUEST_INTERVAL = 5.0
@@ -63,7 +63,7 @@ LIVE_TEST_CASE_IDS = [str(tc["description"]) for tc in LIVE_TEST_CASES]
 def test_get_past_performances_columns(test_case: dict[str, Any]) -> None:
     """get_past_performancesがPAST_PERFORMANCES_COLUMNSと一致するDataFrameを返すこと"""
     horse_id = str(test_case["horse_id"])
-    scraper = PastPerformancesScraper(horse_id)
+    scraper = HorsePageScraper(horse_id)
     df = scraper.get_past_performances()
 
     assert isinstance(df, pd.DataFrame)
@@ -81,7 +81,7 @@ def test_get_past_performances_row_count(test_case: dict[str, Any]) -> None:
     horse_id = str(test_case["horse_id"])
     min_rows = int(test_case["min_rows"])
 
-    scraper = PastPerformancesScraper(horse_id)
+    scraper = HorsePageScraper(horse_id)
     df = scraper.get_past_performances()
 
     assert len(df) >= min_rows
@@ -96,7 +96,7 @@ def test_get_past_performances_row_count(test_case: dict[str, Any]) -> None:
 def test_get_past_performances_date_type(test_case: dict[str, Any]) -> None:
     """日付カラムがdatetime.date型であること"""
     horse_id = str(test_case["horse_id"])
-    scraper = PastPerformancesScraper(horse_id)
+    scraper = HorsePageScraper(horse_id)
     df = scraper.get_past_performances()
 
     for val in df["日付"]:
@@ -112,7 +112,7 @@ def test_get_past_performances_date_type(test_case: dict[str, Any]) -> None:
 def test_get_past_performances_turf_dirt_values(test_case: dict[str, Any]) -> None:
     """芝ダが芝/ダ/障のいずれかであること"""
     horse_id = str(test_case["horse_id"])
-    scraper = PastPerformancesScraper(horse_id)
+    scraper = HorsePageScraper(horse_id)
     df = scraper.get_past_performances()
 
     valid = {"芝", "ダ", "障"}
@@ -129,7 +129,7 @@ def test_get_past_performances_turf_dirt_values(test_case: dict[str, Any]) -> No
 def test_get_past_performances_organize_values(test_case: dict[str, Any]) -> None:
     """主催が中央/地方/海外のいずれかであること"""
     horse_id = str(test_case["horse_id"])
-    scraper = PastPerformancesScraper(horse_id)
+    scraper = HorsePageScraper(horse_id)
     df = scraper.get_past_performances()
 
     valid = {"中央", "地方", "海外"}
@@ -146,7 +146,7 @@ def test_get_past_performances_organize_values(test_case: dict[str, Any]) -> Non
 def test_get_past_performances_jockey_id_format(test_case: dict[str, Any]) -> None:
     """騎手IDが5桁の数字文字列であること（NaN以外）"""
     horse_id = str(test_case["horse_id"])
-    scraper = PastPerformancesScraper(horse_id)
+    scraper = HorsePageScraper(horse_id)
     df = scraper.get_past_performances()
 
     for jockey_id in df["騎手ID"].dropna():

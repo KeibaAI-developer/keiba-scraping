@@ -1,7 +1,7 @@
-"""馬柱スクレイパーモジュール
+"""馬ページスクレイパーモジュール
 
 netkeibaの馬情報ページをSeleniumでスクレイピングし、
-馬柱（過去の出走成績）を取得する。
+馬柱（過去の出走成績）および馬の基本情報を取得する。
 """
 
 import logging
@@ -26,11 +26,12 @@ from scraping.url_builder import build_horse_info_url
 from scraping.utils import calc_interval, set_chrome_options
 
 
-class PastPerformancesScraper:
-    """馬柱のスクレイパー
+class HorsePageScraper:
+    """馬ページのスクレイパー
 
     コンストラクタでSeleniumを使用してページを取得し、
-    get_past_performances()メソッドで馬柱データを取得する。
+    get_past_performances()メソッドで馬柱データを、
+    get_horse_basic_info()メソッドで馬の基本情報を取得する。
 
     Attributes:
         horse_id (str): netkeibaの馬ID（10桁文字列）
