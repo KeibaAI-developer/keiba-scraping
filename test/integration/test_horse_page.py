@@ -13,10 +13,11 @@ import os
 import time
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from scraping.config import PAST_PERFORMANCES_COLUMNS
+from scraping.config import HORSE_BASIC_INFO_COLUMNS, PAST_PERFORMANCES_COLUMNS
 from scraping.horse_page import HorsePageScraper
 
 # テスト間のリクエスト間隔（秒）: Seleniumなので長めに設定
@@ -153,5 +154,105 @@ def test_get_past_performances_jockey_id_format(test_case: dict[str, Any]) -> No
         assert (
             isinstance(jockey_id, str) and len(jockey_id) == 5 and jockey_id.isdigit()
         ), f"騎手IDが不正: {jockey_id}"
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_horse_basic_info（カラム構成）
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_horse_basic_info_columns(test_case: dict[str, Any]) -> None:
+    """get_horse_basic_infoがHORSE_BASIC_INFO_COLUMNSと一致するDataFrameを返すこと"""
+    horse_id = str(test_case["horse_id"])
+    scraper = HorsePageScraper(horse_id)
+    df = scraper.get_horse_basic_info()
+
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == HORSE_BASIC_INFO_COLUMNS
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_horse_basic_info（行数）
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_horse_basic_info_single_row(test_case: dict[str, Any]) -> None:
+    """get_horse_basic_infoが1行のDataFrameを返すこと"""
+    horse_id = str(test_case["horse_id"])
+    scraper = HorsePageScraper(horse_id)
+    df = scraper.get_horse_basic_info()
+
+    assert len(df) == 1
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_horse_basic_info（性別の値）
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_horse_basic_info_gender_valid(test_case: dict[str, Any]) -> None:
+    """性別が牡/牝/セのいずれかであること"""
+    horse_id = str(test_case["horse_id"])
+    scraper = HorsePageScraper(horse_id)
+    df = scraper.get_horse_basic_info()
+
+    assert df.iloc[0]["性別"] in {"牡", "牝", "セ"}
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_horse_basic_info（生年月日のフォーマット）
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_horse_basic_info_birthday_format(test_case: dict[str, Any]) -> None:
+    """生年月日がyyyymmdd形式の8桁整数であること"""
+    horse_id = str(test_case["horse_id"])
+    scraper = HorsePageScraper(horse_id)
+    df = scraper.get_horse_basic_info()
+
+    birthday = df.iloc[0]["生年月日"]
+    assert isinstance(birthday, (int, np.integer)), f"生年月日の型が不正: {type(birthday)}"
+    assert 19000101 <= int(birthday) <= 99991231, f"生年月日が範囲外: {birthday}"
+    assert len(str(int(birthday))) == 8, f"生年月日が8桁でない: {birthday}"
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_horse_basic_info（通算成績のフォーマット）
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_horse_basic_info_career_record_format(test_case: dict[str, Any]) -> None:
+    """通算成績が"x-x-x-x"形式の文字列であること"""
+    import re
+
+    horse_id = str(test_case["horse_id"])
+    scraper = HorsePageScraper(horse_id)
+    df = scraper.get_horse_basic_info()
+
+    career = df.iloc[0]["通算成績"]
+    assert isinstance(career, str)
+    assert re.fullmatch(r"\d+-\d+-\d+-\d+", career), f"通算成績の形式が不正: {career}"
+
+    time.sleep(REQUEST_INTERVAL)
+
+
+# ---------------------------------------------------------------------------
+# 正常系: get_horse_basic_info（血統情報の存在）
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("test_case", LIVE_TEST_CASES, ids=LIVE_TEST_CASE_IDS)
+def test_get_horse_basic_info_pedigree_not_empty(test_case: dict[str, Any]) -> None:
+    """父・母・母父・父父の各血統情報が空でないこと"""
+    horse_id = str(test_case["horse_id"])
+    scraper = HorsePageScraper(horse_id)
+    df = scraper.get_horse_basic_info()
+
+    row = df.iloc[0]
+    for col in ["父", "母", "母父", "父父"]:
+        assert isinstance(row[col], str) and len(row[col]) > 0, f"{col}が空: {row[col]!r}"
 
     time.sleep(REQUEST_INTERVAL)
