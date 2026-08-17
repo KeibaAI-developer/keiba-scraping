@@ -5,6 +5,7 @@
 """
 
 import datetime
+from email.message import Message
 from io import StringIO
 from typing import TYPE_CHECKING
 
@@ -81,9 +82,10 @@ def calc_interval(date1: str, date2: str) -> int | float:
 def resolve_response_encoding(response: "Response") -> str | None:
     """レスポンスのデコードに使うエンコーディングを決定する
 
-    HTTPヘッダのcharset指定を優先し、指定が無い場合のみ本文から推定する。
-    requestsはcharsetを持たない ``text/*`` に対してISO-8859-1を設定するため、
-    その値はヘッダ由来の指定とみなさず推定にフォールバックする。
+    Content-Typeヘッダのcharset指定を優先し、指定が無い場合のみ本文から推定する。
+    requestsはcharsetを持たない ``text/*`` にISO-8859-1を既定値として設定し、
+    明示指定と区別できなくなるため、``response.encoding`` ではなく
+    Content-Typeヘッダを直接解析してcharsetの有無を判定する。
 
     netkeibaはrace配下がUTF-8をヘッダで通知する一方、db配下とJRAはcharsetを
     通知せずそれぞれEUC-JP、Shift_JISを返すため、両者を区別せず扱える。
@@ -94,10 +96,12 @@ def resolve_response_encoding(response: "Response") -> str | None:
     Returns:
         str | None: 使用すべきエンコーディング名。推定できない場合はNone
     """
-    header_encoding = response.encoding
-    if header_encoding is None or header_encoding.lower() == "iso-8859-1":
-        return response.apparent_encoding
-    return header_encoding
+    content_type = Message()
+    content_type["Content-Type"] = response.headers.get("Content-Type", "")
+    header_encoding = content_type.get_content_charset()
+    if header_encoding is not None:
+        return header_encoding
+    return response.apparent_encoding
 
 
 def set_chrome_options() -> Options:

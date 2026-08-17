@@ -17,21 +17,22 @@ SAMPLE_TEXT = (
 )
 
 
-def _build_response(body: bytes, content_type: str) -> Response:
+def _build_response(body: bytes, content_type: str | None = None) -> Response:
     """Content-Typeヘッダとバイト列からResponseを組み立てる
 
     requestsがレスポンス受信時に行うのと同じ手順で ``encoding`` を設定する。
 
     Args:
         body (bytes): レスポンス本文
-        content_type (str): Content-Typeヘッダの値
+        content_type (str | None): Content-Typeヘッダの値。Noneの場合はヘッダを付与しない
 
     Returns:
         Response: encoding設定済みのレスポンス
     """
     response = Response()
     response._content = body
-    response.headers["Content-Type"] = content_type
+    if content_type is not None:
+        response.headers["Content-Type"] = content_type
     response.encoding = get_encoding_from_headers(response.headers)
     return response
 
@@ -40,12 +41,13 @@ def _build_response(body: bytes, content_type: str) -> Response:
 # 正常系: ヘッダにcharsetが指定されている場合
 # ---------------------------------------------------------------------------
 def test_prefers_charset_in_header() -> None:
-    """ヘッダのcharset指定をそのまま採用し、本文が正しくデコードされること"""
+    """ヘッダのcharset指定を採用し、本文が正しくデコードされること"""
     response = _build_response(SAMPLE_TEXT.encode("utf-8"), "text/html; charset=UTF-8")
 
     result = resolve_response_encoding(response)
 
-    assert result == "UTF-8"
+    assert result is not None
+    assert result.lower() == "utf-8"
     response.encoding = result
     assert response.text == SAMPLE_TEXT
 
@@ -57,7 +59,22 @@ def test_header_charset_takes_priority_over_detection() -> None:
 
     result = resolve_response_encoding(response)
 
-    assert result == "Shift_JIS"
+    assert result is not None
+    assert result.lower() == "shift_jis"
+
+
+def test_preserves_explicit_iso_8859_1_charset() -> None:
+    """ISO-8859-1が明示指定された場合に推定で上書きしないこと"""
+    # requestsがcharset未指定時に設定する既定値と同じ値だが、明示指定は尊重する
+    text = "<html><body>café</body></html>"
+    response = _build_response(text.encode("iso-8859-1"), "text/html; charset=ISO-8859-1")
+
+    result = resolve_response_encoding(response)
+
+    assert result is not None
+    assert result.lower() == "iso-8859-1"
+    response.encoding = result
+    assert response.text == text
 
 
 # ---------------------------------------------------------------------------
@@ -80,10 +97,10 @@ def test_falls_back_to_detection_when_header_has_no_charset(encoding: str) -> No
     assert response.text == SAMPLE_TEXT
 
 
-def test_falls_back_to_detection_when_encoding_is_none() -> None:
-    """encodingがNoneの場合に本文から推定すること"""
-    response = _build_response(SAMPLE_TEXT.encode("euc_jp"), "text/html")
-    response.encoding = None
+def test_falls_back_to_detection_when_content_type_is_absent() -> None:
+    """Content-Typeヘッダ自体が無い場合も本文から推定すること"""
+    response = _build_response(SAMPLE_TEXT.encode("euc_jp"))
+    assert response.encoding is None
 
     result = resolve_response_encoding(response)
 
