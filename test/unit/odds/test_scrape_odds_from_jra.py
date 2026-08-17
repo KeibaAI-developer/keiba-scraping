@@ -118,12 +118,13 @@ def test_scrape_odds_from_jra_extracts_odds_values(
     assert umaban_6["複勝人気"] == 1.0
 
 
-def test_scrape_odds_from_jra_with_2着払い_column(
+# JRAのカラム名「複勝（2着払い）」をそのまま識別子に使うため、日本語の名前を許可する
+def test_scrape_odds_from_jra_with_2着払い_column(  # noqa: N802
     mock_playwright: MagicMock, jra_odds_raw_df: pd.DataFrame
 ) -> None:
     """7頭立て以下で複勝（2着払い）カラムの場合も正しく処理できること"""
     # 「3着払い」を「2着払い」にリネームしたDataFrameを作成
-    df_2着 = jra_odds_raw_df.rename(columns={"複勝（3着払い）": "複勝（2着払い）"})
+    df_2着 = jra_odds_raw_df.rename(columns={"複勝（3着払い）": "複勝（2着払い）"})  # noqa: N806
 
     with (
         patch("scraping.odds.async_playwright", return_value=mock_playwright),

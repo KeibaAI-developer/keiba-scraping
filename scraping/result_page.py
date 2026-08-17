@@ -585,7 +585,8 @@ def _split_corner_passing_order(df: pd.DataFrame) -> pd.DataFrame:
     "14-15" → 1コーナー=NaN, 2コーナー=NaN, 3コーナー=14, 4コーナー=15
 
     競走中止馬で正常馬より通過コーナー数が少ない場合は左から埋める:
-    正常馬が4コーナーのレースで中止馬の通過数が3→ 1コーナー=part[0], 2コーナー=part[1], 3コーナー=part[2], 4コーナー=NaN
+    正常馬が4コーナーのレースで中止馬の通過数が3
+    → 1コーナー=part[0], 2コーナー=part[1], 3コーナー=part[2], 4コーナー=NaN
 
     Args:
         df (pd.DataFrame): コーナー通過順カラムを持つDataFrame
