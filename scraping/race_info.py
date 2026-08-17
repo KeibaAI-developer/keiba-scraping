@@ -162,6 +162,7 @@ def _format_race_info_text(race_raw_text: str, logger: logging.Logger) -> list[s
 
     Args:
         race_raw_text (str): class:RaceList_Item02のテキスト
+        logger (logging.Logger): ロガーインスタンス
 
     Returns:
         list[str]: 整形したリスト
@@ -220,6 +221,7 @@ def _format_race_info_list(race_filtered_list: list[str], logger: logging.Logger
 
     Args:
         race_filtered_list (list[str]): _format_race_info_textの出力リスト
+        logger (logging.Logger): ロガーインスタンス
 
     Returns:
         list[str]: レース情報を整形したリスト
@@ -298,7 +300,8 @@ def _format_race_info_list(race_filtered_list: list[str], logger: logging.Logger
     if len(race_info_list) < 13:
         race_info_list.append("")  # グレード要素なしを追加
 
-    # 頭数・賞金が取得できなかった場合のフォールバック（基本13 + 競走記号1 + 頭数1 + 賞金5 = 20要素）
+    # 頭数・賞金が取得できなかった場合のフォールバック
+    # （基本13 + 競走記号1 + 頭数1 + 賞金5 = 20要素）
     while len(race_info_list) < 20:
         race_info_list.append("")
 
@@ -317,7 +320,8 @@ def _build_race_info_dict(
          1着賞金(15), 2着賞金(16), 3着賞金(17), 4着賞金(18), 5着賞金(19)]
 
     グレードは netkeiba のアイコン情報から別途更新される（辞書の"グレード"は空文字列で初期化）。
-    コース生値（例: "左 C", "右 外 B", "直線 A"）を「左右」「コース」「内外」に分割して辞書に格納する。
+    コース生値（例: "左 C", "右 外 B", "直線 A"）を「左右」「コース」「内外」に分割して
+    辞書に格納する。
     距離・回・開催日は_format_race_info_listで整形済みの数値文字列をintに変換する。
 
     障害レースの場合:
@@ -405,6 +409,7 @@ def _validate_race_info_dict(
 
     Args:
         race_info (dict[str, str | int | date | None]): レース情報辞書
+        logger (logging.Logger): ロガーインスタンス
 
     Raises:
         ParseError: 値がスキーマに適合しない場合
