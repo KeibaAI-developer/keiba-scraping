@@ -223,7 +223,7 @@ def test_expected_specific_values(expected: dict[str, Any]) -> None:
 def test_get_all_horse_info_multiple_pages() -> None:
     """複数ページの場合、全ページ分のデータが結合されること"""
     scraper = create_scraper_with_mock(YEAR, 2, [FIXTURE_P1, FIXTURE_P80])
-    df = scraper.get_all_horse_info()
+    df = scraper.get_all_horse_info(sleep=0.0)
 
     assert len(df) == 100 + 75
     assert list(df.columns) == HORSE_INFO_COLUMNS

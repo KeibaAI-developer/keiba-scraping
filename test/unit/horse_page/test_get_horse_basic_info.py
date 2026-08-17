@@ -9,9 +9,8 @@ import pytest
 
 from scraping.config import HORSE_BASIC_INFO_COLUMNS
 from scraping.exceptions import ParseError
-from scraping.horse_page import HorsePageScraper
 
-from .conftest import create_scraper_from_fixture
+from .conftest import create_scraper_from_fixture, create_scraper_from_html
 
 
 # ---------------------------------------------------------------------------
@@ -341,12 +340,7 @@ def test_missing_horse_title_raises_parse_error() -> None:
         "<table class='db_prof_table'><tr><th>生年月日</th><td>2022年1月1日</td></tr></table>"
         "</body></html>"
     )
-    from unittest.mock import MagicMock, patch
-
-    mock_driver = MagicMock()
-    mock_driver.page_source = minimal_html
-    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
-        scraper = HorsePageScraper("9999999999")
+    scraper = create_scraper_from_html(minimal_html, "9999999999")
 
     with pytest.raises(ParseError, match="horse_titleが見つかりません"):
         scraper.get_horse_basic_info()
@@ -359,12 +353,7 @@ def test_missing_prof_table_raises_parse_error() -> None:
         "<div class='horse_title'><h1>テスト馬</h1><p class='txt_01'>牡4歳</p></div>"
         "</body></html>"
     )
-    from unittest.mock import MagicMock, patch
-
-    mock_driver = MagicMock()
-    mock_driver.page_source = minimal_html
-    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
-        scraper = HorsePageScraper("9999999998")
+    scraper = create_scraper_from_html(minimal_html, "9999999998")
 
     with pytest.raises(ParseError, match="db_prof_tableが見つかりません"):
         scraper.get_horse_basic_info()
@@ -390,12 +379,7 @@ def test_missing_blood_table_raises_parse_error() -> None:
         "</table>"
         "</body></html>"
     )
-    from unittest.mock import MagicMock, patch
-
-    mock_driver = MagicMock()
-    mock_driver.page_source = minimal_html
-    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
-        scraper = HorsePageScraper("9999999997")
+    scraper = create_scraper_from_html(minimal_html, "9999999997")
 
     with pytest.raises(ParseError, match="blood_tableが見つかりません"):
         scraper.get_horse_basic_info()

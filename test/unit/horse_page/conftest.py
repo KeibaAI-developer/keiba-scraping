@@ -27,10 +27,34 @@ def load_html(fixture_filename: str) -> str:
         return f.read()
 
 
+def create_scraper_from_html(html_text: str, horse_id: str) -> HorsePageScraper:
+    """任意のHTML文字列からHorsePageScraperを生成する
+
+    Selenium WebDriverをモックし、渡したHTMLのpage_sourceを返すようにする。
+    time.sleepもモックして高速化する。
+
+    Args:
+        html_text (str): page_sourceとして返すHTML
+        horse_id (str): 馬ID
+
+    Returns:
+        HorsePageScraper: 渡したHTMLベースのスクレイパー
+    """
+    mock_driver = MagicMock()
+    mock_driver.page_source = html_text
+
+    with (
+        patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver),
+        patch("scraping.horse_page.time.sleep"),
+    ):
+        return HorsePageScraper(horse_id)
+
+
 def create_scraper_from_fixture(horse_id: str) -> HorsePageScraper:
     """フィクスチャHTMLからHorsePageScraperを生成する
 
     Selenium WebDriverをモックし、フィクスチャHTMLのpage_sourceを返すようにする。
+    time.sleepもモックして高速化する。
 
     Args:
         horse_id (str): 馬ID
@@ -41,13 +65,7 @@ def create_scraper_from_fixture(horse_id: str) -> HorsePageScraper:
     fixture_filename = f"past_performances_{horse_id}.html"
     html_text = load_html(fixture_filename)
 
-    mock_driver = MagicMock()
-    mock_driver.page_source = html_text
-
-    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
-        scraper = HorsePageScraper(horse_id)
-
-    return scraper
+    return create_scraper_from_html(html_text, horse_id)
 
 
 def collect_fixture_horse_ids() -> list[str]:
