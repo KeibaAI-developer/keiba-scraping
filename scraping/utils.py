@@ -5,6 +5,7 @@
 """
 
 import datetime
+from email.message import Message
 from io import StringIO
 from typing import TYPE_CHECKING
 
@@ -15,7 +16,7 @@ from selenium.webdriver.chrome.options import Options
 from scraping.config import ID_TO_KEIBAJO_DICT, ScrapingConfig
 
 if TYPE_CHECKING:
-    from requests import Session
+    from requests import Response, Session
 
 
 def judge_turf_dirt(turf_dirt_text: str) -> str:
@@ -78,6 +79,31 @@ def calc_interval(date1: str, date2: str) -> int | float:
         return np.nan
 
 
+def resolve_response_encoding(response: "Response") -> str | None:
+    """レスポンスのデコードに使うエンコーディングを決定する
+
+    Content-Typeヘッダのcharset指定を優先し、指定が無い場合のみ本文から推定する。
+    requestsはcharsetを持たない ``text/*`` にISO-8859-1を既定値として設定し、
+    明示指定と区別できなくなるため、``response.encoding`` ではなく
+    Content-Typeヘッダを直接解析してcharsetの有無を判定する。
+
+    netkeibaはrace配下がUTF-8をヘッダで通知する一方、db配下とJRAはcharsetを
+    通知せずそれぞれEUC-JP、Shift_JISを返すため、両者を区別せず扱える。
+
+    Args:
+        response (Response): requestsのレスポンス
+
+    Returns:
+        str | None: 使用すべきエンコーディング名。推定できない場合はNone
+    """
+    content_type = Message()
+    content_type["Content-Type"] = response.headers.get("Content-Type", "")
+    header_encoding = content_type.get_content_charset()
+    if header_encoding is not None:
+        return header_encoding
+    return response.apparent_encoding
+
+
 def set_chrome_options() -> Options:
     """ChromeDriverのオプション設定を返す
 
@@ -107,7 +133,7 @@ def is_race_existence(url: str, session: "Session", config: ScrapingConfig | Non
     """
     cfg = config or ScrapingConfig()
     html = session.get(url, headers=cfg.headers, timeout=cfg.request_timeout)
-    html.encoding = "EUC-JP"
+    html.encoding = resolve_response_encoding(html)
 
     try:
         tables = pd.read_html(StringIO(html.text))

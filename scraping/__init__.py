@@ -80,6 +80,7 @@ from scraping.utils import (
     is_race_existence,
     judge_turf_dirt,
     race_id_to_race_info,
+    resolve_response_encoding,
     set_chrome_options,
 )
 
@@ -137,6 +138,7 @@ __all__ = [
     "race_id_to_race_info",
     "calc_interval",
     "set_chrome_options",
+    "resolve_response_encoding",
     "is_race_existence",
     # race_info
     "scrape_race_info",

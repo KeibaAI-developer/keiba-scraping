@@ -24,6 +24,7 @@ from scraping.config import (
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.race_info import scrape_race_info
 from scraping.url_builder import build_entry_url
+from scraping.utils import resolve_response_encoding
 
 
 class EntryPageScraper:
@@ -75,7 +76,7 @@ class EntryPageScraper:
             self._logger.error("ネットワークエラーが発生しました: %s", e)
             raise NetworkError(f"ネットワークエラーが発生しました: {e}") from e
 
-        response.encoding = "EUC-JP"
+        response.encoding = resolve_response_encoding(response)
         self.html_text = response.text
         self.soup = BeautifulSoup(self.html_text, "html.parser")
 

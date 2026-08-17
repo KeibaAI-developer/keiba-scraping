@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup, Tag
 from scraping.config import JRA_GRADED_RACE_COLUMNS, ScrapingConfig
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_jra_graded_race_url
-from scraping.utils import judge_turf_dirt
+from scraping.utils import judge_turf_dirt, resolve_response_encoding
 
 
 class JraGradedRaceScraper:
@@ -75,7 +75,7 @@ class JraGradedRaceScraper:
             self._logger.error("ネットワークエラーが発生しました: %s", exc)
             raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
 
-        response.encoding = response.apparent_encoding
+        response.encoding = resolve_response_encoding(response)
         soup = BeautifulSoup(response.text, "html.parser")
 
         return self._parse_graded_race_table(soup)

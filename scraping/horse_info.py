@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup, Tag
 from scraping.config import AFFILIATION_MAP, HORSE_INFO_COLUMNS, ScrapingConfig
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_horse_list_url
+from scraping.utils import resolve_response_encoding
 
 
 class HorseInfoScraper:
@@ -105,7 +106,7 @@ class HorseInfoScraper:
         except requests.exceptions.RequestException as exc:
             self._logger.error("ネットワークエラーが発生しました: %s", exc)
             raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
-        html.encoding = "EUC-JP"
+        html.encoding = resolve_response_encoding(html)
         soup = BeautifulSoup(html.text, "html.parser")
 
         # テーブル要素を取得
@@ -225,7 +226,7 @@ class HorseInfoScraper:
         except requests.exceptions.RequestException as exc:
             self._logger.error("ネットワークエラーが発生しました: %s", exc)
             raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
-        html.encoding = "EUC-JP"
+        html.encoding = resolve_response_encoding(html)
         soup = BeautifulSoup(html.text, "html.parser")
         pager = soup.find("div", class_="pager")
         if pager is None:
