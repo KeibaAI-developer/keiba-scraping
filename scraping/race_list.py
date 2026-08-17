@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup, Tag
 from scraping.config import AFFILIATION_MAP, RACE_LIST_COLUMNS, ScrapingConfig
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_race_list_url
-from scraping.utils import judge_turf_dirt, race_id_to_race_info
+from scraping.utils import judge_turf_dirt, race_id_to_race_info, resolve_response_encoding
 
 
 class RaceListScraper:
@@ -100,7 +100,7 @@ class RaceListScraper:
             self._logger.error("ネットワークエラーが発生しました: %s", exc)
             raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
 
-        html.encoding = "EUC-JP"
+        html.encoding = resolve_response_encoding(html)
         soup = BeautifulSoup(html.text, "html.parser")
 
         return self._parse_race_list_page(soup)
@@ -277,7 +277,7 @@ class RaceListScraper:
         except requests.exceptions.RequestException as exc:
             raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
 
-        html.encoding = "EUC-JP"
+        html.encoding = resolve_response_encoding(html)
         soup = BeautifulSoup(html.text, "html.parser")
         pager = soup.find("div", class_="pager")
         if pager is None:
