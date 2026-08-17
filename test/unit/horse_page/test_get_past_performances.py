@@ -6,7 +6,7 @@ Selenium WebDriverをモックし、フィクスチャHTMLを返すようにし�
 
 import datetime
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,11 @@ from scraping.config import PAST_PERFORMANCES_COLUMNS
 from scraping.exceptions import DriverError, ParseError
 from scraping.horse_page import HorsePageScraper
 
-from .conftest import collect_fixture_horse_ids, create_scraper_from_fixture
+from .conftest import (
+    collect_fixture_horse_ids,
+    create_scraper_from_fixture,
+    create_scraper_from_html,
+)
 
 HORSE_IDS = collect_fixture_horse_ids()
 
@@ -457,11 +461,7 @@ def test_new_horse_returns_empty_dataframe() -> None:
         "<table><tr><th>名前</th></tr><tr><td>テスト</td></tr></table>"
         "</body></html>"
     )
-    mock_driver = MagicMock()
-    mock_driver.page_source = empty_html
-
-    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
-        scraper = HorsePageScraper("9999999999")
+    scraper = create_scraper_from_html(empty_html, "9999999999")
 
     df = scraper.get_past_performances()
 
@@ -489,11 +489,7 @@ def test_driver_error_on_startup_failure() -> None:
 def test_no_html_table_raises_parse_error() -> None:
     """HTMLにtable要素が存在しない場合にParseErrorが発生すること"""
     no_table_html = "<html><head><title>Test</title></head><body><div>no table</div></body></html>"
-    mock_driver = MagicMock()
-    mock_driver.page_source = no_table_html
-
-    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
-        scraper = HorsePageScraper("9999999998")
+    scraper = create_scraper_from_html(no_table_html, "9999999998")
 
     with pytest.raises(ParseError, match="HTML内にテーブルが見つかりません"):
         scraper.get_past_performances()
@@ -516,11 +512,7 @@ def test_missing_required_columns_raises_parse_error() -> None:
         "</table>"
         "</body></html>"
     )
-    mock_driver = MagicMock()
-    mock_driver.page_source = missing_cols_html
-
-    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
-        scraper = HorsePageScraper("9999999997")
+    scraper = create_scraper_from_html(missing_cols_html, "9999999997")
 
     with pytest.raises(ParseError, match="必須カラムが不足しています"):
         scraper.get_past_performances()
@@ -552,11 +544,7 @@ def test_invalid_turf_dirt_raises_parse_error() -> None:
         "</table>"
         "</body></html>"
     )
-    mock_driver = MagicMock()
-    mock_driver.page_source = invalid_distance_html
-
-    with patch("scraping.horse_page.webdriver.Chrome", return_value=mock_driver):
-        scraper = HorsePageScraper("9999999996")
+    scraper = create_scraper_from_html(invalid_distance_html, "9999999996")
 
     with pytest.raises(ParseError, match="芝/ダ/障を判定できません"):
         scraper.get_past_performances()
