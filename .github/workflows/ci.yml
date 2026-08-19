@@ -12,3 +12,4 @@ jobs:
     with:
       package_name: scraping
       repo_name: keiba-scraping
+      dependency_library: 'keiba-domain@develop'

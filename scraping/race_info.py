@@ -9,6 +9,7 @@ from datetime import date
 
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
+from keiba_domain import parse_inout
 
 from scraping.config import GRADE_DICT, RACE_INFO_COLUMNS, WEIGHT_CONDITIONS
 from scraping.exceptions import ParseError
@@ -557,13 +558,7 @@ def _judge_course_inout(course: str) -> str:
         course (str): コースの生値（例: "右 外 B"）
 
     Returns:
-        str: "内","外","外-内"のいずれか。いずれでもない場合は空文字列
+        str: "内","外","内-外","外-内"のいずれか。いずれでもない場合は空文字列
     """
-    if "内" in course and "外" in course:  # 阪神芝3200mのみ外回りと内回り両方使用
-        return "外-内"
-    elif "内" in course:
-        return "内"
-    elif "外" in course:
-        return "外"
-    else:
-        return ""
+    inout = parse_inout(course)
+    return str(inout) if inout is not None else ""
