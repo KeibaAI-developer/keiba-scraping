@@ -34,6 +34,7 @@
 - `selenium>=4.10.0`
 - `playwright>=1.30.0`
 - `numpy>=1.24.0`
+- `keiba-domain>=0.1.0`
 
 
 ## インストール
