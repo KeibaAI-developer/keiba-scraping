@@ -6,6 +6,8 @@ ScrapingConfigデータクラスおよびライブラリ内で使用する定数
 import os
 from dataclasses import dataclass, field
 
+from keiba_domain import KEIBAJO_CODE_TO_LOCAL_NAME
+
 
 @dataclass
 class ScrapingConfig:
@@ -44,34 +46,10 @@ class ScrapingConfig:
 # 競馬場辞書
 # ---------------------------------------------------------------------------
 KEIBAJO_TO_ID_DICT: dict[str, str] = {
-    "札幌": "01",
-    "函館": "02",
-    "福島": "03",
-    "新潟": "04",
-    "東京": "05",
-    "中山": "06",
-    "中京": "07",
-    "京都": "08",
-    "阪神": "09",
-    "小倉": "10",
-    "門別": "30",
-    "盛岡": "35",
-    "水沢": "36",
-    "浦和": "42",
-    "船橋": "43",
-    "大井": "44",
-    "川崎": "45",
-    "金沢": "46",
-    "笠松": "47",
-    "名古屋": "48",
-    "園田": "50",
-    "姫路": "51",
-    "高知": "54",
-    "佐賀": "55",
-    "帯広": "65",
+    name: code for code, name in KEIBAJO_CODE_TO_LOCAL_NAME.items()
 }
 
-ID_TO_KEIBAJO_DICT: dict[str, str] = {v: k for k, v in KEIBAJO_TO_ID_DICT.items()}
+ID_TO_KEIBAJO_DICT: dict[str, str] = dict(KEIBAJO_CODE_TO_LOCAL_NAME)
 
 # ---------------------------------------------------------------------------
 # グレード辞書

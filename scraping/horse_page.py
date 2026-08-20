@@ -12,6 +12,7 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
+from keiba_domain import parse_turf_dirt
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 
@@ -644,6 +645,10 @@ def _parse_prize(text: str) -> int | float:
 def _extract_turf_dirt(distance_text: str) -> str:
     """距離テキストから芝/ダ/障を抽出する
 
+    芝ダ（keiba_domainの ``TurfDirt``）と平地/障害（``RaceShubetsu``）はドメイン上
+    別概念だが、netkeibaのHTMLは障害レースの距離欄を「障3000」と表記し芝ダの位置に
+    「障」が入る。この関数はnetkeiba表記のパースとして3値を返す。
+
     Args:
         distance_text (str): "芝1200", "ダ1600", "障3000" 等
 
@@ -654,12 +659,11 @@ def _extract_turf_dirt(distance_text: str) -> str:
         ParseError: 芝/ダ/障のいずれにも該当しない場合
     """
     text = str(distance_text)
-    if "障" in text:
+    if "障" in text:  # netkeibaは障害レースの距離欄を「障3000」と表記する
         return "障"
-    elif "芝" in text:
-        return "芝"
-    elif "ダ" in text:
-        return "ダ"
+    turf_dirt = parse_turf_dirt(text)
+    if turf_dirt is not None:
+        return str(turf_dirt)
     raise ParseError(f"芝/ダ/障を判定できません: {distance_text}")
 
 

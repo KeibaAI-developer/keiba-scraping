@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+from keiba_domain import parse_turf_dirt
 from selenium.webdriver.chrome.options import Options
 
 from scraping.config import ID_TO_KEIBAJO_DICT, ScrapingConfig
@@ -22,20 +23,20 @@ if TYPE_CHECKING:
 def judge_turf_dirt(turf_dirt_text: str) -> str:
     """芝かダートか障害か判定する
 
+    芝ダ（keiba_domainの ``TurfDirt``）と平地/障害（``RaceShubetsu``）はドメイン上
+    別概念だが、netkeibaのHTMLは障害レースの距離欄を「障2880m」と表記し芝ダの位置に
+    「障」が入る。この関数はnetkeiba表記のパースとして3値を返す。
+
     Args:
         turf_dirt_text (str): "芝","ダ","障"を含む文字列
 
     Returns:
         str: "芝","ダ","障"のいずれか。判定不能の場合は空文字
     """
-    if "障" in turf_dirt_text:
+    if "障" in turf_dirt_text:  # netkeibaは障害レースの距離欄を「障2880m」と表記する
         return "障"
-    elif "芝" in turf_dirt_text:
-        return "芝"
-    elif "ダ" in turf_dirt_text:
-        return "ダ"
-    else:
-        return ""
+    turf_dirt = parse_turf_dirt(turf_dirt_text)
+    return str(turf_dirt) if turf_dirt is not None else ""
 
 
 def race_id_to_race_info(race_id: str) -> tuple[int, str, int, int, int]:
