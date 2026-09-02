@@ -414,11 +414,18 @@ def test_row_10_hbc_sho() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 準正常系: 平地レースでペースが空の場合
+# 準正常系: ペース欄が不正な場合
 # ---------------------------------------------------------------------------
-def test_flat_race_with_empty_pace_raises_parse_error() -> None:
-    """平地レースのペース欄が空の場合にParseErrorが発生すること"""
-    empty_pace_html = """
+def _build_single_row_html(pace_text: str) -> str:
+    """平地レース1行だけのレース一覧HTMLを組み立てる
+
+    Args:
+        pace_text (str): ペース欄の文字列
+
+    Returns:
+        str: レース一覧のHTML
+    """
+    return f"""
     <html><body>
     <table class="nk_tb_common race_table_01">
         <tr><th>開催日</th></tr>
@@ -433,7 +440,7 @@ def test_flat_race_with_empty_pace_raises_parse_error() -> None:
             <td>14</td>
             <td>稍</td>
             <td>1:45.5</td>
-            <td></td>
+            <td>{pace_text}</td>
             <td><a href="/horse/2023104322/">タガノシルフィー</a></td>
             <td><a href="/jockey/result/recent/01140/">横山和生</a></td>
             <td><a href="/trainer/result/recent/01140/">[西]石橋守</a></td>
@@ -444,14 +451,38 @@ def test_flat_race_with_empty_pace_raises_parse_error() -> None:
     </body></html>
     """
 
+
+def _create_scraper_with_html(html_text: str) -> RaceListScraper:
+    """任意のHTMLを返すモックセッションからRaceListScraperを生成する
+
+    Args:
+        html_text (str): session.getが返すHTML
+
+    Returns:
+        RaceListScraper: モックセッションを持つスクレイパー
+    """
     mock_session = MagicMock()
     mock_response = MagicMock()
-    mock_response.text = empty_pace_html
+    mock_response.text = html_text
     mock_response.encoding = "EUC-JP"
     mock_session.get.return_value = mock_response
 
     with patch.object(RaceListScraper, "_scrape_max_page_num", return_value=1):
-        scraper = RaceListScraper(YEAR, session=mock_session)
+        return RaceListScraper(YEAR, session=mock_session)
+
+
+def test_flat_race_with_empty_pace_raises_parse_error() -> None:
+    """平地レースのペース欄が空の場合にParseErrorが発生すること"""
+    scraper = _create_scraper_with_html(_build_single_row_html(""))
 
     with pytest.raises(ParseError, match="平地レースのペースが空です"):
+        scraper.scrape_one_page(1)
+
+
+@pytest.mark.parametrize("pace_text", ["36.7-40.5abc", "36.7.1-40.5", "36.7"])
+def test_invalid_pace_format_raises_parse_error(pace_text: str) -> None:
+    """ペース欄が "前半-後半" の小数形式でない場合にParseErrorが発生すること"""
+    scraper = _create_scraper_with_html(_build_single_row_html(pace_text))
+
+    with pytest.raises(ParseError, match="ペースのパースに失敗しました"):
         scraper.scrape_one_page(1)

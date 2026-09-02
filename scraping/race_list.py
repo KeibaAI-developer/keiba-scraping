@@ -356,7 +356,7 @@ class RaceListScraper:
                 return np.nan, np.nan
             self._logger.error("平地レースのペースが空です")
             raise ParseError("平地レースのペースが空です")
-        match = re.match(r"([\d.]+)-([\d.]+)", pace_text)
+        match = re.fullmatch(r"(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)", pace_text)
         if match:
             return float(match.group(1)), float(match.group(2))
         self._logger.error("ペースのパースに失敗しました: %s", pace_text)
