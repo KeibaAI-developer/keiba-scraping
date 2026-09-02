@@ -17,6 +17,12 @@ from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_horse_list_url
 from scraping.utils import resolve_response_encoding
 
+# 各IDの形式（netkeibaのIDはASCII英数字で、桁数は項目ごとに固定）
+HORSE_ID_PATTERN = r"[0-9A-Za-z]{10}"
+TRAINER_ID_PATTERN = r"[0-9A-Za-z]{5}"
+OWNER_ID_PATTERN = r"[0-9A-Za-z]{6}"
+BREEDER_ID_PATTERN = r"[0-9A-Za-z]{6}"
+
 
 class HorseInfoScraper:
     """馬情報スクレイパークラス
@@ -138,10 +144,10 @@ class HorseInfoScraper:
             dict[str, object]: HORSE_INFO_COLUMNSのキーを持つ辞書
 
         Raises:
-            ParseError: 馬IDまたは総賞金のパースに失敗した場合
+            ParseError: 馬ID・各種ID・総賞金のパースに失敗した場合
         """
         # 馬ID (tds[1]: 馬名カラムのリンクから)
-        horse_id = _extract_id_from_td(tds[1])
+        horse_id = self._extract_id(tds[1], HORSE_ID_PATTERN)
         if not isinstance(horse_id, str):
             self._logger.error("馬IDのリンクが見つかりません: %s", tds[1].text.strip())
             raise ParseError(f"馬IDのリンクが見つかりません: {tds[1].text.strip()}")
@@ -164,16 +170,42 @@ class HorseInfoScraper:
             "生年": self.year,
             "所属": affiliation,
             "厩舎": trainer_name,
-            "厩舎ID": _extract_id_from_td(tds[5]),
+            "厩舎ID": self._extract_id(tds[5], TRAINER_ID_PATTERN),
             "父": _extract_link_text(tds[6]),
             "母": _extract_link_text(tds[7]),
             "母父": _extract_link_text(tds[8]),
             "馬主": _extract_link_text(tds[9]),
-            "馬主ID": _extract_id_from_td(tds[9]),
+            "馬主ID": self._extract_id(tds[9], OWNER_ID_PATTERN),
             "生産者": _extract_link_text(tds[10]),
-            "生産者ID": _extract_id_from_td(tds[10]),
+            "生産者ID": self._extract_id(tds[10], BREEDER_ID_PATTERN),
             "総賞金(万円)": prize,
         }
+
+    def _extract_id(self, td_element: Tag, id_pattern: str) -> str | float:
+        """tdタグ内のaタグのhrefからIDを抽出する
+
+        馬名のリンク（例: /horse/2022105081/）はパスから、
+        厩舎・馬主・生産者のリンク（例: /trainer/race.html?id=01159）はidクエリからIDを取り出す。
+
+        Args:
+            td_element (Tag): td要素
+            id_pattern (str): IDの形式を表す正規表現
+
+        Returns:
+            str | float: IDの文字列。リンクがない場合はNaN
+
+        Raises:
+            ParseError: リンクはあるがIDが期待する形式でない場合
+        """
+        a_tag = td_element.find("a")
+        if not isinstance(a_tag, Tag):
+            return np.nan
+        href = str(a_tag.get("href", ""))
+        id_match = re.search(rf"(?:/horse/|[?&]id=)({id_pattern})(?:/|&|$)", href)
+        if id_match is None:
+            self._logger.error("IDが期待する形式ではありません: %s", href)
+            raise ParseError(f"IDが期待する形式ではありません: {href}")
+        return id_match.group(1)
 
     def _scrape_max_page_num(self) -> int:
         """競走馬一覧ページの最大ページ数を取得する
@@ -219,28 +251,6 @@ class HorseInfoScraper:
 
         # 100頭ごとに1ページなので切り上げでページ数を算出
         return (birth_num + 99) // 100
-
-
-def _extract_id_from_td(td_element: Tag) -> str | float:
-    """tdタグ内のaタグのhrefからIDを抽出する
-
-    馬名のリンク（例: /horse/2022105081/）はパスから、
-    厩舎・馬主・生産者のリンク（例: /trainer/race.html?id=01159）はidクエリからIDを取り出す。
-
-    Args:
-        td_element (Tag): td要素
-
-    Returns:
-        str | float: IDの文字列。リンクがない場合はNaN
-    """
-    a_tag = td_element.find("a")
-    if not isinstance(a_tag, Tag):
-        return np.nan
-    href = str(a_tag.get("href", ""))
-    id_match = re.search(r"(?:/horse/|[?&]id=)([^/&]+)", href)
-    if id_match is None:
-        return np.nan
-    return id_match.group(1)
 
 
 def _extract_link_text(td_element: Tag) -> str | float:

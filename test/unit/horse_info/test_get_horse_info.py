@@ -4,6 +4,7 @@ requestsをモックし、フィクスチャHTMLを返すようにしてテス�
 馬情報テーブルの取得・カラム構成・主要値を検証する。
 """
 
+import re
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -80,14 +81,16 @@ def test_birth_year_is_consistent() -> None:
 # 正常系: 馬IDの形式
 # ---------------------------------------------------------------------------
 def test_horse_id_format() -> None:
-    """馬IDが10桁の数字文字列であること"""
+    """馬IDが10桁の英数字文字列であること
+
+    外国産馬には "000a02d612" のように英字を含むIDが割り当てられている。
+    """
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
     for horse_id in df["馬ID"]:
         assert isinstance(horse_id, str), f"馬IDが文字列でない: {horse_id}"
-        assert len(horse_id) == 10, f"馬IDが10桁でない: {horse_id}"
-        assert horse_id.isdigit(), f"馬IDが数字でない: {horse_id}"
+        assert re.fullmatch(r"[0-9A-Za-z]{10}", horse_id), f"馬IDが10桁の英数字でない: {horse_id}"
 
 
 # ---------------------------------------------------------------------------
@@ -126,36 +129,37 @@ def test_trainer_id_format() -> None:
 
     for trainer_id in df["厩舎ID"].dropna():
         assert isinstance(trainer_id, str), f"厩舎IDが文字列でない: {trainer_id}"
-        assert len(trainer_id) == 5, f"厩舎IDが5桁でない: {trainer_id}"
-        assert trainer_id.isalnum(), f"厩舎IDが英数字でない: {trainer_id}"
+        assert re.fullmatch(
+            r"[0-9A-Za-z]{5}", trainer_id
+        ), f"厩舎IDが5桁の英数字でない: {trainer_id}"
 
 
 # ---------------------------------------------------------------------------
 # 正常系: 馬主IDの形式
 # ---------------------------------------------------------------------------
 def test_owner_id_format() -> None:
-    """馬主IDが6桁の数字文字列であること（NaN以外）"""
+    """馬主IDが6桁の英数字文字列であること（NaN以外）"""
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
     for owner_id in df["馬主ID"].dropna():
         assert isinstance(owner_id, str), f"馬主IDが文字列でない: {owner_id}"
-        assert len(owner_id) == 6, f"馬主IDが6桁でない: {owner_id}"
-        assert owner_id.isdigit(), f"馬主IDが数字でない: {owner_id}"
+        assert re.fullmatch(r"[0-9A-Za-z]{6}", owner_id), f"馬主IDが6桁の英数字でない: {owner_id}"
 
 
 # ---------------------------------------------------------------------------
 # 正常系: 生産者IDの形式
 # ---------------------------------------------------------------------------
 def test_breeder_id_format() -> None:
-    """生産者IDが6桁の数字文字列であること（NaN以外）"""
+    """生産者IDが6桁の英数字文字列であること（NaN以外）"""
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
     for breeder_id in df["生産者ID"].dropna():
         assert isinstance(breeder_id, str), f"生産者IDが文字列でない: {breeder_id}"
-        assert len(breeder_id) == 6, f"生産者IDが6桁でない: {breeder_id}"
-        assert breeder_id.isdigit(), f"生産者IDが数字でない: {breeder_id}"
+        assert re.fullmatch(
+            r"[0-9A-Za-z]{6}", breeder_id
+        ), f"生産者IDが6桁の英数字でない: {breeder_id}"
 
 
 # ---------------------------------------------------------------------------
@@ -379,4 +383,41 @@ def test_insufficient_td_columns_raises_parse_error() -> None:
         scraper = HorseInfoScraper(YEAR, session=mock_session)
 
     with pytest.raises(ParseError, match="テーブル列数が不足しています"):
+        scraper.scrape_one_page(1)
+
+
+def test_invalid_id_format_raises_parse_error() -> None:
+    """リンクのIDが期待する形式でない場合にParseErrorが発生すること"""
+    invalid_id_html = """
+    <html><body>
+    <table class="nk_tb_common race_table_01 horse_list_table">
+        <tr><th>馬名</th></tr>
+        <tr>
+            <td></td>
+            <td><a href="https://db.netkeiba.com/horse/2022105081/">ミュージアムマイル</a></td>
+            <td>牡</td>
+            <td>2022</td>
+            <td></td>
+            <td>[西] <a href="https://db.netkeiba.com/trainer/race.html?id=abc">高柳大輔</a></td>
+            <td><a href="https://db.netkeiba.com/horse/list.html?sire_id=1">父A</a></td>
+            <td><a href="https://db.netkeiba.com/horse/list.html?mare_id=1">母A</a></td>
+            <td><a href="https://db.netkeiba.com/horse/list.html?bms_id=1">母父A</a></td>
+            <td><a href="https://db.netkeiba.com/owner/race.html?id=226800">馬主A</a></td>
+            <td><a href="https://db.netkeiba.com/breeder/race.html?id=373126">生産者A</a></td>
+            <td>1500.0</td>
+        </tr>
+    </table>
+    </body></html>
+    """
+
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = invalid_id_html
+    mock_response.encoding = "EUC-JP"
+    mock_session.get.return_value = mock_response
+
+    with patch.object(HorseInfoScraper, "_scrape_max_page_num", return_value=1):
+        scraper = HorseInfoScraper(YEAR, session=mock_session)
+
+    with pytest.raises(ParseError, match="IDが期待する形式ではありません"):
         scraper.scrape_one_page(1)
