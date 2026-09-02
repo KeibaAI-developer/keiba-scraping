@@ -200,7 +200,7 @@ class RaceListScraper:
 
         # ペース (td[10]: "36.7-40.5" → レース前3F, レース後3F)
         pace_text = tds[10].text.strip()
-        pace_first, pace_last = self._parse_pace(pace_text)
+        pace_first, pace_last = self._parse_pace(pace_text, turf_dirt)
 
         # 勝ち馬 (td[11])
         winner_name = tds[11].text.strip()
@@ -335,23 +335,27 @@ class RaceListScraper:
             self._logger.error("日付のパースに失敗しました: %s", date_text)
             raise ParseError(f"日付のパースに失敗しました: {date_text}") from exc
 
-    def _parse_pace(self, pace_text: str) -> tuple[float, float]:
+    def _parse_pace(self, pace_text: str, turf_dirt: str) -> tuple[float, float]:
         """ペース文字列を前半3Fと後半3Fに分割する
 
         障害レースはペースが表示されず空文字になるため、NaNを返す。
 
         Args:
             pace_text (str): "36.7-40.5" 形式のペース文字列
+            turf_dirt (str): 芝ダ（"芝","ダ","障"のいずれか）
 
         Returns:
-            float: レース前3F。ペースが空の場合はNaN
-            float: レース後3F。ペースが空の場合はNaN
+            float: レース前3F。障害レースでペースが空の場合はNaN
+            float: レース後3F。障害レースでペースが空の場合はNaN
 
         Raises:
-            ParseError: ペース文字列のパースに失敗した場合
+            ParseError: 平地レースでペースが空の場合、またはペース文字列のパースに失敗した場合
         """
         if pace_text == "":
-            return np.nan, np.nan
+            if turf_dirt == "障":
+                return np.nan, np.nan
+            self._logger.error("平地レースのペースが空です")
+            raise ParseError("平地レースのペースが空です")
         match = re.match(r"([\d.]+)-([\d.]+)", pace_text)
         if match:
             return float(match.group(1)), float(match.group(2))

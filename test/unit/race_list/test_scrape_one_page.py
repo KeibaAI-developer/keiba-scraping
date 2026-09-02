@@ -6,12 +6,15 @@ requestsをモックし、フィクスチャHTMLを返すようにしてテス�
 
 import datetime
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from scraping.config import RACE_LIST_COLUMNS
+from scraping.exceptions import ParseError
+from scraping.race_list import RaceListScraper
 
 from .conftest import create_scraper_with_mock
 
@@ -408,3 +411,47 @@ def test_row_10_hbc_sho() -> None:
     assert row["距離"] == 1200
     assert row["R"] == 10
     assert row["勝ち馬"] == "サトノワーグナー"
+
+
+# ---------------------------------------------------------------------------
+# 準正常系: 平地レースでペースが空の場合
+# ---------------------------------------------------------------------------
+def test_flat_race_with_empty_pace_raises_parse_error() -> None:
+    """平地レースのペース欄が空の場合にParseErrorが発生すること"""
+    empty_pace_html = """
+    <html><body>
+    <table class="nk_tb_common race_table_01">
+        <tr><th>開催日</th></tr>
+        <tr>
+            <td><a href="/race/list/20260830/">2026/08/30</a></td>
+            <td>2札幌4</td>
+            <td>晴</td>
+            <td>1</td>
+            <td><a href="/race/202601020401/">3歳未勝利</a></td>
+            <td></td>
+            <td>ダ1700</td>
+            <td>14</td>
+            <td>稍</td>
+            <td>1:45.5</td>
+            <td></td>
+            <td><a href="/horse/2023104322/">タガノシルフィー</a></td>
+            <td><a href="/jockey/result/recent/01140/">横山和生</a></td>
+            <td><a href="/trainer/result/recent/01140/">[西]石橋守</a></td>
+            <td><a href="/horse/2023104101/">テンレッドサン</a></td>
+            <td><a href="/horse/2023102608/">エリカビアリッツ</a></td>
+        </tr>
+    </table>
+    </body></html>
+    """
+
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = empty_pace_html
+    mock_response.encoding = "EUC-JP"
+    mock_session.get.return_value = mock_response
+
+    with patch.object(RaceListScraper, "_scrape_max_page_num", return_value=1):
+        scraper = RaceListScraper(YEAR, session=mock_session)
+
+    with pytest.raises(ParseError, match="平地レースのペースが空です"):
+        scraper.scrape_one_page(1)
