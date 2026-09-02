@@ -386,9 +386,17 @@ def test_insufficient_td_columns_raises_parse_error() -> None:
         scraper.scrape_one_page(1)
 
 
-def test_invalid_id_format_raises_parse_error() -> None:
-    """リンクのIDが期待する形式でない場合にParseErrorが発生すること"""
-    invalid_id_html = """
+def _build_single_row_html(trainer_href: str, prize_text: str) -> str:
+    """競走馬1行だけの競走馬一覧HTMLを組み立てる
+
+    Args:
+        trainer_href (str): 厩舎リンクのURL
+        prize_text (str): 総賞金欄の文字列
+
+    Returns:
+        str: 競走馬一覧のHTML
+    """
+    return f"""
     <html><body>
     <table class="nk_tb_common race_table_01 horse_list_table">
         <tr><th>馬名</th></tr>
@@ -398,26 +406,56 @@ def test_invalid_id_format_raises_parse_error() -> None:
             <td>牡</td>
             <td>2022</td>
             <td></td>
-            <td>[西] <a href="https://db.netkeiba.com/trainer/race.html?id=abc">高柳大輔</a></td>
+            <td>[西] <a href="{trainer_href}">高柳大輔</a></td>
             <td><a href="https://db.netkeiba.com/horse/list.html?sire_id=1">父A</a></td>
             <td><a href="https://db.netkeiba.com/horse/list.html?mare_id=1">母A</a></td>
             <td><a href="https://db.netkeiba.com/horse/list.html?bms_id=1">母父A</a></td>
             <td><a href="https://db.netkeiba.com/owner/race.html?id=226800">馬主A</a></td>
             <td><a href="https://db.netkeiba.com/breeder/race.html?id=373126">生産者A</a></td>
-            <td>1500.0</td>
+            <td>{prize_text}</td>
         </tr>
     </table>
     </body></html>
     """
 
+
+def _create_scraper_with_html(html_text: str) -> HorseInfoScraper:
+    """任意のHTMLを返すモックセッションからHorseInfoScraperを生成する
+
+    Args:
+        html_text (str): session.getが返すHTML
+
+    Returns:
+        HorseInfoScraper: モックセッションを持つスクレイパー
+    """
     mock_session = MagicMock()
     mock_response = MagicMock()
-    mock_response.text = invalid_id_html
+    mock_response.text = html_text
     mock_response.encoding = "EUC-JP"
     mock_session.get.return_value = mock_response
 
     with patch.object(HorseInfoScraper, "_scrape_max_page_num", return_value=1):
-        scraper = HorseInfoScraper(YEAR, session=mock_session)
+        return HorseInfoScraper(YEAR, session=mock_session)
+
+
+def test_invalid_id_format_raises_parse_error() -> None:
+    """リンクのIDが期待する形式でない場合にParseErrorが発生すること"""
+    html_text = _build_single_row_html(
+        trainer_href="https://db.netkeiba.com/trainer/race.html?id=abc", prize_text="1500.0"
+    )
+    scraper = _create_scraper_with_html(html_text)
 
     with pytest.raises(ParseError, match="IDが期待する形式ではありません"):
+        scraper.scrape_one_page(1)
+
+
+@pytest.mark.parametrize("prize_text", ["abc", "inf", "1e400"])
+def test_invalid_prize_raises_parse_error(prize_text: str) -> None:
+    """総賞金が数値に変換できない、または整数に収まらない場合にParseErrorが発生すること"""
+    html_text = _build_single_row_html(
+        trainer_href="https://db.netkeiba.com/trainer/race.html?id=01159", prize_text=prize_text
+    )
+    scraper = _create_scraper_with_html(html_text)
+
+    with pytest.raises(ParseError, match="総賞金のパースに失敗しました"):
         scraper.scrape_one_page(1)

@@ -161,7 +161,7 @@ class HorseInfoScraper:
         prize_text = tds[11].text.strip().replace(",", "")
         try:
             prize = int(float(prize_text))
-        except ValueError as exc:
+        except (ValueError, OverflowError) as exc:
             self._logger.error("総賞金のパースに失敗しました: %s", prize_text)
             raise ParseError(f"総賞金のパースに失敗しました: {prize_text}") from exc
 
