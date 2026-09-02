@@ -338,15 +338,20 @@ class RaceListScraper:
     def _parse_pace(self, pace_text: str) -> tuple[float, float]:
         """ペース文字列を前半3Fと後半3Fに分割する
 
+        障害レースはペースが表示されず空文字になるため、NaNを返す。
+
         Args:
             pace_text (str): "36.7-40.5" 形式のペース文字列
 
         Returns:
-            tuple[float, float]: レース前3F, レース後3F
+            float: レース前3F。ペースが空の場合はNaN
+            float: レース後3F。ペースが空の場合はNaN
 
         Raises:
             ParseError: ペース文字列のパースに失敗した場合
         """
+        if pace_text == "":
+            return np.nan, np.nan
         match = re.match(r"([\d.]+)-([\d.]+)", pace_text)
         if match:
             return float(match.group(1)), float(match.group(2))
