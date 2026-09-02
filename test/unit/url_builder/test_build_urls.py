@@ -32,9 +32,10 @@ def custom_config() -> ScrapingConfig:
 def test_build_race_list_url_default(default_config: ScrapingConfig) -> None:
     """デフォルト設定でレース一覧URLが正しく構築されることを確認する"""
     url = build_race_list_url(2024, 1, default_config)
-    assert "db.netkeiba.com" in url
-    assert "start_year=2024" in url
-    assert "end_year=2024" in url
+    assert "db.netkeiba.com/race/list.html" in url
+    assert "yf=2024" in url
+    assert "yt=2024" in url
+    assert "limit=100" in url
     assert "page=1" in url
 
 
@@ -42,7 +43,7 @@ def test_build_race_list_url_none_config() -> None:
     """configがNoneでもデフォルト値でURLが構築されることを確認する"""
     url = build_race_list_url(2024, 1)
     assert "db.netkeiba.com" in url
-    assert "start_year=2024" in url
+    assert "yf=2024" in url
 
 
 def test_build_race_list_url_custom(custom_config: ScrapingConfig) -> None:
@@ -101,8 +102,9 @@ def test_build_horse_info_url_default(default_config: ScrapingConfig) -> None:
 def test_build_horse_list_url_default(default_config: ScrapingConfig) -> None:
     """競走馬一覧ページURLが正しく構築されることを確認する"""
     url = build_horse_list_url(2021, 2, default_config)
-    assert "db.netkeiba.com" in url
-    assert "birthyear=2021" in url
+    assert "db.netkeiba.com/horse/list.html" in url
+    assert "year=2021" in url
+    assert "limit=100" in url
     assert "page=2" in url
 
 

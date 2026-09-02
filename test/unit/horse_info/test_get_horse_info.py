@@ -21,7 +21,7 @@ from .conftest import create_scraper_with_mock
 # テスト用定数
 # ---------------------------------------------------------------------------
 FIXTURE_P1 = "horse_info_2022_p1.html"
-FIXTURE_P80 = "horse_info_2022_p80.html"
+FIXTURE_P82 = "horse_info_2022_p82.html"
 YEAR = 2022
 
 
@@ -37,9 +37,9 @@ def test_columns_match_horse_info_columns_p1() -> None:
     assert list(df.columns) == HORSE_INFO_COLUMNS
 
 
-def test_columns_match_horse_info_columns_p80() -> None:
+def test_columns_match_horse_info_columns_p82() -> None:
     """最終ページのカラム構成がHORSE_INFO_COLUMNSと一致すること"""
-    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P80])
+    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P82])
     df = scraper.scrape_one_page(1)
 
     assert isinstance(df, pd.DataFrame)
@@ -57,9 +57,9 @@ def test_row_count_p1() -> None:
     assert len(df) == 100
 
 
-def test_row_count_p80() -> None:
+def test_row_count_p82() -> None:
     """最終ページは75行であること"""
-    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P80])
+    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P82])
     df = scraper.scrape_one_page(1)
 
     assert len(df) == 75
@@ -117,14 +117,17 @@ def test_affiliation_contains_kuritto_and_miho() -> None:
 # 正常系: 厩舎IDの形式
 # ---------------------------------------------------------------------------
 def test_trainer_id_format() -> None:
-    """厩舎IDが5桁の数字文字列であること（NaN以外）"""
+    """厩舎IDが5桁の英数字文字列であること（NaN以外）
+
+    地方の調教師には "a02a8" のように英字を含むIDが割り当てられている。
+    """
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
     for trainer_id in df["厩舎ID"].dropna():
         assert isinstance(trainer_id, str), f"厩舎IDが文字列でない: {trainer_id}"
         assert len(trainer_id) == 5, f"厩舎IDが5桁でない: {trainer_id}"
-        assert trainer_id.isdigit(), f"厩舎IDが数字でない: {trainer_id}"
+        assert trainer_id.isalnum(), f"厩舎IDが英数字でない: {trainer_id}"
 
 
 # ---------------------------------------------------------------------------
@@ -179,17 +182,38 @@ def test_prize_money_has_positive_values() -> None:
 # 正常系: 具体的な値の検証
 # ---------------------------------------------------------------------------
 EXPECTED_VALUES: list[dict[str, Any]] = [
-    # ミュージアムマイル（1ページ目の先頭）
+    # ミュージアムマイル（1ページ目、デビュー済み）
     {
         "fixture": FIXTURE_P1,
         "馬ID": "2022105081",
         "馬名": "ミュージアムマイル",
         "性別": "牡",
+        "生年": YEAR,
         "所属": "栗東",
         "厩舎": "高柳大輔",
         "厩舎ID": "01159",
+        "父": "リオンディーズ",
+        "母": "ミュージアムヒル",
+        "母父": "ハーツクライ",
+        "馬主": "サンデーレーシング",
         "馬主ID": "226800",
+        "生産者": "ノーザンファーム",
         "生産者ID": "373126",
+        "総賞金(万円)": 96179,
+    },
+    # ミスビビー（最終ページ、デビュー前）
+    {
+        "fixture": FIXTURE_P82,
+        "馬ID": "2022109161",
+        "馬名": "ミスビビー",
+        "性別": "牝",
+        "生年": YEAR,
+        "父": "アレスバローズ",
+        "母": "スペシャルビビー",
+        "母父": "スペシャルウィーク",
+        "生産者": "新保孝一",
+        "生産者ID": "313400",
+        "総賞金(万円)": 0,
     },
 ]
 
@@ -222,7 +246,7 @@ def test_expected_specific_values(expected: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 def test_get_all_horse_info_multiple_pages() -> None:
     """複数ページの場合、全ページ分のデータが結合されること"""
-    scraper = create_scraper_with_mock(YEAR, 2, [FIXTURE_P1, FIXTURE_P80])
+    scraper = create_scraper_with_mock(YEAR, 2, [FIXTURE_P1, FIXTURE_P82])
     df = scraper.get_all_horse_info(sleep=0.0)
 
     assert len(df) == 100 + 75
@@ -234,22 +258,14 @@ def test_get_all_horse_info_multiple_pages() -> None:
 # ---------------------------------------------------------------------------
 # 正常系: デビュー前の馬（厩舎ID/所属/厩舎がNaN）
 # ---------------------------------------------------------------------------
-def test_debut_before_horse_has_nan_trainer_id() -> None:
-    """デビュー前の馬は厩舎IDがNaNであること"""
-    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P80])
+@pytest.mark.parametrize("column", ["所属", "厩舎", "厩舎ID", "馬主", "馬主ID"])
+def test_debut_before_horse_has_nan(column: str) -> None:
+    """デビュー前の馬は所属・厩舎・馬主に関するカラムがNaNであること"""
+    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P82])
     df = scraper.scrape_one_page(1)
 
-    nan_trainer = df[df["厩舎ID"].isna()]
-    assert len(nan_trainer) > 0, "最終ページにデビュー前の馬が存在するはず"
-
-
-def test_debut_before_horse_has_nan_affiliation() -> None:
-    """デビュー前の馬は所属がNaNであること"""
-    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P80])
-    df = scraper.scrape_one_page(1)
-
-    nan_affiliation = df[df["所属"].isna()]
-    assert len(nan_affiliation) > 0, "最終ページにデビュー前の馬が存在するはず"
+    row = df[df["馬ID"] == "2022109161"].iloc[0]
+    assert pd.isna(row[column]), f"{column}がNaNでない: {row[column]}"
 
 
 # ---------------------------------------------------------------------------

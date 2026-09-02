@@ -8,26 +8,20 @@ test/fixtures/html/ にUTF-8で保存する。
 """
 
 import os
+import re
 import time
 
 import requests
+from bs4 import BeautifulSoup
+
+from scraping.config import ScrapingConfig
+from scraping.url_builder import build_horse_list_url
 
 # フィクスチャ保存先ディレクトリ
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "..", "fixtures", "html")
 
-# netkeibaの競走馬一覧ページURL
-HORSE_LIST_URL_TEMPLATE = (
-    "https://db.netkeiba.com/?pid=horse_list&birthyear={year}&list=100&page={page_num}"
-)
-
 # リクエストヘッダー
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/58.0.3029.110 Safari/537.3"
-    )
-}
+HEADERS = ScrapingConfig().headers
 
 # リクエスト間隔（秒）
 REQUEST_INTERVAL = 3.0
@@ -45,7 +39,7 @@ def fetch_and_save(year: int, page_num: int) -> None:
         year (int): 生年
         page_num (int): ページ番号
     """
-    url = HORSE_LIST_URL_TEMPLATE.format(year=year, page_num=page_num)
+    url = build_horse_list_url(year, page_num)
     filename = f"horse_info_{year}_p{page_num}.html"
     filepath = os.path.join(FIXTURES_DIR, filename)
 
@@ -66,12 +60,8 @@ def fetch_last_page(year: int) -> None:
     Args:
         year (int): 生年
     """
-    import re
-
-    from bs4 import BeautifulSoup
-
     # まず1ページ目のHTMLからページ数を取得
-    url = HORSE_LIST_URL_TEMPLATE.format(year=year, page_num=1)
+    url = build_horse_list_url(year, 1)
     print(f"最大ページ数を取得中: {url}")
     response = requests.get(url, headers=HEADERS, timeout=30)
     response.encoding = "EUC-JP"

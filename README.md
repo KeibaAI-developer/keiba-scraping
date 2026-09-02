@@ -117,7 +117,7 @@ playwright install chromium
 
 ### 馬情報一覧ページ
 
-- **サンプルURL**: `https://db.netkeiba.com/?pid=horse_list&birthyear=2022&list=100&page=1`
+- **サンプルURL**: `https://db.netkeiba.com/horse/list.html?year=2022&limit=100&page=1`
 - **API**: `HorseInfoScraper(year: int)`
 - **サンプルコード**: [example/example_horse_info.py](example/example_horse_info.py)
 
@@ -146,7 +146,7 @@ playwright install chromium
 
 ### レース一覧ページ
 
-- **サンプルURL**: `https://db.netkeiba.com/?pid=race_list&word=&start_year=2025&start_mon=1&end_year=2025&end_mon=12&...&page=1`
+- **サンプルURL**: `https://db.netkeiba.com/race/list.html?word=&yf=2025&mf=1&yt=2025&mt=12&...&page=1`
 - **API**: `RaceListScraper(year: int)`
 - **サンプルコード**: [example/example_race_list.py](example/example_race_list.py)
 
