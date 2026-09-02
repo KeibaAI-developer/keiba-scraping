@@ -5,6 +5,7 @@
 """
 
 import datetime
+import logging
 import re
 from email.message import Message
 from io import StringIO
@@ -12,10 +13,12 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+from bs4 import Tag
 from keiba_domain import parse_turf_dirt
 from selenium.webdriver.chrome.options import Options
 
 from scraping.config import ID_TO_KEIBAJO_DICT, ScrapingConfig
+from scraping.exceptions import ParseError
 
 if TYPE_CHECKING:
     from requests import Response, Session
@@ -81,22 +84,31 @@ def calc_interval(date1: str, date2: str) -> int | float:
         return np.nan
 
 
-def extract_id_from_href(href: str, id_pattern: str) -> str | None:
-    """netkeibaのリンクURLの末尾からIDを抽出する
+def extract_id_from_td(td_element: Tag, id_pattern: str, logger: logging.Logger) -> str | float:
+    """td要素内のaタグのhrefからnetkeibaのIDを抽出する
 
     パス末尾のID（例: /horse/2022105081/）と、
     idクエリのID（例: /trainer/race.html?id=01159）に対応する。
 
     Args:
-        href (str): リンクURL
+        td_element (Tag): td要素
         id_pattern (str): IDの形式を表す正規表現
+        logger (logging.Logger): エラー出力先のロガー
 
     Returns:
-        str | None: IDの文字列。URLの末尾が期待する形式のIDでない場合はNone
+        str | float: IDの文字列。リンクがない場合はNaN
+
+    Raises:
+        ParseError: リンクはあるがIDが期待する形式でない場合
     """
+    a_tag = td_element.find("a")
+    if not isinstance(a_tag, Tag):
+        return np.nan
+    href = str(a_tag.get("href", ""))
     match = re.search(rf"(?:/|[?&]id=)({id_pattern})/?$", href)
     if match is None:
-        return None
+        logger.error("IDが期待する形式ではありません: %s", href)
+        raise ParseError(f"IDが期待する形式ではありません: {href}")
     return match.group(1)
 
 

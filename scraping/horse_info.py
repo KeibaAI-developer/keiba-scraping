@@ -23,7 +23,7 @@ from scraping.config import (
 )
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_horse_list_url
-from scraping.utils import extract_id_from_href, resolve_response_encoding
+from scraping.utils import extract_id_from_td, resolve_response_encoding
 
 
 class HorseInfoScraper:
@@ -149,7 +149,7 @@ class HorseInfoScraper:
             ParseError: 馬ID・各種ID・総賞金のパースに失敗した場合
         """
         # 馬ID (tds[1]: 馬名カラムのリンクから)
-        horse_id = self._extract_id(tds[1], HORSE_ID_PATTERN)
+        horse_id = extract_id_from_td(tds[1], HORSE_ID_PATTERN, self._logger)
         if not isinstance(horse_id, str):
             self._logger.error("馬IDのリンクが見つかりません: %s", tds[1].text.strip())
             raise ParseError(f"馬IDのリンクが見つかりません: {tds[1].text.strip()}")
@@ -172,42 +172,16 @@ class HorseInfoScraper:
             "生年": self.year,
             "所属": affiliation,
             "厩舎": trainer_name,
-            "厩舎ID": self._extract_id(tds[5], TRAINER_ID_PATTERN),
+            "厩舎ID": extract_id_from_td(tds[5], TRAINER_ID_PATTERN, self._logger),
             "父": _extract_link_text(tds[6]),
             "母": _extract_link_text(tds[7]),
             "母父": _extract_link_text(tds[8]),
             "馬主": _extract_link_text(tds[9]),
-            "馬主ID": self._extract_id(tds[9], OWNER_ID_PATTERN),
+            "馬主ID": extract_id_from_td(tds[9], OWNER_ID_PATTERN, self._logger),
             "生産者": _extract_link_text(tds[10]),
-            "生産者ID": self._extract_id(tds[10], BREEDER_ID_PATTERN),
+            "生産者ID": extract_id_from_td(tds[10], BREEDER_ID_PATTERN, self._logger),
             "総賞金(万円)": prize,
         }
-
-    def _extract_id(self, td_element: Tag, id_pattern: str) -> str | float:
-        """tdタグ内のaタグのhrefからIDを抽出する
-
-        馬名のリンク（例: /horse/2022105081/）はパスから、
-        厩舎・馬主・生産者のリンク（例: /trainer/race.html?id=01159）はidクエリからIDを取り出す。
-
-        Args:
-            td_element (Tag): td要素
-            id_pattern (str): IDの形式を表す正規表現
-
-        Returns:
-            str | float: IDの文字列。リンクがない場合はNaN
-
-        Raises:
-            ParseError: リンクはあるがIDが期待する形式でない場合
-        """
-        a_tag = td_element.find("a")
-        if not isinstance(a_tag, Tag):
-            return np.nan
-        href = str(a_tag.get("href", ""))
-        extracted_id = extract_id_from_href(href, id_pattern)
-        if extracted_id is None:
-            self._logger.error("IDが期待する形式ではありません: %s", href)
-            raise ParseError(f"IDが期待する形式ではありません: {href}")
-        return extracted_id
 
     def _scrape_max_page_num(self) -> int:
         """競走馬一覧ページの最大ページ数を取得する
