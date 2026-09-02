@@ -5,6 +5,7 @@
 """
 
 import datetime
+import re
 from email.message import Message
 from io import StringIO
 from typing import TYPE_CHECKING
@@ -78,6 +79,25 @@ def calc_interval(date1: str, date2: str) -> int | float:
         return abs((date1_dt - date2_dt).days)
     except (ValueError, TypeError):
         return np.nan
+
+
+def extract_id_from_href(href: str, id_pattern: str) -> str | None:
+    """netkeibaのリンクURLの末尾からIDを抽出する
+
+    パス末尾のID（例: /horse/2022105081/）と、
+    idクエリのID（例: /trainer/race.html?id=01159）に対応する。
+
+    Args:
+        href (str): リンクURL
+        id_pattern (str): IDの形式を表す正規表現
+
+    Returns:
+        str | None: IDの文字列。URLの末尾が期待する形式のIDでない場合はNone
+    """
+    match = re.search(rf"(?:/|[?&]id=)({id_pattern})/?$", href)
+    if match is None:
+        return None
+    return match.group(1)
 
 
 def resolve_response_encoding(response: "Response") -> str | None:

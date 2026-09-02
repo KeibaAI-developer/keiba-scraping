@@ -12,16 +12,18 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from scraping.config import AFFILIATION_MAP, HORSE_INFO_COLUMNS, ScrapingConfig
+from scraping.config import (
+    AFFILIATION_MAP,
+    BREEDER_ID_PATTERN,
+    HORSE_ID_PATTERN,
+    HORSE_INFO_COLUMNS,
+    OWNER_ID_PATTERN,
+    TRAINER_ID_PATTERN,
+    ScrapingConfig,
+)
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_horse_list_url
-from scraping.utils import resolve_response_encoding
-
-# 各IDの形式（netkeibaのIDはASCII英数字で、桁数は項目ごとに固定）
-HORSE_ID_PATTERN = r"[0-9A-Za-z]{10}"
-TRAINER_ID_PATTERN = r"[0-9A-Za-z]{5}"
-OWNER_ID_PATTERN = r"[0-9A-Za-z]{6}"
-BREEDER_ID_PATTERN = r"[0-9A-Za-z]{6}"
+from scraping.utils import extract_id_from_href, resolve_response_encoding
 
 
 class HorseInfoScraper:
@@ -201,11 +203,11 @@ class HorseInfoScraper:
         if not isinstance(a_tag, Tag):
             return np.nan
         href = str(a_tag.get("href", ""))
-        id_match = re.search(rf"(?:/horse/|[?&]id=)({id_pattern})(?:/|&|$)", href)
-        if id_match is None:
+        extracted_id = extract_id_from_href(href, id_pattern)
+        if extracted_id is None:
             self._logger.error("IDが期待する形式ではありません: %s", href)
             raise ParseError(f"IDが期待する形式ではありません: {href}")
-        return id_match.group(1)
+        return extracted_id
 
     def _scrape_max_page_num(self) -> int:
         """競走馬一覧ページの最大ページ数を取得する

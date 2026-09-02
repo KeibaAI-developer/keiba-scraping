@@ -10,10 +10,22 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from scraping.config import AFFILIATION_MAP, RACE_LIST_COLUMNS, ScrapingConfig
+from scraping.config import (
+    AFFILIATION_MAP,
+    HORSE_ID_PATTERN,
+    JOCKEY_ID_PATTERN,
+    RACE_LIST_COLUMNS,
+    TRAINER_ID_PATTERN,
+    ScrapingConfig,
+)
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_race_list_url
-from scraping.utils import judge_turf_dirt, race_id_to_race_info, resolve_response_encoding
+from scraping.utils import (
+    extract_id_from_href,
+    judge_turf_dirt,
+    race_id_to_race_info,
+    resolve_response_encoding,
+)
 
 
 class RaceListScraper:
@@ -204,24 +216,24 @@ class RaceListScraper:
 
         # 勝ち馬 (td[11])
         winner_name = tds[11].text.strip()
-        winner_id = _extract_id_from_link(tds[11])
+        winner_id = self._extract_id(tds[11], HORSE_ID_PATTERN)
 
         # 騎手 (td[12])
         jockey_name = tds[12].text.strip()
-        jockey_id = _extract_id_from_link(tds[12])
+        jockey_id = self._extract_id(tds[12], JOCKEY_ID_PATTERN)
 
         # 調教師 (td[13]: "[東]小手川準" → 所属="美浦", 厩舎="小手川準")
         trainer_text = tds[13].text.strip()
         affiliation, trainer_name = _parse_trainer(trainer_text)
-        trainer_id = _extract_id_from_link(tds[13])
+        trainer_id = self._extract_id(tds[13], TRAINER_ID_PATTERN)
 
         # 2着馬 (td[14])
         second_name = tds[14].text.strip()
-        second_id = _extract_id_from_link(tds[14])
+        second_id = self._extract_id(tds[14], HORSE_ID_PATTERN)
 
         # 3着馬 (td[15])
         third_name = tds[15].text.strip()
-        third_id = _extract_id_from_link(tds[15])
+        third_id = self._extract_id(tds[15], HORSE_ID_PATTERN)
 
         return {
             "レースID": race_id,
@@ -317,6 +329,29 @@ class RaceListScraper:
             raise ParseError(f"レースIDが抽出できません: {href}")
         return match.group(1)
 
+    def _extract_id(self, td_element: Tag, id_pattern: str) -> str | float:
+        """td要素内のaタグのhrefからIDを抽出する
+
+        Args:
+            td_element (Tag): td要素
+            id_pattern (str): IDの形式を表す正規表現
+
+        Returns:
+            str | float: IDの文字列。リンクがない場合はNaN
+
+        Raises:
+            ParseError: リンクはあるがIDが期待する形式でない場合
+        """
+        a_tag = td_element.find("a")
+        if not isinstance(a_tag, Tag):
+            return np.nan
+        href = str(a_tag.get("href", ""))
+        extracted_id = extract_id_from_href(href, id_pattern)
+        if extracted_id is None:
+            self._logger.error("IDが期待する形式ではありません: %s", href)
+            raise ParseError(f"IDが期待する形式ではありません: {href}")
+        return extracted_id
+
     def _parse_date(self, date_text: str) -> datetime.date:
         """日付文字列をdatetime.dateに変換する
 
@@ -361,25 +396,6 @@ class RaceListScraper:
             return float(match.group(1)), float(match.group(2))
         self._logger.error("ペースのパースに失敗しました: %s", pace_text)
         raise ParseError(f"ペースのパースに失敗しました: {pace_text}")
-
-
-def _extract_id_from_link(td_element: Tag) -> str | float:
-    """td要素内のaタグのhrefからIDを抽出する
-
-    Args:
-        td_element (Tag): td要素
-
-    Returns:
-        str | float: IDの文字列。リンクがない場合はNaN
-    """
-    a_tag = td_element.find("a")
-    if not isinstance(a_tag, Tag):
-        return np.nan
-    href = str(a_tag.get("href", ""))
-    match = re.search(r"/(\d{5}|\d{10})(?:/|$)", href)
-    if match is None:
-        return np.nan
-    return match.group(1)
 
 
 def _parse_trainer(trainer_text: str) -> tuple[str, str]:

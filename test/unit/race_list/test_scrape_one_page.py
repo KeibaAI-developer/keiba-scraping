@@ -414,13 +414,19 @@ def test_row_10_hbc_sho() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 準正常系: ペース欄が不正な場合
+# 準正常系・正常系（合成HTML）: ペース欄と各種IDの扱い
 # ---------------------------------------------------------------------------
-def _build_single_row_html(pace_text: str) -> str:
+def _build_single_row_html(
+    pace_text: str = "29.4-38.7",
+    winner_href: str = "/horse/2023104322/",
+    trainer_href: str = "/trainer/result/recent/01140/",
+) -> str:
     """平地レース1行だけのレース一覧HTMLを組み立てる
 
     Args:
         pace_text (str): ペース欄の文字列
+        winner_href (str): 勝ち馬リンクのURL
+        trainer_href (str): 調教師リンクのURL
 
     Returns:
         str: レース一覧のHTML
@@ -441,9 +447,9 @@ def _build_single_row_html(pace_text: str) -> str:
             <td>稍</td>
             <td>1:45.5</td>
             <td>{pace_text}</td>
-            <td><a href="/horse/2023104322/">タガノシルフィー</a></td>
+            <td><a href="{winner_href}">タガノシルフィー</a></td>
             <td><a href="/jockey/result/recent/01140/">横山和生</a></td>
-            <td><a href="/trainer/result/recent/01140/">[西]石橋守</a></td>
+            <td><a href="{trainer_href}">[西]石橋守</a></td>
             <td><a href="/horse/2023104101/">テンレッドサン</a></td>
             <td><a href="/horse/2023102608/">エリカビアリッツ</a></td>
         </tr>
@@ -473,7 +479,7 @@ def _create_scraper_with_html(html_text: str) -> RaceListScraper:
 
 def test_flat_race_with_empty_pace_raises_parse_error() -> None:
     """平地レースのペース欄が空の場合にParseErrorが発生すること"""
-    scraper = _create_scraper_with_html(_build_single_row_html(""))
+    scraper = _create_scraper_with_html(_build_single_row_html(pace_text=""))
 
     with pytest.raises(ParseError, match="平地レースのペースが空です"):
         scraper.scrape_one_page(1)
@@ -482,7 +488,38 @@ def test_flat_race_with_empty_pace_raises_parse_error() -> None:
 @pytest.mark.parametrize("pace_text", ["36.7-40.5abc", "36.7.1-40.5", "36.7"])
 def test_invalid_pace_format_raises_parse_error(pace_text: str) -> None:
     """ペース欄が "前半-後半" の小数形式でない場合にParseErrorが発生すること"""
-    scraper = _create_scraper_with_html(_build_single_row_html(pace_text))
+    scraper = _create_scraper_with_html(_build_single_row_html(pace_text=pace_text))
 
     with pytest.raises(ParseError, match="ペースのパースに失敗しました"):
+        scraper.scrape_one_page(1)
+
+
+# 正常系: 英字を含むID（外国産馬・地方調教師）
+def test_alphanumeric_ids_are_extracted() -> None:
+    """外国産馬の馬IDと地方調教師の厩舎IDに含まれる英字を保持して抽出できること"""
+    html_text = _build_single_row_html(
+        winner_href="/horse/000a02d612/",
+        trainer_href="https://db.netkeiba.com/trainer/result/recent/a02a8/",
+    )
+    scraper = _create_scraper_with_html(html_text)
+    df = scraper.scrape_one_page(1)
+
+    assert df["勝ち馬ID"].iloc[0] == "000a02d612"
+    assert df["厩舎ID"].iloc[0] == "a02a8"
+
+
+# 準正常系: IDの形式が不正な場合
+@pytest.mark.parametrize(
+    "winner_href, trainer_href",
+    [
+        ("/horse/12345/", "/trainer/result/recent/01140/"),
+        ("/horse/2023104322/", "/trainer/result/recent/0114/"),
+    ],
+)
+def test_invalid_id_format_raises_parse_error(winner_href: str, trainer_href: str) -> None:
+    """リンクのIDが期待する桁数でない場合にParseErrorが発生すること"""
+    html_text = _build_single_row_html(winner_href=winner_href, trainer_href=trainer_href)
+    scraper = _create_scraper_with_html(html_text)
+
+    with pytest.raises(ParseError, match="IDが期待する形式ではありません"):
         scraper.scrape_one_page(1)
