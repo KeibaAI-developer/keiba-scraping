@@ -6,12 +6,15 @@ requestsをモックし、フィクスチャHTMLを返すようにしてテス�
 
 import datetime
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from scraping.config import RACE_LIST_COLUMNS
+from scraping.exceptions import ParseError
+from scraping.race_list import RaceListScraper
 
 from .conftest import create_scraper_with_mock
 
@@ -302,30 +305,30 @@ def test_third_horse_id_format() -> None:
 # 正常系: 具体的な値の検証（1行目）
 # ---------------------------------------------------------------------------
 EXPECTED_FIRST_ROW: dict[str, Any] = {
-    "レースID": "202606020201",
-    "日付": datetime.date(2026, 3, 1),
-    "競馬場": "中山",
+    "レースID": "202601020401",
+    "日付": datetime.date(2026, 8, 30),
+    "競馬場": "札幌",
     "回": 2,
-    "開催日": 2,
+    "開催日": 4,
     "天候": "晴",
     "R": 1,
     "レース名": "3歳未勝利",
     "芝ダ": "ダ",
-    "距離": 1800,
-    "頭数": 16,
+    "距離": 1700,
+    "頭数": 14,
     "馬場": "稍",
-    "タイム": "1:55.2",
-    "勝ち馬": "ピュアエンブレム",
-    "勝ち馬ID": "2023107171",
-    "騎手": "岩田康誠",
-    "騎手ID": "05203",
-    "所属": "美浦",
-    "厩舎": "小手川準",
-    "厩舎ID": "01171",
-    "2着馬": "サラサチャチャチャ",
-    "2着馬ID": "2023102581",
-    "3着馬": "ロジマギー",
-    "3着馬ID": "2023107361",
+    "タイム": "1:45.5",
+    "勝ち馬": "タガノシルフィー",
+    "勝ち馬ID": "2023104322",
+    "騎手": "横山和生",
+    "騎手ID": "01140",
+    "所属": "栗東",
+    "厩舎": "石橋守",
+    "厩舎ID": "01140",
+    "2着馬": "テンレッドサン",
+    "2着馬ID": "2023104101",
+    "3着馬": "エリカビアリッツ",
+    "3着馬ID": "2023102608",
 }
 
 
@@ -346,53 +349,177 @@ def test_first_row_values(column: str, expected: Any) -> None:
 # 正常系: ペースの具体値（1行目）
 # ---------------------------------------------------------------------------
 def test_first_row_pace_values() -> None:
-    """1行目のレース前3F=36.7、レース後3F=40.5であること"""
+    """1行目のレース前3F=29.4、レース後3F=38.7であること"""
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
-    assert df["レース前3F"].iloc[0] == pytest.approx(36.7)
-    assert df["レース後3F"].iloc[0] == pytest.approx(40.5)
+    assert df["レース前3F"].iloc[0] == pytest.approx(29.4)
+    assert df["レース後3F"].iloc[0] == pytest.approx(38.7)
 
 
 # ---------------------------------------------------------------------------
-# 正常系: 具体的な値の検証（最終行: 障害レース）
+# 正常系: 具体的な値の検証（13行目: 障害レース）
 # ---------------------------------------------------------------------------
-EXPECTED_LAST_ROW: dict[str, Any] = {
-    "レースID": "202610011004",
-    "競馬場": "小倉",
+STEEPLECHASE_ROW_INDEX = 12
+EXPECTED_STEEPLECHASE_ROW: dict[str, Any] = {
+    "レースID": "202604030401",
+    "競馬場": "新潟",
     "芝ダ": "障",
-    "距離": 2860,
+    "距離": 2850,
     "頭数": 12,
-    "勝ち馬": "グラニットピーク",
-    "勝ち馬ID": "2020103507",
+    "タイム": "3:03.2",
+    "勝ち馬": "オーサムストローク",
+    "勝ち馬ID": "2021100557",
 }
 
 
 @pytest.mark.parametrize(
     "column, expected",
-    list(EXPECTED_LAST_ROW.items()),
-    ids=list(EXPECTED_LAST_ROW.keys()),
+    list(EXPECTED_STEEPLECHASE_ROW.items()),
+    ids=list(EXPECTED_STEEPLECHASE_ROW.keys()),
 )
-def test_last_row_values(column: str, expected: Any) -> None:
-    """最終行（障害レース）の各カラムが期待値と一致すること"""
+def test_steeplechase_row_values(column: str, expected: Any) -> None:
+    """障害レースの行の各カラムが期待値と一致すること"""
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
-    assert df[column].iloc[-1] == expected, f"{column}: {df[column].iloc[-1]} != {expected}"
+    actual = df[column].iloc[STEEPLECHASE_ROW_INDEX]
+    assert actual == expected, f"{column}: {actual} != {expected}"
+
+
+def test_steeplechase_row_pace_is_nan() -> None:
+    """障害レースはペースが表示されないため、レース前3F・レース後3FがNaNであること"""
+    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
+    df = scraper.scrape_one_page(1)
+
+    assert np.isnan(df["レース前3F"].iloc[STEEPLECHASE_ROW_INDEX])
+    assert np.isnan(df["レース後3F"].iloc[STEEPLECHASE_ROW_INDEX])
 
 
 # ---------------------------------------------------------------------------
-# 正常系: 10行目（アクアマリンS、芝レース）
+# 正常系: 10行目（HBC賞、芝レース）
 # ---------------------------------------------------------------------------
-def test_row_10_aquamarine_stakes() -> None:
-    """10行目のアクアマリンSが芝1200mの中山レースであること"""
+def test_row_10_hbc_sho() -> None:
+    """10行目のHBC賞が芝1200mの札幌レースであること"""
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
     row = df.iloc[9]
-    assert row["レースID"] == "202606020210"
-    assert row["競馬場"] == "中山"
+    assert row["レースID"] == "202601020410"
+    assert row["競馬場"] == "札幌"
     assert row["芝ダ"] == "芝"
     assert row["距離"] == 1200
     assert row["R"] == 10
-    assert row["勝ち馬"] == "ソーダーンライト"
+    assert row["勝ち馬"] == "サトノワーグナー"
+
+
+# ---------------------------------------------------------------------------
+# 準正常系・正常系（合成HTML）: ペース欄と各種IDの扱い
+# ---------------------------------------------------------------------------
+def _build_single_row_html(
+    pace_text: str = "29.4-38.7",
+    winner_href: str = "/horse/2023104322/",
+    trainer_href: str = "/trainer/result/recent/01140/",
+) -> str:
+    """平地レース1行だけのレース一覧HTMLを組み立てる
+
+    Args:
+        pace_text (str): ペース欄の文字列
+        winner_href (str): 勝ち馬リンクのURL
+        trainer_href (str): 調教師リンクのURL
+
+    Returns:
+        str: レース一覧のHTML
+    """
+    return f"""
+    <html><body>
+    <table class="nk_tb_common race_table_01">
+        <tr><th>開催日</th></tr>
+        <tr>
+            <td><a href="/race/list/20260830/">2026/08/30</a></td>
+            <td>2札幌4</td>
+            <td>晴</td>
+            <td>1</td>
+            <td><a href="/race/202601020401/">3歳未勝利</a></td>
+            <td></td>
+            <td>ダ1700</td>
+            <td>14</td>
+            <td>稍</td>
+            <td>1:45.5</td>
+            <td>{pace_text}</td>
+            <td><a href="{winner_href}">タガノシルフィー</a></td>
+            <td><a href="/jockey/result/recent/01140/">横山和生</a></td>
+            <td><a href="{trainer_href}">[西]石橋守</a></td>
+            <td><a href="/horse/2023104101/">テンレッドサン</a></td>
+            <td><a href="/horse/2023102608/">エリカビアリッツ</a></td>
+        </tr>
+    </table>
+    </body></html>
+    """
+
+
+def _create_scraper_with_html(html_text: str) -> RaceListScraper:
+    """任意のHTMLを返すモックセッションからRaceListScraperを生成する
+
+    Args:
+        html_text (str): session.getが返すHTML
+
+    Returns:
+        RaceListScraper: モックセッションを持つスクレイパー
+    """
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = html_text
+    mock_response.encoding = "EUC-JP"
+    mock_session.get.return_value = mock_response
+
+    with patch.object(RaceListScraper, "_scrape_max_page_num", return_value=1):
+        return RaceListScraper(YEAR, session=mock_session)
+
+
+def test_flat_race_with_empty_pace_raises_parse_error() -> None:
+    """平地レースのペース欄が空の場合にParseErrorが発生すること"""
+    scraper = _create_scraper_with_html(_build_single_row_html(pace_text=""))
+
+    with pytest.raises(ParseError, match="平地レースのペースが空です"):
+        scraper.scrape_one_page(1)
+
+
+@pytest.mark.parametrize("pace_text", ["36.7-40.5abc", "36.7.1-40.5", "36.7"])
+def test_invalid_pace_format_raises_parse_error(pace_text: str) -> None:
+    """ペース欄が "前半-後半" の小数形式でない場合にParseErrorが発生すること"""
+    scraper = _create_scraper_with_html(_build_single_row_html(pace_text=pace_text))
+
+    with pytest.raises(ParseError, match="ペースのパースに失敗しました"):
+        scraper.scrape_one_page(1)
+
+
+# 正常系: 英字を含むID（外国産馬・地方調教師）
+def test_alphanumeric_ids_are_extracted() -> None:
+    """外国産馬の馬IDと地方調教師の厩舎IDに含まれる英字を保持して抽出できること"""
+    html_text = _build_single_row_html(
+        winner_href="/horse/000a02d612/",
+        trainer_href="https://db.netkeiba.com/trainer/result/recent/a02a8/",
+    )
+    scraper = _create_scraper_with_html(html_text)
+    df = scraper.scrape_one_page(1)
+
+    assert df["勝ち馬ID"].iloc[0] == "000a02d612"
+    assert df["厩舎ID"].iloc[0] == "a02a8"
+
+
+# 準正常系: IDの形式が不正な場合
+@pytest.mark.parametrize(
+    "winner_href, trainer_href",
+    [
+        ("/horse/12345/", "/trainer/result/recent/01140/"),
+        ("/horse/2023104322/", "/trainer/result/recent/0114/"),
+    ],
+)
+def test_invalid_id_format_raises_parse_error(winner_href: str, trainer_href: str) -> None:
+    """リンクのIDが期待する桁数でない場合にParseErrorが発生すること"""
+    html_text = _build_single_row_html(winner_href=winner_href, trainer_href=trainer_href)
+    scraper = _create_scraper_with_html(html_text)
+
+    with pytest.raises(ParseError, match="IDが期待する形式ではありません"):
+        scraper.scrape_one_page(1)

@@ -11,29 +11,14 @@ import os
 
 import requests
 
+from scraping.config import ScrapingConfig
+from scraping.url_builder import build_race_list_url
+
 # フィクスチャ保存先ディレクトリ
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "..", "fixtures", "html")
 
-# netkeibaのレース一覧ページURL
-RACE_LIST_URL_TEMPLATE = (
-    "https://db.netkeiba.com/"
-    "?pid=race_list&word="
-    "&start_year={year}&start_mon=1"
-    "&end_year={year}&end_mon=12"
-    "&jyo%5B%5D=01&jyo%5B%5D=02&jyo%5B%5D=03&jyo%5B%5D=04"
-    "&jyo%5B%5D=05&jyo%5B%5D=06&jyo%5B%5D=07&jyo%5B%5D=08"
-    "&jyo%5B%5D=09&jyo%5B%5D=10"
-    "&kyori_min=&kyori_max=&sort=date&list=100&page={page_num}"
-)
-
 # リクエストヘッダー
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/58.0.3029.110 Safari/537.3"
-    )
-}
+HEADERS = ScrapingConfig().headers
 
 # 取得対象
 TARGETS: list[dict[str, int]] = [
@@ -48,7 +33,7 @@ def fetch_and_save(year: int, page_num: int) -> None:
         year (int): 年
         page_num (int): ページ番号
     """
-    url = RACE_LIST_URL_TEMPLATE.format(year=year, page_num=page_num)
+    url = build_race_list_url(year, page_num)
     filename = f"race_list_{year}_p{page_num}.html"
     filepath = os.path.join(FIXTURES_DIR, filename)
 

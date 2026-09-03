@@ -4,6 +4,7 @@ requestsをモックし、フィクスチャHTMLを返すようにしてテス�
 馬情報テーブルの取得・カラム構成・主要値を検証する。
 """
 
+import re
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -21,7 +22,7 @@ from .conftest import create_scraper_with_mock
 # テスト用定数
 # ---------------------------------------------------------------------------
 FIXTURE_P1 = "horse_info_2022_p1.html"
-FIXTURE_P80 = "horse_info_2022_p80.html"
+FIXTURE_P82 = "horse_info_2022_p82.html"
 YEAR = 2022
 
 
@@ -37,9 +38,9 @@ def test_columns_match_horse_info_columns_p1() -> None:
     assert list(df.columns) == HORSE_INFO_COLUMNS
 
 
-def test_columns_match_horse_info_columns_p80() -> None:
+def test_columns_match_horse_info_columns_p82() -> None:
     """最終ページのカラム構成がHORSE_INFO_COLUMNSと一致すること"""
-    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P80])
+    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P82])
     df = scraper.scrape_one_page(1)
 
     assert isinstance(df, pd.DataFrame)
@@ -57,9 +58,9 @@ def test_row_count_p1() -> None:
     assert len(df) == 100
 
 
-def test_row_count_p80() -> None:
+def test_row_count_p82() -> None:
     """最終ページは75行であること"""
-    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P80])
+    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P82])
     df = scraper.scrape_one_page(1)
 
     assert len(df) == 75
@@ -80,14 +81,16 @@ def test_birth_year_is_consistent() -> None:
 # 正常系: 馬IDの形式
 # ---------------------------------------------------------------------------
 def test_horse_id_format() -> None:
-    """馬IDが10桁の数字文字列であること"""
+    """馬IDが10桁の英数字文字列であること
+
+    外国産馬には "000a02d612" のように英字を含むIDが割り当てられている。
+    """
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
     for horse_id in df["馬ID"]:
         assert isinstance(horse_id, str), f"馬IDが文字列でない: {horse_id}"
-        assert len(horse_id) == 10, f"馬IDが10桁でない: {horse_id}"
-        assert horse_id.isdigit(), f"馬IDが数字でない: {horse_id}"
+        assert re.fullmatch(r"[0-9A-Za-z]{10}", horse_id), f"馬IDが10桁の英数字でない: {horse_id}"
 
 
 # ---------------------------------------------------------------------------
@@ -117,42 +120,46 @@ def test_affiliation_contains_kuritto_and_miho() -> None:
 # 正常系: 厩舎IDの形式
 # ---------------------------------------------------------------------------
 def test_trainer_id_format() -> None:
-    """厩舎IDが5桁の数字文字列であること（NaN以外）"""
+    """厩舎IDが5桁の英数字文字列であること（NaN以外）
+
+    地方の調教師には "a02a8" のように英字を含むIDが割り当てられている。
+    """
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
     for trainer_id in df["厩舎ID"].dropna():
         assert isinstance(trainer_id, str), f"厩舎IDが文字列でない: {trainer_id}"
-        assert len(trainer_id) == 5, f"厩舎IDが5桁でない: {trainer_id}"
-        assert trainer_id.isdigit(), f"厩舎IDが数字でない: {trainer_id}"
+        assert re.fullmatch(
+            r"[0-9A-Za-z]{5}", trainer_id
+        ), f"厩舎IDが5桁の英数字でない: {trainer_id}"
 
 
 # ---------------------------------------------------------------------------
 # 正常系: 馬主IDの形式
 # ---------------------------------------------------------------------------
 def test_owner_id_format() -> None:
-    """馬主IDが6桁の数字文字列であること（NaN以外）"""
+    """馬主IDが6桁の英数字文字列であること（NaN以外）"""
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
     for owner_id in df["馬主ID"].dropna():
         assert isinstance(owner_id, str), f"馬主IDが文字列でない: {owner_id}"
-        assert len(owner_id) == 6, f"馬主IDが6桁でない: {owner_id}"
-        assert owner_id.isdigit(), f"馬主IDが数字でない: {owner_id}"
+        assert re.fullmatch(r"[0-9A-Za-z]{6}", owner_id), f"馬主IDが6桁の英数字でない: {owner_id}"
 
 
 # ---------------------------------------------------------------------------
 # 正常系: 生産者IDの形式
 # ---------------------------------------------------------------------------
 def test_breeder_id_format() -> None:
-    """生産者IDが6桁の数字文字列であること（NaN以外）"""
+    """生産者IDが6桁の英数字文字列であること（NaN以外）"""
     scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P1])
     df = scraper.scrape_one_page(1)
 
     for breeder_id in df["生産者ID"].dropna():
         assert isinstance(breeder_id, str), f"生産者IDが文字列でない: {breeder_id}"
-        assert len(breeder_id) == 6, f"生産者IDが6桁でない: {breeder_id}"
-        assert breeder_id.isdigit(), f"生産者IDが数字でない: {breeder_id}"
+        assert re.fullmatch(
+            r"[0-9A-Za-z]{6}", breeder_id
+        ), f"生産者IDが6桁の英数字でない: {breeder_id}"
 
 
 # ---------------------------------------------------------------------------
@@ -179,17 +186,38 @@ def test_prize_money_has_positive_values() -> None:
 # 正常系: 具体的な値の検証
 # ---------------------------------------------------------------------------
 EXPECTED_VALUES: list[dict[str, Any]] = [
-    # ミュージアムマイル（1ページ目の先頭）
+    # ミュージアムマイル（1ページ目、デビュー済み）
     {
         "fixture": FIXTURE_P1,
         "馬ID": "2022105081",
         "馬名": "ミュージアムマイル",
         "性別": "牡",
+        "生年": YEAR,
         "所属": "栗東",
         "厩舎": "高柳大輔",
         "厩舎ID": "01159",
+        "父": "リオンディーズ",
+        "母": "ミュージアムヒル",
+        "母父": "ハーツクライ",
+        "馬主": "サンデーレーシング",
         "馬主ID": "226800",
+        "生産者": "ノーザンファーム",
         "生産者ID": "373126",
+        "総賞金(万円)": 96179,
+    },
+    # ミスビビー（最終ページ、デビュー前）
+    {
+        "fixture": FIXTURE_P82,
+        "馬ID": "2022109161",
+        "馬名": "ミスビビー",
+        "性別": "牝",
+        "生年": YEAR,
+        "父": "アレスバローズ",
+        "母": "スペシャルビビー",
+        "母父": "スペシャルウィーク",
+        "生産者": "新保孝一",
+        "生産者ID": "313400",
+        "総賞金(万円)": 0,
     },
 ]
 
@@ -222,7 +250,7 @@ def test_expected_specific_values(expected: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 def test_get_all_horse_info_multiple_pages() -> None:
     """複数ページの場合、全ページ分のデータが結合されること"""
-    scraper = create_scraper_with_mock(YEAR, 2, [FIXTURE_P1, FIXTURE_P80])
+    scraper = create_scraper_with_mock(YEAR, 2, [FIXTURE_P1, FIXTURE_P82])
     df = scraper.get_all_horse_info(sleep=0.0)
 
     assert len(df) == 100 + 75
@@ -234,22 +262,14 @@ def test_get_all_horse_info_multiple_pages() -> None:
 # ---------------------------------------------------------------------------
 # 正常系: デビュー前の馬（厩舎ID/所属/厩舎がNaN）
 # ---------------------------------------------------------------------------
-def test_debut_before_horse_has_nan_trainer_id() -> None:
-    """デビュー前の馬は厩舎IDがNaNであること"""
-    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P80])
+@pytest.mark.parametrize("column", ["所属", "厩舎", "厩舎ID", "馬主", "馬主ID"])
+def test_debut_before_horse_has_nan(column: str) -> None:
+    """デビュー前の馬は所属・厩舎・馬主に関するカラムがNaNであること"""
+    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P82])
     df = scraper.scrape_one_page(1)
 
-    nan_trainer = df[df["厩舎ID"].isna()]
-    assert len(nan_trainer) > 0, "最終ページにデビュー前の馬が存在するはず"
-
-
-def test_debut_before_horse_has_nan_affiliation() -> None:
-    """デビュー前の馬は所属がNaNであること"""
-    scraper = create_scraper_with_mock(YEAR, 1, [FIXTURE_P80])
-    df = scraper.scrape_one_page(1)
-
-    nan_affiliation = df[df["所属"].isna()]
-    assert len(nan_affiliation) > 0, "最終ページにデビュー前の馬が存在するはず"
+    row = df[df["馬ID"] == "2022109161"].iloc[0]
+    assert pd.isna(row[column]), f"{column}がNaNでない: {row[column]}"
 
 
 # ---------------------------------------------------------------------------
@@ -363,4 +383,79 @@ def test_insufficient_td_columns_raises_parse_error() -> None:
         scraper = HorseInfoScraper(YEAR, session=mock_session)
 
     with pytest.raises(ParseError, match="テーブル列数が不足しています"):
+        scraper.scrape_one_page(1)
+
+
+def _build_single_row_html(trainer_href: str, prize_text: str) -> str:
+    """競走馬1行だけの競走馬一覧HTMLを組み立てる
+
+    Args:
+        trainer_href (str): 厩舎リンクのURL
+        prize_text (str): 総賞金欄の文字列
+
+    Returns:
+        str: 競走馬一覧のHTML
+    """
+    return f"""
+    <html><body>
+    <table class="nk_tb_common race_table_01 horse_list_table">
+        <tr><th>馬名</th></tr>
+        <tr>
+            <td></td>
+            <td><a href="https://db.netkeiba.com/horse/2022105081/">ミュージアムマイル</a></td>
+            <td>牡</td>
+            <td>2022</td>
+            <td></td>
+            <td>[西] <a href="{trainer_href}">高柳大輔</a></td>
+            <td><a href="https://db.netkeiba.com/horse/list.html?sire_id=1">父A</a></td>
+            <td><a href="https://db.netkeiba.com/horse/list.html?mare_id=1">母A</a></td>
+            <td><a href="https://db.netkeiba.com/horse/list.html?bms_id=1">母父A</a></td>
+            <td><a href="https://db.netkeiba.com/owner/race.html?id=226800">馬主A</a></td>
+            <td><a href="https://db.netkeiba.com/breeder/race.html?id=373126">生産者A</a></td>
+            <td>{prize_text}</td>
+        </tr>
+    </table>
+    </body></html>
+    """
+
+
+def _create_scraper_with_html(html_text: str) -> HorseInfoScraper:
+    """任意のHTMLを返すモックセッションからHorseInfoScraperを生成する
+
+    Args:
+        html_text (str): session.getが返すHTML
+
+    Returns:
+        HorseInfoScraper: モックセッションを持つスクレイパー
+    """
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = html_text
+    mock_response.encoding = "EUC-JP"
+    mock_session.get.return_value = mock_response
+
+    with patch.object(HorseInfoScraper, "_scrape_max_page_num", return_value=1):
+        return HorseInfoScraper(YEAR, session=mock_session)
+
+
+def test_invalid_id_format_raises_parse_error() -> None:
+    """リンクのIDが期待する形式でない場合にParseErrorが発生すること"""
+    html_text = _build_single_row_html(
+        trainer_href="https://db.netkeiba.com/trainer/race.html?id=abc", prize_text="1500.0"
+    )
+    scraper = _create_scraper_with_html(html_text)
+
+    with pytest.raises(ParseError, match="IDが期待する形式ではありません"):
+        scraper.scrape_one_page(1)
+
+
+@pytest.mark.parametrize("prize_text", ["abc", "inf", "1e400"])
+def test_invalid_prize_raises_parse_error(prize_text: str) -> None:
+    """総賞金が数値に変換できない、または整数に収まらない場合にParseErrorが発生すること"""
+    html_text = _build_single_row_html(
+        trainer_href="https://db.netkeiba.com/trainer/race.html?id=01159", prize_text=prize_text
+    )
+    scraper = _create_scraper_with_html(html_text)
+
+    with pytest.raises(ParseError, match="総賞金のパースに失敗しました"):
         scraper.scrape_one_page(1)

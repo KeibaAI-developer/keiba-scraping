@@ -1,23 +1,29 @@
 """馬情報スクレイピングモジュール
 
 netkeibaの競走馬一覧ページから馬情報をスクレイピングする。
-KeibaAIの``scrape_horse_info_page``に対応する。
 """
 
 import logging
 import re
 import time
-from io import StringIO
 
 import numpy as np
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from scraping.config import AFFILIATION_MAP, HORSE_INFO_COLUMNS, ScrapingConfig
+from scraping.config import (
+    AFFILIATION_MAP,
+    BREEDER_ID_PATTERN,
+    HORSE_ID_PATTERN,
+    HORSE_INFO_COLUMNS,
+    OWNER_ID_PATTERN,
+    TRAINER_ID_PATTERN,
+    ScrapingConfig,
+)
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_horse_list_url
-from scraping.utils import resolve_response_encoding
+from scraping.utils import extract_id_from_td, resolve_response_encoding
 
 
 class HorseInfoScraper:
@@ -110,94 +116,72 @@ class HorseInfoScraper:
         soup = BeautifulSoup(html.text, "html.parser")
 
         # テーブル要素を取得
-        race_table_01 = soup.find("table", class_="nk_tb_common race_table_01")
-        if not isinstance(race_table_01, Tag):
+        horse_list_table = soup.select_one("table.nk_tb_common.race_table_01")
+        if horse_list_table is None:
             self._logger.error("テーブルが見つかりません: %s", url)
             raise ParseError(f"テーブルが見つかりません: {url}")
 
-        # 各種IDを行ごとに抽出
-        horse_id_list: list[str | float] = []
-        trainer_id_list: list[str | float] = []
-        owner_id_list: list[str | float] = []
-        breeder_id_list: list[str | float] = []
-
-        trs = race_table_01.find_all("tr")
+        rows: list[dict[str, object]] = []
+        trs = horse_list_table.find_all("tr")
         for i in range(1, len(trs)):  # 最初の行はヘッダーのためスキップ
             tds = trs[i].find_all("td")
-            if len(tds) <= 10:
+            if len(tds) < 12:
                 self._logger.error(
                     "テーブル列数が不足しています: %s (row=%d, columns=%d)", url, i, len(tds)
                 )
                 raise ParseError(
                     f"テーブル列数が不足しています: {url} (row={i}, columns={len(tds)})"
                 )
+            rows.append(self._parse_row(tds))
 
-            # 馬ID (tds[1]: 馬名カラム)
-            horse_id = _extract_id_from_td(tds[1])
-            horse_id_list.append(horse_id)
-            # 厩舎ID (tds[5]: 厩舎カラム)
-            trainer_id_list.append(_extract_id_from_td(tds[5]))
-            # 馬主ID (tds[9]: 馬主カラム)
-            owner_id_list.append(_extract_id_from_td(tds[9]))
-            # 生産者ID (tds[10]: 生産者カラム)
-            breeder_id_list.append(_extract_id_from_td(tds[10]))
+        return pd.DataFrame(rows, columns=HORSE_INFO_COLUMNS)
 
-        # pd.read_htmlでテーブルの基本カラムを取得
-        read_html_columns = [
-            "馬名",
-            "性",
-            "厩舎",
-            "父",
-            "母",
-            "母父",
-            "馬主",
-            "生産者",
-            "総賞金(万円)",
-        ]
+    def _parse_row(self, tds: list[Tag]) -> dict[str, object]:
+        """1行分のtd要素から馬情報を抽出する
+
+        Args:
+            tds (list[Tag]): td要素のリスト
+
+        Returns:
+            dict[str, object]: HORSE_INFO_COLUMNSのキーを持つ辞書
+
+        Raises:
+            ParseError: 馬ID・各種ID・総賞金のパースに失敗した場合
+        """
+        # 馬ID (tds[1]: 馬名カラムのリンクから)
+        horse_id = extract_id_from_td(tds[1], HORSE_ID_PATTERN, self._logger)
+        if not isinstance(horse_id, str):
+            self._logger.error("馬IDのリンクが見つかりません: %s", tds[1].text.strip())
+            raise ParseError(f"馬IDのリンクが見つかりません: {tds[1].text.strip()}")
+
+        # 所属・厩舎 (tds[5]: "[西] 高柳大輔" → 所属="栗東", 厩舎="高柳大輔")
+        affiliation, trainer_name = _parse_trainer(tds[5])
+
+        # 総賞金 (tds[11]: "4226.9" のような万円単位の数値)
+        prize_text = tds[11].text.strip().replace(",", "")
         try:
-            tables = pd.read_html(StringIO(html.text))
-            horse_info_df = tables[0][read_html_columns].copy()
-        except Exception as exc:
-            self._logger.error("テーブルの読み込みに失敗しました: %s", url, exc_info=True)
-            raise ParseError(f"テーブルの読み込みに失敗しました: {url}") from exc
+            prize = int(float(prize_text))
+        except (ValueError, OverflowError) as exc:
+            self._logger.error("総賞金のパースに失敗しました: %s", prize_text)
+            raise ParseError(f"総賞金のパースに失敗しました: {prize_text}") from exc
 
-        # カラム名を変換
-        horse_info_df = horse_info_df.rename(columns={"性": "性別"})
-
-        # カラムを追加・整形
-        horse_info_df.insert(0, "馬ID", horse_id_list)
-        horse_info_df.insert(2, "生年", self.year)
-        horse_info_df.insert(3, "所属", "")
-        horse_info_df["厩舎ID"] = trainer_id_list
-        horse_info_df["馬主ID"] = owner_id_list
-        horse_info_df["生産者ID"] = breeder_id_list
-
-        # 所属と厩舎を分割（"[西]友道康夫" → 所属="栗東", 厩舎="友道康夫"）
-        try:
-            horse_info_df[["所属", "厩舎"]] = horse_info_df["厩舎"].str.extract(r"\[(.*?)\](.*)")
-        except Exception:
-            # 厩舎列のすべての行がNaNだった場合何もしない
-            pass
-
-        # 所属の値を変換（"東"→"美浦"、"西"→"栗東"、"地"→"地方"、"外"→"海外"）
-        horse_info_df["所属"] = horse_info_df["所属"].map(
-            lambda x: AFFILIATION_MAP.get(str(x), x) if pd.notna(x) else x
-        )
-
-        # 総賞金を万円単位のintに変換（NaNは0）
-        horse_info_df["総賞金(万円)"] = (
-            pd.to_numeric(
-                horse_info_df["総賞金(万円)"].astype(str).str.replace(",", ""),
-                errors="coerce",
-            )
-            .fillna(0)
-            .astype(int)
-        )
-
-        # HORSE_INFO_COLUMNSの順序でカラムを並び替え
-        horse_info_df = horse_info_df[HORSE_INFO_COLUMNS]
-
-        return horse_info_df
+        return {
+            "馬ID": horse_id,
+            "馬名": _extract_link_text(tds[1]),
+            "性別": tds[2].text.strip(),
+            "生年": self.year,
+            "所属": affiliation,
+            "厩舎": trainer_name,
+            "厩舎ID": extract_id_from_td(tds[5], TRAINER_ID_PATTERN, self._logger),
+            "父": _extract_link_text(tds[6]),
+            "母": _extract_link_text(tds[7]),
+            "母父": _extract_link_text(tds[8]),
+            "馬主": _extract_link_text(tds[9]),
+            "馬主ID": extract_id_from_td(tds[9], OWNER_ID_PATTERN, self._logger),
+            "生産者": _extract_link_text(tds[10]),
+            "生産者ID": extract_id_from_td(tds[10], BREEDER_ID_PATTERN, self._logger),
+            "総賞金(万円)": prize,
+        }
 
     def _scrape_max_page_num(self) -> int:
         """競走馬一覧ページの最大ページ数を取得する
@@ -245,25 +229,34 @@ class HorseInfoScraper:
         return (birth_num + 99) // 100
 
 
-def _extract_id_from_td(td_element: Tag) -> str | float:
-    """tdタグからaタグのhrefを解析してIDを抽出する
+def _extract_link_text(td_element: Tag) -> str | float:
+    """tdタグ内の最初のaタグの文字列を抽出する
 
     Args:
-        td_element: BeautifulSoupのtd要素
+        td_element (Tag): td要素
 
     Returns:
-        str | float: IDの文字列。リンクがない場合はNaN
+        str | float: リンクの文字列。リンクがない場合はNaN
     """
-    try:
-        a_tag = td_element.find("a")
-        if not isinstance(a_tag, Tag):
-            return np.nan
-        href = str(a_tag["href"])
-        # URLの末尾からIDを抽出（末尾の/を除く）
-        # 例: /horse/2022105081/ → 2022105081
-        id_match = re.search(r"/(\d+)/?$", href)
-        if id_match:
-            return id_match.group(1)
+    a_tag = td_element.find("a")
+    if not isinstance(a_tag, Tag):
         return np.nan
-    except Exception:
-        return np.nan
+    return a_tag.get_text(strip=True)
+
+
+def _parse_trainer(td_element: Tag) -> tuple[str | float, str | float]:
+    """厩舎のtdタグから所属と調教師名を分離する
+
+    Args:
+        td_element (Tag): 厩舎のtd要素（"[西] 高柳大輔" 形式のテキストを持つ）
+
+    Returns:
+        str | float: 所属（"美浦","栗東","地方","海外"のいずれか）。厩舎未所属の場合はNaN
+        str | float: 調教師名。厩舎未所属の場合はNaN
+    """
+    text = " ".join(td_element.stripped_strings)
+    match = re.fullmatch(r"\[(.+?)\]\s*(.+)", text)
+    if match is None:
+        return np.nan, np.nan
+    code = match.group(1)
+    return AFFILIATION_MAP.get(code, code), match.group(2)

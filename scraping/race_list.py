@@ -10,10 +10,22 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from scraping.config import AFFILIATION_MAP, RACE_LIST_COLUMNS, ScrapingConfig
+from scraping.config import (
+    AFFILIATION_MAP,
+    HORSE_ID_PATTERN,
+    JOCKEY_ID_PATTERN,
+    RACE_LIST_COLUMNS,
+    TRAINER_ID_PATTERN,
+    ScrapingConfig,
+)
 from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
 from scraping.url_builder import build_race_list_url
-from scraping.utils import judge_turf_dirt, race_id_to_race_info, resolve_response_encoding
+from scraping.utils import (
+    extract_id_from_td,
+    judge_turf_dirt,
+    race_id_to_race_info,
+    resolve_response_encoding,
+)
 
 
 class RaceListScraper:
@@ -200,28 +212,28 @@ class RaceListScraper:
 
         # ペース (td[10]: "36.7-40.5" → レース前3F, レース後3F)
         pace_text = tds[10].text.strip()
-        pace_first, pace_last = self._parse_pace(pace_text)
+        pace_first, pace_last = self._parse_pace(pace_text, turf_dirt)
 
         # 勝ち馬 (td[11])
         winner_name = tds[11].text.strip()
-        winner_id = _extract_id_from_link(tds[11])
+        winner_id = extract_id_from_td(tds[11], HORSE_ID_PATTERN, self._logger)
 
         # 騎手 (td[12])
         jockey_name = tds[12].text.strip()
-        jockey_id = _extract_id_from_link(tds[12])
+        jockey_id = extract_id_from_td(tds[12], JOCKEY_ID_PATTERN, self._logger)
 
         # 調教師 (td[13]: "[東]小手川準" → 所属="美浦", 厩舎="小手川準")
         trainer_text = tds[13].text.strip()
         affiliation, trainer_name = _parse_trainer(trainer_text)
-        trainer_id = _extract_id_from_link(tds[13])
+        trainer_id = extract_id_from_td(tds[13], TRAINER_ID_PATTERN, self._logger)
 
         # 2着馬 (td[14])
         second_name = tds[14].text.strip()
-        second_id = _extract_id_from_link(tds[14])
+        second_id = extract_id_from_td(tds[14], HORSE_ID_PATTERN, self._logger)
 
         # 3着馬 (td[15])
         third_name = tds[15].text.strip()
-        third_id = _extract_id_from_link(tds[15])
+        third_id = extract_id_from_td(tds[15], HORSE_ID_PATTERN, self._logger)
 
         return {
             "レースID": race_id,
@@ -335,42 +347,32 @@ class RaceListScraper:
             self._logger.error("日付のパースに失敗しました: %s", date_text)
             raise ParseError(f"日付のパースに失敗しました: {date_text}") from exc
 
-    def _parse_pace(self, pace_text: str) -> tuple[float, float]:
+    def _parse_pace(self, pace_text: str, turf_dirt: str) -> tuple[float, float]:
         """ペース文字列を前半3Fと後半3Fに分割する
+
+        障害レースはペースが表示されず空文字になるため、NaNを返す。
 
         Args:
             pace_text (str): "36.7-40.5" 形式のペース文字列
+            turf_dirt (str): 芝ダ（"芝","ダ","障"のいずれか）
 
         Returns:
-            tuple[float, float]: レース前3F, レース後3F
+            float: レース前3F。障害レースでペースが空の場合はNaN
+            float: レース後3F。障害レースでペースが空の場合はNaN
 
         Raises:
-            ParseError: ペース文字列のパースに失敗した場合
+            ParseError: 平地レースでペースが空の場合、またはペース文字列のパースに失敗した場合
         """
-        match = re.match(r"([\d.]+)-([\d.]+)", pace_text)
+        if pace_text == "":
+            if turf_dirt == "障":
+                return np.nan, np.nan
+            self._logger.error("平地レースのペースが空です")
+            raise ParseError("平地レースのペースが空です")
+        match = re.fullmatch(r"(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)", pace_text)
         if match:
             return float(match.group(1)), float(match.group(2))
         self._logger.error("ペースのパースに失敗しました: %s", pace_text)
         raise ParseError(f"ペースのパースに失敗しました: {pace_text}")
-
-
-def _extract_id_from_link(td_element: Tag) -> str | float:
-    """td要素内のaタグのhrefからIDを抽出する
-
-    Args:
-        td_element (Tag): td要素
-
-    Returns:
-        str | float: IDの文字列。リンクがない場合はNaN
-    """
-    a_tag = td_element.find("a")
-    if not isinstance(a_tag, Tag):
-        return np.nan
-    href = str(a_tag.get("href", ""))
-    match = re.search(r"/(\d{5}|\d{10})(?:/|$)", href)
-    if match is None:
-        return np.nan
-    return match.group(1)
 
 
 def _parse_trainer(trainer_text: str) -> tuple[str, str]:

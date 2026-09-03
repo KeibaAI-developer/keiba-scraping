@@ -18,15 +18,11 @@ def build_race_list_url(year: int, page_num: int, config: ScrapingConfig | None 
         str: URL
     """
     cfg = config or ScrapingConfig()
+    jyo_query = "&".join(f"jyo%5B%5D={jyo_id:02}" for jyo_id in range(1, 11))  # 中央10場
     return (
-        f"{cfg.netkeiba_base_url}/"
-        f"?pid=race_list&word="
-        f"&start_year={year}&start_mon=1"
-        f"&end_year={year}&end_mon=12"
-        f"&jyo%5B%5D=01&jyo%5B%5D=02&jyo%5B%5D=03&jyo%5B%5D=04"
-        f"&jyo%5B%5D=05&jyo%5B%5D=06&jyo%5B%5D=07&jyo%5B%5D=08"
-        f"&jyo%5B%5D=09&jyo%5B%5D=10"
-        f"&kyori_min=&kyori_max=&sort=date&list=100&page={page_num}"
+        f"{cfg.netkeiba_base_url}/race/list.html"
+        f"?word=&yf={year}&mf=1&yt={year}&mt=12&{jyo_query}"
+        f"&sort=date-desc&limit=100&page={page_num}"
     )
 
 
@@ -102,7 +98,7 @@ def build_horse_list_url(year: int, page_num: int, config: ScrapingConfig | None
         str: URL
     """
     cfg = config or ScrapingConfig()
-    return f"{cfg.netkeiba_base_url}/?pid=horse_list&birthyear={year}&list=100&page={page_num}"
+    return f"{cfg.netkeiba_base_url}/horse/list.html?year={year}&limit=100&page={page_num}"
 
 
 def build_odds_api_url(race_id: str, config: ScrapingConfig | None = None) -> str:
