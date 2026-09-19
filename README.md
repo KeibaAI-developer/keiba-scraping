@@ -140,7 +140,7 @@ playwright install chromium
 |------|------|------------|
 | `scrape_odds_from_netkeiba(race_id: str)` | netkeibaから現在のオッズを取得 | [SCHEMA.md#オッズ](doc/SCHEMA.md#オッズ) |
 | `scrape_odds_from_jra(race_id: str)` | JRAから現在のオッズを取得（Playwright） | [SCHEMA.md#オッズ](doc/SCHEMA.md#オッズ) |
-| `scrape_yoso_odds_from_netkeiba(race_id: str)` | netkeibaから予想オッズを取得（Selenium） | [SCHEMA.md#予想オッズ](doc/SCHEMA.md#予想オッズ) |
+| `scrape_yoso_odds_from_netkeiba(race_id: str)` | netkeibaから予想オッズを取得（Selenium）。発売開始後は `ExpectedOddsUnavailableError` | [SCHEMA.md#予想オッズ](doc/SCHEMA.md#予想オッズ) |
 
 ---
 

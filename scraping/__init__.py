@@ -48,6 +48,7 @@ from scraping.config import (
 from scraping.entry_page import EntryPageScraper
 from scraping.exceptions import (
     DriverError,
+    ExpectedOddsUnavailableError,
     NetworkError,
     PageNotFoundError,
     ParseError,
@@ -124,6 +125,7 @@ __all__ = [
     "ParseError",
     "NetworkError",
     "DriverError",
+    "ExpectedOddsUnavailableError",
     # url_builder
     "build_race_list_url",
     "build_today_race_list_url",
