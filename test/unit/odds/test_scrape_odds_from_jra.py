@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
-from scraping.config import ODDS_COLUMNS
+from scraping.config import ODDS_COLUMNS, ScrapingConfig
 from scraping.exceptions import DriverError, PageNotFoundError, ParseError
 from scraping.odds import scrape_odds_from_jra
 
@@ -159,6 +159,27 @@ def test_scrape_odds_from_jra_waits_for_kaisai_link(
     mock_page.wait_for_load_state.assert_awaited_with("domcontentloaded")
     kaisai_locator.wait_for.assert_awaited_once()
     assert kaisai_locator.wait_for.await_args.kwargs["state"] == "attached"
+
+
+def test_scrape_odds_from_jra_passes_timeout_in_milliseconds(
+    mock_playwright: MagicMock, jra_odds_raw_df: pd.DataFrame
+) -> None:
+    """page_wait_timeout（秒）がミリ秒に換算して渡されること"""
+    mock_pw = mock_playwright.__aenter__.return_value
+    mock_browser = mock_pw.chromium.launch.return_value
+    mock_context = mock_browser.new_context.return_value
+    mock_page = mock_context.new_page.return_value
+    kaisai_locator = mock_page.get_by_role.return_value
+
+    with (
+        patch("scraping.odds.async_playwright", return_value=mock_playwright),
+        patch("scraping.odds.pd.read_html", return_value=[jra_odds_raw_df]),
+    ):
+        asyncio.run(
+            scrape_odds_from_jra("202606020411", config=ScrapingConfig(page_wait_timeout=2))
+        )
+
+    assert kaisai_locator.wait_for.await_args.kwargs["timeout"] == 2000
 
 
 # 準正常系
