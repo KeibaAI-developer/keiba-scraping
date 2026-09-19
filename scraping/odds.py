@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import requests
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import async_playwright
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -41,12 +42,15 @@ async def scrape_odds_from_jra(
         config (ScrapingConfig | None): 設定オブジェクト
         logger (logging.Logger | None): ロガーインスタンス
 
+    JRAは開催日の前日からオッズを掲載する（単勝・複勝の両方）。翌週以降のレースは
+    掲載されないため PageNotFoundError になる。
+
     Returns:
         pd.DataFrame: オッズデータ（ODDS_COLUMNSのカラム）
             馬番順にソートされている
 
     Raises:
-        PageNotFoundError: 指定したレースがJRAサイト上に見つからない場合
+        PageNotFoundError: 指定したレースがJRAサイト上に見つからない場合（掲載前を含む）
         DriverError: Playwrightの操作に失敗した場合
         ParseError: HTMLテーブルの解析に失敗した場合
     """
@@ -64,16 +68,22 @@ async def scrape_odds_from_jra(
 
                 await page.goto(cfg.jra_url)
                 await page.get_by_role("link", name="オッズ", exact=True).click()
+                await page.wait_for_load_state("domcontentloaded")
 
-                # 該当開催日のリンクが存在しない場合はPageNotFoundError
-                kaisai_link = page.get_by_role("link", name=f"{kai}回{keibajo}{day}日")
-                if await kaisai_link.count() == 0:
+                # 開催リンクは遷移後に現れるため出現を待つ。待っても現れない場合は
+                # JRAが該当開催のオッズを掲載していない（翌週以降のレースなど）
+                kaisai_link = page.get_by_role("link", name=f"{kai}回{keibajo}{day}日").first
+                try:
+                    await kaisai_link.wait_for(
+                        state="attached", timeout=cfg.page_wait_timeout * 1000
+                    )
+                except PlaywrightTimeoutError as exc:
                     _logger.error(
                         "JRAに該当開催 (%s回%s%s日) が見つかりません。", kai, keibajo, day
                     )
                     raise PageNotFoundError(
                         f"JRAに該当開催 ({kai}回{keibajo}{day}日) が見つかりません。"
-                    )
+                    ) from exc
                 await kaisai_link.click()
 
                 async with page.expect_navigation():

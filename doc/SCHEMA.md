@@ -548,7 +548,11 @@ RACE_SCHEDULE_COLUMNSに定義されたカラムを持つDataFrame。
 
 `scrape_odds_from_netkeiba()`および`scrape_odds_from_jra()`が返すDataFrameの仕様。
 ODDS_COLUMNSに定義されたカラムを持つDataFrame。行数は出走頭数に依存。
-馬券発売前は0行のDataFrameを返す。
+
+取得元によって取得できる時期が異なる。
+
+- `scrape_odds_from_jra()`: JRAは開催日の前日からオッズを掲載する（単勝・複勝の両方）。翌週以降のレースは掲載されないため`PageNotFoundError`になる
+- `scrape_odds_from_netkeiba()`: netkeibaのオッズAPIは開催日までデータを持たない（前日は`reason: result odds empty`で空）。馬券発売前は0行のDataFrameを返す。前日の単勝オッズは出馬表ページに掲載されており、`scrape_yoso_odds_from_netkeiba()`で取得できる（複勝は掲載されない）
 
 | カラム名         | 型    | 説明                               | NaNになる条件              | 例               |
 | ---------------- | ----- | --------------------------------- | ------------------------ | ---------------- |
