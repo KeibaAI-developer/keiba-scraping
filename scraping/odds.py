@@ -17,7 +17,13 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
 from scraping.config import ODDS_COLUMNS, YOSO_ODDS_COLUMNS, ScrapingConfig
-from scraping.exceptions import DriverError, NetworkError, PageNotFoundError, ParseError
+from scraping.exceptions import (
+    DriverError,
+    ExpectedOddsUnavailableError,
+    NetworkError,
+    PageNotFoundError,
+    ParseError,
+)
 from scraping.url_builder import build_entry_url, build_odds_api_url
 from scraping.utils import race_id_to_race_info, set_chrome_options
 
@@ -140,6 +146,13 @@ def scrape_odds_from_netkeiba(
     return odds_df
 
 
+# 出馬表のオッズ列の位置と、予想オッズが掲載されているときの見出し。
+# 馬券発売開始後は同じ列が実オッズの表示に変わり、見出しも変わる
+_SHUTUBA_HEADER_SELECTOR = "table.Shutuba_Table th"
+_ODDS_COLUMN_INDEX = 9
+_YOSO_ODDS_HEADER = "予想オッズ"
+
+
 def scrape_yoso_odds_from_netkeiba(
     race_id: str,
     config: ScrapingConfig | None = None,
@@ -147,8 +160,13 @@ def scrape_yoso_odds_from_netkeiba(
 ) -> pd.DataFrame:
     """netkeibaから予想オッズを取得する（馬券発売前用）
 
-    netkeibaの出馬表ページからJavaScriptで生成される予想オッズを取得する。
-    馬名と予想単勝オッズを取得する。
+    netkeibaの出馬表ページのオッズ列から予想オッズを取得する。馬名と予想単勝オッズを取得する。
+
+    同じ列は馬券発売開始後に実オッズの表示へ変わり、見出しが「予想オッズ」から変わる。
+    予想オッズ以外を返さないよう、見出しを検証して異なる場合は例外にする。
+
+    枠順確定前は馬番が掲載されないため、馬番は欠損値になる。同一レースに同名の馬は
+    出走しないため、その場合は馬名で馬を識別する。
 
     Args:
         race_id (str): レースID
@@ -157,10 +175,11 @@ def scrape_yoso_odds_from_netkeiba(
 
     Returns:
         pd.DataFrame: 予想オッズデータ（YOSO_ODDS_COLUMNSのカラム）
-            馬名順（出馬表の登録順）
+            馬名順（出馬表の登録順）。枠順確定前は馬番が欠損値
 
     Raises:
         NetworkError: ページの取得に失敗した場合
+        ExpectedOddsUnavailableError: オッズ列が予想オッズでない場合（発売開始後など）
         ParseError: ページ解析に失敗した場合
     """
     _logger = logger or logging.getLogger(__name__)
@@ -181,6 +200,24 @@ def scrape_yoso_odds_from_netkeiba(
         except Exception as exc:
             _logger.error("予想オッズページの取得に失敗しました: %s", exc)
             raise NetworkError(f"予想オッズページの取得に失敗しました: {exc}") from exc
+
+        # オッズ列が予想オッズかどうかを見出しで判定する
+        headers = [
+            cell.text.strip().replace("\n", "")
+            for cell in driver.find_elements(By.CSS_SELECTOR, _SHUTUBA_HEADER_SELECTOR)
+        ]
+        if len(headers) <= _ODDS_COLUMN_INDEX:
+            message = f"出馬表の見出しを読み取れませんでした: race_id={race_id}"
+            _logger.error(message)
+            raise ParseError(message)
+        odds_header = headers[_ODDS_COLUMN_INDEX]
+        if odds_header != _YOSO_ODDS_HEADER:
+            message = (
+                f"予想オッズが掲載されていません（オッズ列の見出し: {odds_header}）: "
+                f"race_id={race_id}"
+            )
+            _logger.error(message)
+            raise ExpectedOddsUnavailableError(message)
 
         # HorseListから馬名とオッズを取得
         horse_list = driver.find_elements(By.CLASS_NAME, "HorseList")
@@ -203,7 +240,7 @@ def scrape_yoso_odds_from_netkeiba(
                 horse_name = horse_name_elem.text.strip() if horse_name_elem else ""
 
                 # オッズを取得
-                odds_text = tds[9].text.strip()
+                odds_text = tds[_ODDS_COLUMN_INDEX].text.strip()
 
                 # オッズをパース
                 try:
@@ -226,7 +263,7 @@ def scrape_yoso_odds_from_netkeiba(
         df = pd.DataFrame(rows, columns=YOSO_ODDS_COLUMNS)
         return df
 
-    except (NetworkError, ParseError):
+    except (NetworkError, ParseError, ExpectedOddsUnavailableError):
         raise
     except Exception as exc:
         _logger.error("予想オッズの解析に失敗しました: %s", exc)
