@@ -22,6 +22,7 @@ class ScrapingConfig:
             環境変数 ``CHROME_DRIVER_PATH`` が設定されていればその値を使用し、
             未設定の場合は ``None`` (SeleniumのService自動検出) をデフォルトとする。
         request_timeout (int): HTTPリクエストのタイムアウト(秒)
+        page_wait_timeout (int): ブラウザ操作で要素の出現を待つタイムアウト(秒)
     """
 
     netkeiba_base_url: str = "https://db.netkeiba.com"
@@ -40,6 +41,7 @@ class ScrapingConfig:
         default_factory=lambda: os.environ.get("CHROME_DRIVER_PATH")
     )
     request_timeout: int = 10
+    page_wait_timeout: int = 15
 
 
 # ---------------------------------------------------------------------------

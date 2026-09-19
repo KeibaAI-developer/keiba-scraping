@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pandas as pd
 import pytest
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from scraping.config import ODDS_COLUMNS
 from scraping.exceptions import DriverError, PageNotFoundError, ParseError
@@ -35,8 +36,9 @@ def mock_playwright() -> MagicMock:
     # Locatorのモック（get_by_roleの返り値）
     mock_locator = MagicMock()
     mock_locator.click = AsyncMock()
-    mock_locator.count = AsyncMock(return_value=1)
+    mock_locator.wait_for = AsyncMock()
     mock_locator.nth.return_value = mock_locator
+    mock_locator.first = mock_locator
 
     # expect_navigationのモック（async context manager）
     mock_nav_cm = AsyncMock()
@@ -137,19 +139,42 @@ def test_scrape_odds_from_jra_with_2着払い_column(  # noqa: N802
     assert len(result) == 10
 
 
+def test_scrape_odds_from_jra_waits_for_kaisai_link(
+    mock_playwright: MagicMock, jra_odds_raw_df: pd.DataFrame
+) -> None:
+    """遷移の完了前でリンクが未出現でも、出現を待って取得できること"""
+    mock_pw = mock_playwright.__aenter__.return_value
+    mock_browser = mock_pw.chromium.launch.return_value
+    mock_context = mock_browser.new_context.return_value
+    mock_page = mock_context.new_page.return_value
+    kaisai_locator = mock_page.get_by_role.return_value
+
+    with (
+        patch("scraping.odds.async_playwright", return_value=mock_playwright),
+        patch("scraping.odds.pd.read_html", return_value=[jra_odds_raw_df]),
+    ):
+        result = asyncio.run(scrape_odds_from_jra("202606020411"))
+
+    assert len(result) == 10
+    mock_page.wait_for_load_state.assert_awaited_with("domcontentloaded")
+    kaisai_locator.wait_for.assert_awaited_once()
+    assert kaisai_locator.wait_for.await_args.kwargs["state"] == "attached"
+
+
 # 準正常系
 def test_scrape_odds_from_jra_kaisai_not_found_raises_page_not_found_error(
     mock_playwright: MagicMock,
 ) -> None:
-    """該当開催が見つからない場合にPageNotFoundErrorを送出すること"""
-    # count()が0を返すLocatorを取得するようにモックを書き換え
+    """待ってもリンクが現れない場合にPageNotFoundErrorを送出すること"""
+    # wait_for()がタイムアウトするLocatorを取得するようにモックを書き換え
     mock_pw = mock_playwright.__aenter__.return_value
     mock_browser = mock_pw.chromium.launch.return_value
     mock_context = mock_browser.new_context.return_value
     mock_page = mock_context.new_page.return_value
 
     mock_not_found_locator = MagicMock()
-    mock_not_found_locator.count = AsyncMock(return_value=0)
+    mock_not_found_locator.wait_for = AsyncMock(side_effect=PlaywrightTimeoutError("timeout"))
+    mock_not_found_locator.first = mock_not_found_locator
 
     original_get_by_role = mock_page.get_by_role
 

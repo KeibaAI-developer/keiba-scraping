@@ -12,6 +12,7 @@ def test_default_values() -> None:
     assert config.jra_url == "https://www.jra.go.jp"
     assert config.chrome_driver_path is None
     assert config.request_timeout == 10
+    assert config.page_wait_timeout == 15
     assert "User-Agent" in config.headers
 
 
@@ -24,6 +25,7 @@ def test_custom_values() -> None:
         headers={"User-Agent": "CustomAgent/1.0"},
         chrome_driver_path="/custom/path/chromedriver",
         request_timeout=30,
+        page_wait_timeout=45,
     )
     assert config.netkeiba_base_url == "https://custom.netkeiba.com"
     assert config.netkeiba_race_url == "https://custom-race.netkeiba.com"
@@ -31,6 +33,7 @@ def test_custom_values() -> None:
     assert config.headers == {"User-Agent": "CustomAgent/1.0"}
     assert config.chrome_driver_path == "/custom/path/chromedriver"
     assert config.request_timeout == 30
+    assert config.page_wait_timeout == 45
 
 
 def test_partial_custom_values() -> None:
