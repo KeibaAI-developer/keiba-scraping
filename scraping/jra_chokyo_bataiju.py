@@ -160,7 +160,7 @@ class JraChokyoBataijuScraper:
             pd.DataFrame: JRA_CHOKYO_BATAIJU_COLUMNSのカラムを持つDataFrame
 
         Raises:
-            ParseError: 表が見つからない場合、または値の解析に失敗した場合
+            ParseError: 表が見つからない場合、表に必要な列が無い場合、または値の解析に失敗した場合
         """
         year_match = _NEWS_YEAR_PATTERN.search(news_url)
         if year_match is None:
@@ -174,6 +174,10 @@ class JraChokyoBataijuScraper:
         else:
             self._logger.error("調教後馬体重の表が見つかりません: %s", news_url)
             raise ParseError(f"調教後馬体重の表が見つかりません: {news_url}")
+        missing = [column for column in JRA_CHOKYO_BATAIJU_COLUMNS if column not in headers]
+        if missing:
+            self._logger.error("調教後馬体重の表に無い列があります: %s", missing)
+            raise ParseError(f"調教後馬体重の表に無い列があります: {missing}")
 
         rows: list[dict[str, object]] = []
         for tr in table.find_all("tr"):

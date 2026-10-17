@@ -134,6 +134,15 @@ def test_get_chokyo_bataiju_no_table() -> None:
         scraper.get_chokyo_bataiju()
 
 
+def test_get_chokyo_bataiju_missing_column() -> None:
+    """表に必要な列の見出しが無い場合にParseErrorが発生すること"""
+    news_html = load_html(FIXTURE_NEWS).replace("計量場所", "計量地", 1)
+    scraper, _ = create_scraper_with_mock(load_html(FIXTURE_WEIGHT_PAGE), news_html)
+
+    with pytest.raises(ParseError, match="計量場所"):
+        scraper.get_chokyo_bataiju()
+
+
 def test_get_chokyo_bataiju_invalid_weight() -> None:
     """馬体重が数値でない場合にParseErrorが発生すること"""
     news_html = load_html(FIXTURE_NEWS).replace("<td>528</td>", "<td>計不</td>", 1)
