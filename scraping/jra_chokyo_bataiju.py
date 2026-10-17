@@ -168,7 +168,7 @@ class JraChokyoBataijuScraper:
         year = int(year_match.group(1))
 
         for table in soup.find_all("table"):
-            headers = self._parse_headers(table)
+            headers = _parse_headers(table)
             if "馬名" in headers and "馬体重" in headers:
                 break
         else:
@@ -190,13 +190,13 @@ class JraChokyoBataijuScraper:
             rows.append(
                 {
                     "馬名": values["馬名"],
-                    "馬体重": self._parse_weight(values["馬体重"]),
-                    "計量日": self._parse_date(values["計量日"], year),
+                    "馬体重": _parse_weight(values["馬体重"]),
+                    "計量日": _parse_date(values["計量日"], year),
                     "計量場所": values["計量場所"],
                     "調教師": values["調教師"],
                     "所属": values["所属"],
                     "前走馬体重": (
-                        self._parse_weight(values["前走馬体重"]) if values["前走馬体重"] else None
+                        _parse_weight(values["前走馬体重"]) if values["前走馬体重"] else None
                     ),
                 }
             )
@@ -206,59 +206,62 @@ class JraChokyoBataijuScraper:
         df["前走馬体重"] = df["前走馬体重"].astype("Int64")
         return df
 
-    def _parse_headers(self, table: Tag) -> list[str]:
-        """表の見出しを、返すDataFrameのカラム名にして列の順に返す
 
-        所属厩舎の見出しは、またがる2列を調教師・所属に分ける。
+def _parse_headers(table: Tag) -> list[str]:
+    """表の見出しを、返すDataFrameのカラム名にして列の順に返す
 
-        Args:
-            table (Tag): table要素
+    所属厩舎の見出しは、またがる2列を調教師・所属に分ける。
 
-        Returns:
-            list[str]: 列ごとのカラム名。対応しない見出しはそのままの文字列
-        """
-        headers: list[str] = []
-        for th in table.find_all("th"):
-            text = th.get_text(strip=True)
-            if text == _STABLE_HEADER:
-                headers.extend(["調教師", "所属"])
-                continue
-            headers.extend([_HEADER_TO_COLUMN.get(text, text)] * int(str(th.get("colspan", 1))))
-        return headers
+    Args:
+        table (Tag): table要素
 
-    def _parse_weight(self, text: str) -> int:
-        """馬体重の文字列を数値にする
+    Returns:
+        list[str]: 列ごとのカラム名。対応しない見出しはそのままの文字列
+    """
+    headers: list[str] = []
+    for th in table.find_all("th"):
+        text = th.get_text(strip=True)
+        if text == _STABLE_HEADER:
+            headers.extend(["調教師", "所属"])
+            continue
+        headers.extend([_HEADER_TO_COLUMN.get(text, text)] * int(str(th.get("colspan", 1))))
+    return headers
 
-        Args:
-            text (str): 馬体重（"528" など）
 
-        Returns:
-            int: 馬体重（kg）
+def _parse_weight(text: str) -> int:
+    """馬体重の文字列を数値にする
 
-        Raises:
-            ParseError: 数値でない場合
-        """
-        if not text.isdecimal():
-            raise ParseError(f"馬体重のパースに失敗しました: {text}")
-        return int(text)
+    Args:
+        text (str): 馬体重（"528" など）
 
-    def _parse_date(self, text: str, year: int) -> datetime.date:
-        """計量日の文字列を日付にする
+    Returns:
+        int: 馬体重（kg）
 
-        Args:
-            text (str): 計量日（"10月15日（木曜）" など）
-            year (int): 発表年
+    Raises:
+        ParseError: 数値でない場合
+    """
+    if not text.isdecimal():
+        raise ParseError(f"馬体重のパースに失敗しました: {text}")
+    return int(text)
 
-        Returns:
-            datetime.date: 計量日
 
-        Raises:
-            ParseError: 日付のパースに失敗した場合
-        """
-        match = _DATE_PATTERN.search(text)
-        if match is None:
-            raise ParseError(f"計量日のパースに失敗しました: {text}")
-        try:
-            return datetime.date(year, int(match.group(1)), int(match.group(2)))
-        except ValueError as exc:
-            raise ParseError(f"計量日のパースに失敗しました: {text}") from exc
+def _parse_date(text: str, year: int) -> datetime.date:
+    """計量日の文字列を日付にする
+
+    Args:
+        text (str): 計量日（"10月15日（木曜）" など）
+        year (int): 発表年
+
+    Returns:
+        datetime.date: 計量日
+
+    Raises:
+        ParseError: 日付のパースに失敗した場合
+    """
+    match = _DATE_PATTERN.search(text)
+    if match is None:
+        raise ParseError(f"計量日のパースに失敗しました: {text}")
+    try:
+        return datetime.date(year, int(match.group(1)), int(match.group(2)))
+    except ValueError as exc:
+        raise ParseError(f"計量日のパースに失敗しました: {text}") from exc
