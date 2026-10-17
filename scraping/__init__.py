@@ -22,6 +22,7 @@ from scraping.config import (
     HORSE_BASIC_INFO_COLUMNS,
     HORSE_INFO_COLUMNS,
     ID_TO_KEIBAJO_DICT,
+    JRA_CHOKYO_BATAIJU_COLUMNS,
     JRA_GRADED_RACE_COLUMNS,
     KEIBAJO_TO_ID_DICT,
     LAP_TIME_COLUMNS,
@@ -47,6 +48,7 @@ from scraping.config import (
 )
 from scraping.entry_page import EntryPageScraper
 from scraping.exceptions import (
+    ChokyoBataijuUnavailableError,
     DriverError,
     ExpectedOddsUnavailableError,
     NetworkError,
@@ -56,6 +58,7 @@ from scraping.exceptions import (
 )
 from scraping.horse_info import HorseInfoScraper
 from scraping.horse_page import HorsePageScraper
+from scraping.jra_chokyo_bataiju import JraChokyoBataijuScraper
 from scraping.jra_graded_race import JraGradedRaceScraper
 from scraping.odds import (
     scrape_odds_from_jra,
@@ -70,6 +73,7 @@ from scraping.url_builder import (
     build_entry_url,
     build_horse_info_url,
     build_horse_list_url,
+    build_jra_g1_weight_url,
     build_jra_graded_race_url,
     build_odds_api_url,
     build_race_list_url,
@@ -117,6 +121,7 @@ __all__ = [
     "RACE_LIST_COLUMNS",
     "RACE_SCHEDULE_COLUMNS",
     "JRA_GRADED_RACE_COLUMNS",
+    "JRA_CHOKYO_BATAIJU_COLUMNS",
     "ODDS_COLUMNS",
     "YOSO_ODDS_COLUMNS",
     # exceptions
@@ -126,6 +131,7 @@ __all__ = [
     "NetworkError",
     "DriverError",
     "ExpectedOddsUnavailableError",
+    "ChokyoBataijuUnavailableError",
     # url_builder
     "build_race_list_url",
     "build_today_race_list_url",
@@ -134,6 +140,7 @@ __all__ = [
     "build_horse_info_url",
     "build_horse_list_url",
     "build_jra_graded_race_url",
+    "build_jra_g1_weight_url",
     "build_odds_api_url",
     # utils
     "judge_turf_dirt",
@@ -156,6 +163,8 @@ __all__ = [
     "RaceScheduleScraper",
     # jra_graded_race
     "JraGradedRaceScraper",
+    # jra_chokyo_bataiju
+    "JraChokyoBataijuScraper",
     # horse_info
     "HorseInfoScraper",
     # odds

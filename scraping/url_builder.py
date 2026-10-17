@@ -127,3 +127,17 @@ def build_jra_graded_race_url(year: int, config: ScrapingConfig | None = None) -
     """
     cfg = config or ScrapingConfig()
     return f"{cfg.jra_url}/datafile/seiseki/replay/{year}/jyusyo.html"
+
+
+def build_jra_g1_weight_url(g1_page: str, config: ScrapingConfig | None = None) -> str:
+    """JRAのG1特設ページのうち、調教後馬体重のページのURLを作成する
+
+    Args:
+        g1_page (str): G1特設ページ名（秋華賞なら"shuka"）
+        config (ScrapingConfig | None): 設定オブジェクト
+
+    Returns:
+        str: URL
+    """
+    cfg = config or ScrapingConfig()
+    return f"{cfg.jra_url}/keiba/g1/{g1_page}/weight.html"
