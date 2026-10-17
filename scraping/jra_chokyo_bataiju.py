@@ -27,12 +27,18 @@ from scraping.utils import resolve_response_encoding
 
 # ニュースの表の見出し -> 返すDataFrameのカラム名
 _HEADER_TO_COLUMN: dict[str, str] = {
+    "枠": "枠",
+    "馬番": "馬番",
     "馬名": "馬名",
     "馬体重": "馬体重",
     "計量日": "計量日",
     "計量場所": "計量場所",
     "（参考）前走馬体重": "前走馬体重",
 }
+# 枠順の確定後に発表されたニュースにだけある列
+_DRAW_COLUMNS = ("枠", "馬番")
+# 前走馬体重の欄で、前走の馬体重が無いことを表す文字列
+_NO_PREVIOUS_WEIGHT_TEXTS = frozenset({"", "前走海外"})
 # 所属厩舎の見出しは調教師名と所属の2列にまたがる
 _STABLE_HEADER = "所属厩舎"
 # ニュースのURLの /news/{年}{月}/ から発表年を取る
@@ -127,7 +133,9 @@ class JraChokyoBataijuScraper:
             raise NetworkError(f"ネットワークエラーが発生しました: {exc}") from exc
 
         response.encoding = resolve_response_encoding(response)
-        return BeautifulSoup(response.text, "html.parser")
+        # ニュースの表には閉じていない tr が混じることがあり、html.parser では後続の行が
+        # 入れ子になる。lxml は次の tr の開始で前の tr を閉じて読む
+        return BeautifulSoup(response.text, "lxml")
 
     def _find_news_url(self, soup: BeautifulSoup, page_url: str) -> str:
         """「調教後馬体重」ボタンのリンク先のニュースのURLを返す
@@ -174,21 +182,28 @@ class JraChokyoBataijuScraper:
         else:
             self._logger.error("調教後馬体重の表が見つかりません: %s", news_url)
             raise ParseError(f"調教後馬体重の表が見つかりません: {news_url}")
-        missing = [column for column in JRA_CHOKYO_BATAIJU_COLUMNS if column not in headers]
+        missing = [
+            column
+            for column in JRA_CHOKYO_BATAIJU_COLUMNS
+            if column not in headers and column not in _DRAW_COLUMNS
+        ]
         if missing:
             self._logger.error("調教後馬体重の表に無い列があります: %s", missing)
             raise ParseError(f"調教後馬体重の表に無い列があります: {missing}")
 
         rows: list[dict[str, object]] = []
         for tr in table.find_all("tr"):
-            cells = [td.get_text(strip=True) for td in tr.find_all("td")]
-            if not cells:
+            # 枠順の確定後は、枠のセルが行見出し（th）になる
+            if not tr.find_all("td"):
                 continue
+            cells = [cell.get_text(strip=True) for cell in tr.find_all(["th", "td"])]
             if len(cells) != len(headers):
                 raise ParseError(f"列数が見出しと一致しません: {cells}")
             values = dict(zip(headers, cells, strict=True))
             rows.append(
                 {
+                    "枠": int(values["枠"]) if "枠" in values else None,
+                    "馬番": int(values["馬番"]) if "馬番" in values else None,
                     "馬名": values["馬名"],
                     "馬体重": _parse_weight(values["馬体重"]),
                     "計量日": _parse_date(values["計量日"], year),
@@ -196,30 +211,37 @@ class JraChokyoBataijuScraper:
                     "調教師": values["調教師"],
                     "所属": values["所属"],
                     "前走馬体重": (
-                        _parse_weight(values["前走馬体重"]) if values["前走馬体重"] else None
+                        None
+                        if values["前走馬体重"] in _NO_PREVIOUS_WEIGHT_TEXTS
+                        else _parse_weight(values["前走馬体重"])
                     ),
                 }
             )
         if not rows:
             raise ParseError(f"調教後馬体重の表に馬がいません: {news_url}")
         df = pd.DataFrame(rows, columns=JRA_CHOKYO_BATAIJU_COLUMNS)
-        df["前走馬体重"] = df["前走馬体重"].astype("Int64")
+        for column in ("枠", "馬番", "前走馬体重"):
+            df[column] = df[column].astype("Int64")
         return df
 
 
 def _parse_headers(table: Tag) -> list[str]:
     """表の見出しを、返すDataFrameのカラム名にして列の順に返す
 
+    見出しは、データのセル（td）を持たない最初の行から取る。
     所属厩舎の見出しは、またがる2列を調教師・所属に分ける。
 
     Args:
         table (Tag): table要素
 
     Returns:
-        list[str]: 列ごとのカラム名。対応しない見出しはそのままの文字列
+        list[str]: 列ごとのカラム名。対応しない見出しはそのままの文字列。見出しの行が無ければ空
     """
+    header_row = next((tr for tr in table.find_all("tr") if not tr.find_all("td")), None)
+    if header_row is None:
+        return []
     headers: list[str] = []
-    for th in table.find_all("th"):
+    for th in header_row.find_all("th"):
         text = th.get_text(strip=True)
         if text == _STABLE_HEADER:
             headers.extend(["調教師", "所属"])

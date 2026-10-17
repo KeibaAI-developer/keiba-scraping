@@ -23,6 +23,9 @@ from scraping.jra_chokyo_bataiju import JraChokyoBataijuScraper
 
 from .conftest import (
     FIXTURE_NEWS,
+    FIXTURE_NEWS_OVERSEAS,
+    FIXTURE_NEWS_UNCLOSED_ROW,
+    FIXTURE_NEWS_WITH_DRAW,
     FIXTURE_WEIGHT_PAGE,
     NEWS_PATH,
     create_scraper_with_mock,
@@ -62,6 +65,8 @@ def test_get_chokyo_bataiju_first_row_values() -> None:
     df = scraper.get_chokyo_bataiju()
 
     first = df.iloc[0]
+    assert pd.isna(first["枠"])
+    assert pd.isna(first["馬番"])
     assert first["馬名"] == "エンネ"
     assert first["馬体重"] == 528
     assert first["計量日"] == datetime.date(2026, 10, 15)
@@ -79,6 +84,58 @@ def test_get_chokyo_bataiju_empty_previous_weight() -> None:
 
     assert str(df["前走馬体重"].dtype) == "Int64"
     assert pd.isna(df.iloc[0]["前走馬体重"])
+
+
+def test_get_chokyo_bataiju_without_draw_has_na_draw_columns() -> None:
+    """枠順の確定前に発表されたニュースでは、枠・馬番がNAになること"""
+    scraper, _ = create_scraper_with_mock(load_html(FIXTURE_WEIGHT_PAGE), load_html(FIXTURE_NEWS))
+    df = scraper.get_chokyo_bataiju()
+
+    assert str(df["枠"].dtype) == "Int64"
+    assert str(df["馬番"].dtype) == "Int64"
+    assert df["枠"].isna().all()
+    assert df["馬番"].isna().all()
+
+
+def test_get_chokyo_bataiju_with_draw() -> None:
+    """枠順の確定後に発表されたニュース（2026年日本ダービー）から枠・馬番も取得すること"""
+    scraper, _ = create_scraper_with_mock(
+        load_html(FIXTURE_WEIGHT_PAGE), load_html(FIXTURE_NEWS_WITH_DRAW)
+    )
+    df = scraper.get_chokyo_bataiju()
+
+    assert len(df) == 18
+    first = df.iloc[0]
+    assert first["枠"] == 1
+    assert first["馬番"] == 1
+    assert first["馬名"] == "ライヒスアドラー"
+    assert first["馬体重"] == 524
+    assert first["計量日"] == datetime.date(2026, 5, 28)
+    assert first["前走馬体重"] == 510
+
+
+def test_get_chokyo_bataiju_overseas_previous_race_is_na() -> None:
+    """前走馬体重が「前走海外」の馬はNAになること（2026年安田記念）"""
+    scraper, _ = create_scraper_with_mock(
+        load_html(FIXTURE_WEIGHT_PAGE), load_html(FIXTURE_NEWS_OVERSEAS)
+    )
+    df = scraper.get_chokyo_bataiju()
+
+    overseas = df[df["馬名"] == "ガイアフォース"].iloc[0]
+    assert overseas["馬体重"] == 504
+    assert pd.isna(overseas["前走馬体重"])
+    assert df["前走馬体重"].isna().sum() == 2
+
+
+def test_get_chokyo_bataiju_unclosed_row() -> None:
+    """閉じていない空の行があるニュース（2026年オークス）でも1頭1行で取得すること"""
+    scraper, _ = create_scraper_with_mock(
+        load_html(FIXTURE_WEIGHT_PAGE), load_html(FIXTURE_NEWS_UNCLOSED_ROW)
+    )
+    df = scraper.get_chokyo_bataiju()
+
+    assert len(df) == 18
+    assert list(df["馬番"]) == list(range(1, 19))
 
 
 def test_save_to_csv() -> None:

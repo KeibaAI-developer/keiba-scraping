@@ -15,6 +15,12 @@ FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "fixtures", "
 FIXTURE_WEIGHT_PAGE = "jra_g1_weight_shuka_2026.html"
 FIXTURE_NEWS = "jra_chokyo_bataiju_news_202610_101502.html"
 NEWS_PATH = "/news/202610/101502.html"
+# 枠順の確定後に発表された2026年日本ダービーのニュース（枠・馬番の列がある）
+FIXTURE_NEWS_WITH_DRAW = "jra_chokyo_bataiju_news_202605_052803.html"
+# 前走馬体重に「前走海外」がある2026年安田記念のニュース
+FIXTURE_NEWS_OVERSEAS = "jra_chokyo_bataiju_news_202606_060405.html"
+# 表に閉じていない空の行がある2026年オークスのニュース
+FIXTURE_NEWS_UNCLOSED_ROW = "jra_chokyo_bataiju_news_202605_052108.html"
 
 
 def load_html(fixture_filename: str) -> str:
