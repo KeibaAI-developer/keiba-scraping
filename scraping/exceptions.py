@@ -26,3 +26,7 @@ class DriverError(ScrapingError):
 
 class ExpectedOddsUnavailableError(ScrapingError):
     """予想オッズが掲載されていない場合の例外（馬券発売開始後など）"""
+
+
+class ChokyoBataijuUnavailableError(ScrapingError):
+    """調教後馬体重がまだ発表されていない場合の例外"""

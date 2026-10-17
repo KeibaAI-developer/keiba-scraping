@@ -561,3 +561,13 @@ JRA_GRADED_RACE_COLUMNS: list[str] = [
     "優勝馬",
     "騎手",
 ]
+
+JRA_CHOKYO_BATAIJU_COLUMNS: list[str] = [
+    "馬名",
+    "馬体重",
+    "計量日",
+    "計量場所",
+    "調教師",
+    "所属",
+    "前走馬体重",
+]

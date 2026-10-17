@@ -16,6 +16,7 @@
 - レース一覧（年間のレース検索結果）
 - レーススケジュール（日別の開催レース一覧）
 - JRA重賞レース一覧（年間の重賞レース一覧）
+- JRA調教後馬体重（G1出走馬の調教後の馬体重）
 
 
 ## 動作要件
@@ -178,6 +179,21 @@ playwright install chromium
 | 関数 | 説明 | カラム定義 |
 |------|------|------------|
 | `get_graded_races()` | JRA重賞レース一覧 | [SCHEMA.md#jra重賞レース一覧](doc/SCHEMA.md#jra重賞レース一覧) |
+
+---
+
+### JRA調教後馬体重
+
+- **サンプルURL**: `https://www.jra.go.jp/keiba/g1/shuka/weight.html`
+- **API**: `JraChokyoBataijuScraper(g1_page: str)`
+- **サンプルコード**: [example/example_jra_chokyo_bataiju.py](example/example_jra_chokyo_bataiju.py)
+
+`g1_page` はJRAのG1特設ページ名（URLの `/keiba/g1/{g1_page}/` の部分。秋華賞なら `shuka`）。
+調教後馬体重はレース週の木曜17時以降に発表されるJRAニュースに載る。G1特設ページの「調教後馬体重」ボタンのリンク先を辿ってそのニュースの表を取得する。
+
+| 関数 | 説明 | カラム定義 |
+|------|------|------------|
+| `get_chokyo_bataiju()` | G1出走馬の調教後馬体重。発表前は `ChokyoBataijuUnavailableError`、G1特設ページの公開前は `PageNotFoundError` | [SCHEMA.md#jra調教後馬体重](doc/SCHEMA.md#jra調教後馬体重) |
 
 ---
 

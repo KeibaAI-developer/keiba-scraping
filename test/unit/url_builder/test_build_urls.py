@@ -7,6 +7,7 @@ from scraping.url_builder import (
     build_entry_url,
     build_horse_info_url,
     build_horse_list_url,
+    build_jra_g1_weight_url,
     build_race_list_url,
     build_result_url,
     build_today_race_list_url,
@@ -112,3 +113,9 @@ def test_build_horse_info_url_custom(custom_config: ScrapingConfig) -> None:
     """カスタム設定で馬情報ページURLが構築されることを確認する"""
     url = build_horse_info_url("2021104956", custom_config)
     assert "custom-db.netkeiba.com" in url
+
+
+def test_build_jra_g1_weight_url_default(default_config: ScrapingConfig) -> None:
+    """G1特設ページの調教後馬体重のページURLが正しく構築されることを確認する"""
+    url = build_jra_g1_weight_url("shuka", default_config)
+    assert url == "https://www.jra.go.jp/keiba/g1/shuka/weight.html"
