@@ -258,4 +258,7 @@ class JraChokyoBataijuScraper:
         match = _DATE_PATTERN.search(text)
         if match is None:
             raise ParseError(f"計量日のパースに失敗しました: {text}")
-        return datetime.date(year, int(match.group(1)), int(match.group(2)))
+        try:
+            return datetime.date(year, int(match.group(1)), int(match.group(2)))
+        except ValueError as exc:
+            raise ParseError(f"計量日のパースに失敗しました: {text}") from exc

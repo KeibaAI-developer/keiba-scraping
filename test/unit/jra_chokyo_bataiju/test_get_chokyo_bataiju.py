@@ -143,6 +143,16 @@ def test_get_chokyo_bataiju_missing_column() -> None:
         scraper.get_chokyo_bataiju()
 
 
+@pytest.mark.parametrize("date_text", ["未定", "10月32日（金曜）", "13月1日（日曜）"])
+def test_get_chokyo_bataiju_invalid_date(date_text: str) -> None:
+    """計量日が日付として解釈できない場合にParseErrorが発生すること"""
+    news_html = load_html(FIXTURE_NEWS).replace("10月15日（木曜）", date_text, 1)
+    scraper, _ = create_scraper_with_mock(load_html(FIXTURE_WEIGHT_PAGE), news_html)
+
+    with pytest.raises(ParseError, match="計量日のパースに失敗しました"):
+        scraper.get_chokyo_bataiju()
+
+
 def test_get_chokyo_bataiju_invalid_weight() -> None:
     """馬体重が数値でない場合にParseErrorが発生すること"""
     news_html = load_html(FIXTURE_NEWS).replace("<td>528</td>", "<td>計不</td>", 1)
