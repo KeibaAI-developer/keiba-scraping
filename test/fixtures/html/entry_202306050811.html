@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="EUC-JP">
+<meta charset="utf-8">
 
 <!-- block=common__meta_tag_each_race (cp) -->
 <meta http-equiv="content-language" content="ja">
@@ -85,42 +85,87 @@ if(window.performance && typeof window.performance.mark == 'function') {window.p
 </script>
 <!-- 共通css include -->
 <!-- block=common__css (d) -->
-<link rel='stylesheet' href="https://cdn.netkeiba.com/img.race/common/css/race_pc_new.css?20260202" type='text/css' media="all">
-<link rel='stylesheet' href="https://cdn.netkeiba.com/img.race/common/css/note_pc.css?20251217" type='text/css' media="all">
-<link rel='stylesheet' href="https://cdn.netkeiba.com/img.race/common/css/colorbox.css" type='text/css' media="all">
+<link rel='stylesheet' href="https://cdnv2.netkeiba.com/img.race/common/css/race_pc_new.css?20261023" type='text/css' media="all">
+<link rel='stylesheet' href="https://cdnv2.netkeiba.com/img.race/common/css/note_pc.css?20251217" type='text/css' media="all">
+<link rel='stylesheet' href="https://cdnv2.netkeiba.com/img.race/common/css/colorbox.css" type='text/css' media="all">
+
 <!-- 共通js include -->
 <!-- block=common__js (d) -->
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/slick.min.js?2019080501"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/raceapi.action.js?2019073001"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.yoso/common/js/yoso/YosoJraNar.js?20251003" type="text/javascript"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/sweetalert.min.js?2019073001" type="text/javascript"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/jquery.colorbox.js?2019073001"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.regist.sp/common/js/monthly_goods_link.js?2019101001"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/common_pc_new.js?2019073001" type="text/javascript"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/slick.min.js?2019080501"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/raceapi.action.js?2019073001"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.yoso/common/js/yoso/YosoJraNar.js?20251003" type="text/javascript"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/sweetalert.min.js?2019073001" type="text/javascript"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/jquery.colorbox.js?2019073001"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.regist.sp/common/js/monthly_goods_link.js?2019101001"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/common_pc_new.js?2019073001" type="text/javascript"></script>
 <script type="text/javascript">
 // $Id: race_common_js.html 20040 2019-02-28 07:05:48Z m-ashizawa $
 //window.console = {};
 //window.console.log = function(i){return;};
 </script>
-<!-- Geniee Wrapper Head Tag -->
-<script>
-window.gnshbrequest = window.gnshbrequest || {cmd:[]};
-gnshbrequest.cmd.push(function(){
-gnshbrequest.registerPassback("1491440");
-gnshbrequest.registerPassback("1492791");
-gnshbrequest.registerPassback("1491441");
-gnshbrequest.registerPassback("1491442");
-gnshbrequest.registerPassback("1491463_1");
-gnshbrequest.forceInternalRequest();
-});
-</script>
-<script async src="https://cpt.geniee.jp/hb/v1/211239/47/wrapper.min.js"></script>
-<!-- /Geniee Wrapper Head Tag -->
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/jquery.lazyscript.js"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/jquery.lazyscript.js"></script>
 <!-- その他 include -->
 <!-- block=race_common_other (d) -->
 
+<!-- block=ad_gam_header (d) -->
+<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+<!-- BID STRAPスクリプトの読み込み -->
+<script async src="https://fam.adingo.jp/bid-strap/netkeiba/pb.js"></script>
+<script>
+var bsttag = window.bsttag || {cmd: []};
+bsttag.failSafeTimeout = 3000; //header bidding全体のタイムアウト
+bsttag.launchAuction = function (slots) {
+var hbm = {};
+bsttag.cmd.push(function(cmd) {
+hbm = cmd.requestBids({adUnits: slots});
+});
+setTimeout(function () {
+if (hbm.isRequestSent) {
+return;
+}
+hbm.isRequestSent = true;
+googletag.cmd.push(function() {
+googletag.pubads().refresh(slots);
+});
+}, bsttag.failSafeTimeout);
+};
+</script>
+<!-- 広告枠の定義と、BID STRAPの呼び出し -->
+<script>
+window.googletag = window.googletag || {cmd: []};
+googletag.cmd.push(function() {
+function randomInt(min, max) {
+return Math.floor( Math.random() * (max + 1 - min) ) + min;
+}
+googletag.defineSlot("/21246805/pc_netkeiba_race_sidebar-rectangle-01_free", [[300,250]], "div-gpt-ad-23331086848-0").addService(googletag.pubads());
+googletag.defineSlot("/21246805/pc_netkeiba_race_sidebar-skyscraper-01_free", [[300,600]], "div-gpt-ad-23331092161-0").addService(googletag.pubads());
+googletag.defineSlot("/21246805/pc_netkeiba_race_middle-leaderboard-01_free", [[728,90]], "div-gpt-ad-23330414073-0").addService(googletag.pubads());
+googletag.defineSlot("/21246805/pc_netkeiba_race_middle-leaderboard-02_free", [[728,90]], "div-gpt-ad-23331092158-0").addService(googletag.pubads());
+//オーバーレイ広告
+var overlaySlot = googletag.defineSlot("/21246805/pc_netkeiba_all_overlay-banner_free", [[728,90],[970,90]], "div-gpt-ad-23331502454-0").addService(googletag.pubads());
+googletag.pubads().setTargeting("fluct_ad_group", String(randomInt(1, 10)));
+googletag.pubads().collapseEmptyDivs();
+googletag.pubads().enableSingleRequest();
+googletag.pubads().disableInitialLoad();
+googletag.enableServices();
+bsttag.launchAuction();
+setInterval(function() {
+googletag.cmd.push(function() {
+if (typeof overlaySlot !== 'undefined') {
+bsttag.launchAuction([overlaySlot]);
+}
+});
+}, 120000);
+
+});
+</script>
+<style>
+.gam_ad,.gam_ad_side01,.gam_ad_side02,.gam_ad_raceside01{display:block;text-align:center}
+.gam_ad{padding:15px 0 20px}
+.gam_ad_side01{margin-bottom:20px}
+.gam_ad_side02{margin:30px 0 20px}
+</style>
 <!-- Google Tag Manager -->
 <script>
 window.dataLayer = window.dataLayer || [];
@@ -142,25 +187,25 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 お客様のブラウザはジャバスクリプト（JavaScript）に対応していないか無効になっています。
 </noscript>
 <!-- block=common__race_header (d) -->
-<link rel="stylesheet" href="https://cdn.netkeiba.com/img.www/style/netkeiba.ja/css/pc_header.css?2025826" type="text/css" media="all" />
+<link rel="stylesheet" href="https://cdnv2.netkeiba.com/img.www/style/netkeiba.ja/css/pc_header.css?20260616" type="text/css" media="all" />
 
 <header class="Header_Area fc">
 <div class="Header_Inner">
 <h1>
 <a href="https://www.netkeiba.com/?rf=logo" title="netkeiba">
-<img src="https://cdn.netkeiba.com/img.www/style/netkeiba.ja/image/common/netkeiba_logo02.png?20231003" alt="netkeiba">
+<img src="https://cdnv2.netkeiba.com/img.www/style/netkeiba.ja/image/common/netkeiba_logo02.png?20231003" alt="netkeiba">
 </a>
 </h1>
 <div class="DB_Search_Input">
 <!-- なんでも検索リニューアル -->
 <span id="gnavi_search_form">
-<img src="https://cdn.netkeiba.com/img.db/common/img/gif_loader.gif" />
+<img src="https://cdnv2.netkeiba.com/img.db/common/img/gif_loader.gif" />
 </span>
 <script>
 $(function(){
 const param = {input: 'UTF-8',output: 'jsonp',};
 $.ajax({type: 'GET',
-url: 'https://cdn.netkeiba.com/img.db/ajax_gnavi_search.html',
+url: 'https://cdnv2.netkeiba.com/img.db/ajax_gnavi_search.html',
 data: param,
 dataType: param.output,
 success: function(data){
@@ -213,7 +258,7 @@ $('#gnavi_search_form').html(data.data);
 <div class="SiteToggleBtn01 Keirin">
 <a href="https://keirin.netkeiba.com/?rf=nk_pc_header">
 <span class="LiveRace">LIVE</span>
-<img src="https://cdn.netkeiba.com/img.www/style/netkeiba.ja/image/common/icon_keirin01.png" alt="" width="21" height="16" class="KeirinLogoMark01">競輪
+<img src="https://cdnv2.netkeiba.com/img.www/style/netkeiba.ja/image/common/icon_keirin01.png" alt="" width="21" height="16" class="KeirinLogoMark01">競輪
 </a>
 </div><!-- /.SiteToggleBtn01 -->
 </div>
@@ -234,7 +279,7 @@ $('#gnavi_search_form').html(data.data);
 <a href="../AI/AI.html?rf=navi" title="AI" id="navi_link_AI">A I</a>
 </li>
 <!-- <li class="Special">
-<a href="https://race.netkeiba.com/special/index.html?id=0133&rf=navi" title="有馬記念" id="navi_link_Special">有馬記念</a>
+<a href="https://race.netkeiba.com/special/index.html?id=0059&rf=navi" title="日本ダービー" id="navi_link_Special">日本ダービー</a>
 </li> -->
 <li class="Yoso">
 <a href="https://yoso.netkeiba.com?access=init&rf=navi" title="予想" id="navi_link_yoso">予想</a>
@@ -264,7 +309,7 @@ $('#gnavi_search_form').html(data.data);
 <a href="https://orepro.netkeiba.com?rf=navi" title="俺プロ" id="navi_link_orepro">俺プロ</a>
 </li>
 <li class="Owner">
-<a href="https://owner.netkeiba.com?rf=navi" title="一口馬主" id="navi_link_owner">一口馬主</a>
+<a href="https://own.netkeiba.com/?rf=nknabi" title="一口馬主" id="navi_link_owner" target="_blank">一口馬主</a>
 </li>
 <li class="Pog">
 <a href="https://pog.netkeiba.com?rf=navi" title="POG" id="navi_link_pog">POG</a>
@@ -286,7 +331,7 @@ var googletag = googletag || {};
 googletag.cmd = googletag.cmd || [];
 </script>
 <!-- /広告配信用 -->
-<script async src="https://cdn.netkeiba.com/img.racev4.sp/common/js/nd_util.min.js"></script>
+<script async src="https://cdnv2.netkeiba.com/img.racev4.sp/common/js/nd_util.min.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
 show_user();
@@ -326,14 +371,15 @@ $('.login_show').remove();
 
 <dl id="RaceList_DateList">
 
-<dd><a href="../top/race_list.html?&kaisai_date=20231216&kaisai_id=2023090505&current_group=1020231223#racelist_top_a" title="12月16日(土)" class="">12月16日<span class="Sat">(土)</span></a></dd>
-<dd><a href="../top/race_list.html?&kaisai_date=20231217&kaisai_id=2023090506&current_group=1020231223#racelist_top_a" title="12月17日(日)" class="">12月17日<span class="Sun">(日)</span></a></dd>
-<dd><a href="../top/race_list.html?&kaisai_date=20231223&kaisai_id=2023090507&current_group=1020231223#racelist_top_a" title="12月23日(土)" class="">12月23日<span class="Sat">(土)</span></a></dd><dd class="Active"><a href="../top/race_list.html?kaisai_date=20231224&kaisai_id=2023090508&current_group=1020231223#racelist_top_a" title="12月24日(日)">12月24日<span class="Sun">(日)</span></a></dd>
+<dd><a href="../top/race_list.html?kaisai_date=20231216&amp;kaisai_id=2023090505&amp;current_group=1020231223#racelist_top_a" title="12月16日(土)" class="">12月16日<span class="Sat">(土)</span></a></dd>
+<dd><a href="../top/race_list.html?kaisai_date=20231217&amp;kaisai_id=2023090506&amp;current_group=1020231223#racelist_top_a" title="12月17日(日)" class="">12月17日<span class="Sun">(日)</span></a></dd>
+<dd><a href="../top/race_list.html?kaisai_date=20231223&amp;kaisai_id=2023090507&amp;current_group=1020231223#racelist_top_a" title="12月23日(土)" class="">12月23日<span class="Sat">(土)</span></a></dd><dd class="Active"><a href="../top/race_list.html?kaisai_date=20231224&amp;kaisai_id=2023090508&amp;current_group=1020231223#racelist_top_a" title="12月24日(日)">12月24日<span class="Sun">(日)</span></a></dd>
 
 </dl>
 <div class="RaceDayNext">
 <a href="../top/race_list.html?kaisai_date=20231228#racelist_top_a" class="Active">次</a>
 </div>
+
 
 </div><!-- /.RaceDayWrap -->
 </div>
@@ -371,7 +417,7 @@ overlay.hide();
 </ul>
 </div>
 <!-- /.RaceKaisaiWrap -->
-<!-- block=shutuba__race_kaisai_wrap (cp) -->
+<!-- block=shutuba__race_kaisai_wrap (d) -->
 <div class="RaceNumWrap">
 <ul class="fc">
 <li class="">
@@ -454,9 +500,12 @@ overlay.hide();
 <span class="Icon_GradeType Icon_GradeType13 Icon_GradePos01"></span>
 </h1>
 <div class="RaceData01">
-15:40発走 /<!-- <span class="Turf"> --><span> 芝2500m</span> (右&nbsp;A)
-/ 天候:晴<span class="Icon_Weather Weather01"></span>
-<span class="Item03">/ 馬場:良</span>
+15:40発走 /<!-- <span class="Turf"> --><span> 芝2500m</span> 右&nbsp;A
+
+
+/ <span class="Icon_Weather Weather01" role="img" aria-label="晴" title="晴"></span>
+<span class="Item03"> 良</span>
+
 
 </div>
 <div class="RaceData02">
@@ -479,13 +528,13 @@ overlay.hide();
 </div>
 <ul class="RaceHeadBtnArea">
 <li>
-<a href="https://cdn.netkeiba.com/img.race/common/img/course/06_t2500.png?2019073001" class="Popup_Img MapRaceBtn">
-<span><img src="https://cdn.netkeiba.com/img.race/common/img/course/thumb_62/06_t2500.png?2019073001" onerror="replaceDefaultNoImage()" alt="Course"/></span>
+<a href="https://cdnv2.netkeiba.com/img.race/common/img/course/06_t2500.png?2019073001" class="Popup_Img MapRaceBtn">
+<span><img src="https://cdnv2.netkeiba.com/img.race/common/img/course/thumb_62/06_t2500.png?2019073001" onerror="replaceDefaultNoImage()" alt="Course"/></span>
 コース詳細
 </a>
 <script>
 function replaceDefaultNoImage() {
-var baseurl = "https://cdn.netkeiba.com/img.race/common/img/course/";
+var baseurl = "https://cdnv2.netkeiba.com/img.race/common/img/course/";
 $("a.Popup_Img").attr("href", baseurl + "soon.png");
 $("a.Popup_Img img").attr("src", baseurl + "soon.png");
 }
@@ -493,7 +542,7 @@ $("a.Popup_Img img").attr("src", baseurl + "soon.png");
 </li>
 <li>
 <a href="/ipat/dispatch.html?race_id=202306050811" target="_blank" class="IpatBtn01">
-<img disabled="false" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_ipat01.png?2019073001" alt="IPAT" /><span>連携</span>
+<img disabled="false" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_ipat01.png?2019073001" alt="IPAT" /><span>連携</span>
 </a>
 
 </li>
@@ -514,7 +563,7 @@ return false;
 if ($("a.Popup_Img").length) {
 $("a.Popup_Img").colorbox();
 }
-var _action_api_url = 'https://race.netkeiba.com/api/api_get_my_race.html';
+var _action_api_url = window.location.origin + '/api/api_get_my_race.html';
 var _data = { pid : 'api_get_my_race' };
 _data.input       = 'UTF-8';
 _data.output      = 'json';
@@ -548,16 +597,15 @@ console.log('textStatus: %s',textStatus);
 </div><!-- /.RaceMainColumn -->
 <div class="RaceSideColumn">
 
-<!-- block=common__advertisement (d) -->
-<script src="https://cdn.netkeiba.com/img.sp/common/js/loadFif.js?ver=20200228"></script>
-<div class="nk_AdvBox_pc new_race_rectangle race_shutuba  ">
-<div id="new_race_rectangle"></div>
-<script language="JavaScript" type="text/javascript">
-if(typeof loadDuraFiF !== "undefined") {
-loadDuraFiF("new_race_rectangle",23);
-}
+<!-- block=ad_gam_body_rectangle (d) -->
+<div id="div-gpt-ad-23331086848-0" class="gam_ad_raceside01" style='min-width: 300px; min-height: 250px;'>
+<script>
+googletag.cmd.push(function() { googletag.display('div-gpt-ad-23331086848-0'); });
 </script>
 </div>
+
+<!-- block=ad_gam_body_rectangle (d) -->
+
 </div>
 </div><!-- /.RaceColumnWrap -->
 </div><!-- /.RaceColumn01 -->
@@ -653,7 +701,7 @@ $('.master_course_infoText01, .master_course_infoText02').hide();
 <!-- block=shutuba__race_menu (d) -->
 <div class="RaceMenuArea">
 <ul class="RaceMainMenu">
-<li id="navi_shutuba" class="race_navi_shutuba"><a href="../race/shutuba.html?race_id=202306050811&rf=race_submenu" class="Active" title="出馬表"><span class="IconRaceMenu01 IconShutuba"></span>出馬表</a></li>
+<li id="navi_shutuba" class="race_navi_shutuba"><a href="../race/shutuba.html?race_id=202306050811&rf=race_submenu" class="Active" title="出馬表"><span class="IconRaceMenu01 IconShutuba"></span>出馬表<span class="NewIconFlag js-ai-score-pedigree-new-main" style="display:none;"></span></a></li>
 <li id="navi_odds_view" class="race_navi_odds"><a href="../odds/index.html?race_id=202306050811&rf=race_submenu" title="オッズ・購入" class=""><span class="IconRaceMenu01 IconOdds"></span>オッズ・購入</a></li>
 <li id="navi_yoso_mark_list" class="race_navi_yoso"><a href="../yoso/mark_list.html?race_id=202306050811&rf=race_submenu" class="" title="予想"><span class="IconRaceMenu01 IconYoso"></span>予想</a></li>
 <li class="race_navi_chokyo"><a href="../race/oikiri.html?race_id=202306050811&rf=race_submenu" class="" title="調教"><span class="IconRaceMenu01 IconTraining"></span>調教</a></li>
@@ -671,13 +719,15 @@ $('.master_course_infoText01, .master_course_infoText02').hide();
 <li><a href="https://yoso.netkeiba.com/senmonshi/jra/yoso_list.html?race_id=202306050811&rf=shutuba_submenu">専門紙</a></li>
 <li><a href="../race/shutuba_past.html?race_id=202306050811&rf=shutuba_submenu" class="">馬柱(5走)</a></li>
 <li><a href="../race/shutuba_past_9.html?race_id=202306050811&rf=shutuba_submenu" target="_blank" class="">馬柱(9走)</a></li>
+<li><a href="../race/ai_summary.html?race_id=202306050811&rf=shutuba_submenu" class=" js-ai-score-pedigree-new">AI総合スコア<span class="icon_new_submenu" style="display:none;"></span></a></li>
 <li><a href="../race/speed.html?race_id=202306050811&rf=shutuba_submenu" class="">タイム指数</a></li>
 <li><a href="../race/note_past5.html?race_id=202306050811&rf=shutuba_submenu" class="">メモ</a></li>
-<li><a href="../race/holding_time.html?race_id=202306050811&rf=shutuba_submenu" class="">持ちタイム</span></a></li>
+<li><a href="../race/holding_time.html?race_id=202306050811&rf=shutuba_submenu" class="">持ちタイム</a></li>
 <li><a href="../race/paddock.html?race_id=202306050811&rf=shutuba_submenu" class="">パドック</a></li>
 <li><a href="../race/bias.html?race_id=202306050811&rf=shutuba_submenu" class="">血統</a></li>
 <li><a href="../race/match.html?race_id=202306050811&rf=shutuba_submenu" class="">対戦表</a></li>
 <li><a href="https://race.sp.netkeiba.com/barometer/score.html?race_id=202306050811&rf=shutuba_submenu">調子偏差値</a></li>
+<li><a href="../race/cgm_label.html?race_id=202306050811&rf=shutuba_submenu" class="">みんなのラベル</a></li>
 </ul>
 
 
@@ -689,6 +739,35 @@ $('.master_course_infoText01, .master_course_infoText02').hide();
 </div>
 </div><!-- /.RaceMenuArea -->
 <script>
+(function () {
+var applyAiScorePedigreeNew = function () {
+var now = Date.now();
+var start = Date.UTC(2026, 7, 21, 3, 0, 0); // 2026/08/21 12:00 JST
+var end = Date.UTC(2026, 10, 1, 15, 0, 0); // 2026/11/02 00:00 JST
+var isVisible = start <= now && now < end;
+var mainIcon = document.querySelector('.js-ai-score-pedigree-new-main');
+var targets = document.querySelectorAll('.js-ai-score-pedigree-new');
+if (mainIcon) {
+mainIcon.style.display = isVisible ? '' : 'none';
+}
+for (var i = 0; i < targets.length; i++) {
+var icon = targets[i].querySelector('.icon_new_submenu');
+if (isVisible) {
+targets[i].classList.add('NewFlag');
+if (icon) { icon.style.display = ''; }
+} else {
+targets[i].classList.remove('NewFlag');
+if (icon) { icon.style.display = 'none'; }
+}
+}
+};
+if (document.readyState === 'loading') {
+document.addEventListener('DOMContentLoaded', applyAiScorePedigreeNew);
+} else {
+applyAiScorePedigreeNew();
+}
+window.addEventListener('pageshow', applyAiScorePedigreeNew);
+})();
 function newspaper_link()
 {
 window.location.href = 'https://rapl.netkeiba.com/race/newspaper.html?race_id=202306050811';
@@ -744,25 +823,25 @@ $(function(){
 //   }
 });
 </script>
-<link rel='stylesheet' href="https://cdn.netkeiba.com/img.race/common/css/jquery-ui-1.12.1.css?2019102501" type='text/css'>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/jquery-ui-1.12.1.js?2019102501"></script>
+<link rel='stylesheet' href="https://cdnv2.netkeiba.com/img.race/common/css/jquery-ui-1.12.1.css?2019102501" type='text/css'>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/jquery-ui-1.12.1.js?2019102501"></script>
 <script type="text/javascript">
 // $Id: shutuba.html 18964 2018-12-17 10:00:57Z t-kaizuka $
-var _action_api_url = 'https://race.netkeiba.com'+'/api/api_post_social_cart.html';
-var _action_api_url_myhorse = 'https://race.netkeiba.com'+'/api/api_get_myhorse_entry_v3.html';
-var _race_location_url = 'https://race.netkeiba.com';
+var _action_api_url = window.location.origin+'/api/api_post_social_cart.html';
+var _action_api_url_myhorse = window.location.origin+'/api/api_get_myhorse_entry_v3.html';
+var _race_location_url = window.location.origin;
 var _shutuba_cart_group = 'horse_202306050811';
 var _shutuba_race_id = '202306050811';
 var _race_cookie_domain_ = '.netkeiba.com';
 var user_note = {};
 </script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/social_cart.js?2019073001"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/race/shutuba.js?20240404"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/race/api_myhorse.action.js?2019073001"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/jquery.odds_update.js?2019073001"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/ndcommon.min.js?2019073001"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/zlib.min.js?2019073001"></script>
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/jquery.tablesorter.js?2019103101"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/social_cart.js?2019073001"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/race/shutuba.js?20240404"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/race/api_myhorse.action.js?2019073001"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/jquery.odds_update.js?2019073001"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/ndcommon.min.js?2019073001"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/zlib.min.js?2019073001"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/jquery.tablesorter.js?2019103101"></script>
 <div class="RaceTableArea">
 <table class="Shutuba_Table RaceTable01 ShutubaTable">
 <thead>
@@ -816,8 +895,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2020102899" target="_blank" title="ソールオリエンス">ソールオリエンス<img id="myhorse_2020102899" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2020102899" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2020102899" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2020102899" target="_blank" title="ソールオリエンス">ソールオリエンス<img id="myhorse_2020102899" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2020102899" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2020102899" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -838,8 +917,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2020102899&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2020102899" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2020102899" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2020102899" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2020102899" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2020102899" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2020102899" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2020102899&race_id=202306050811" id="Bamei_2020102899" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -926,8 +1005,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2018105165" target="_blank" title="シャフリヤール">シャフリヤール<img id="myhorse_2018105165" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2018105165" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2018105165" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2018105165" target="_blank" title="シャフリヤール">シャフリヤール<img id="myhorse_2018105165" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2018105165" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2018105165" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -948,8 +1027,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2018105165&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2018105165" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2018105165" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2018105165" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2018105165" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2018105165" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2018105165" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2018105165&race_id=202306050811" id="Bamei_2018105165" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -1036,8 +1115,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017104691" target="_blank" title="ホウオウエミーズ">ホウオウエミーズ<img id="myhorse_2017104691" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2017104691" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017104691" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017104691" target="_blank" title="ホウオウエミーズ">ホウオウエミーズ<img id="myhorse_2017104691" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2017104691" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017104691" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -1058,8 +1137,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2017104691&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017104691" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2017104691" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017104691" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017104691" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2017104691" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017104691" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2017104691&race_id=202306050811" id="Bamei_2017104691" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -1146,8 +1225,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2018103559" target="_blank" title="タイトルホルダー">タイトルホルダー<img id="myhorse_2018103559" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2018103559" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2018103559" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2018103559" target="_blank" title="タイトルホルダー">タイトルホルダー<img id="myhorse_2018103559" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2018103559" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2018103559" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -1168,8 +1247,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2018103559&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2018103559" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2018103559" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2018103559" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2018103559" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2018103559" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2018103559" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2018103559&race_id=202306050811" id="Bamei_2018103559" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -1256,8 +1335,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019105283" target="_blank" title="ドウデュース">ドウデュース<img id="myhorse_2019105283" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2019105283" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019105283" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019105283" target="_blank" title="ドウデュース">ドウデュース<img id="myhorse_2019105283" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2019105283" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019105283" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -1278,8 +1357,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2019105283&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019105283" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2019105283" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019105283" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019105283" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2019105283" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019105283" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2019105283&race_id=202306050811" id="Bamei_2019105283" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -1366,8 +1445,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017102170" target="_blank" title="ディープボンド">ディープボンド<img id="myhorse_2017102170" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2017102170" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017102170" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017102170" target="_blank" title="ディープボンド">ディープボンド<img id="myhorse_2017102170" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2017102170" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017102170" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -1388,8 +1467,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2017102170&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017102170" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2017102170" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017102170" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017102170" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2017102170" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017102170" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2017102170&race_id=202306050811" id="Bamei_2017102170" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -1476,8 +1555,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017105477" target="_blank" title="アイアンバローズ">アイアンバローズ<img id="myhorse_2017105477" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2017105477" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017105477" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017105477" target="_blank" title="アイアンバローズ">アイアンバローズ<img id="myhorse_2017105477" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2017105477" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017105477" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -1498,8 +1577,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2017105477&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017105477" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2017105477" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017105477" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017105477" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2017105477" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017105477" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2017105477&race_id=202306050811" id="Bamei_2017105477" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -1586,8 +1665,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019103588" target="_blank" title="ライラック">ライラック<img id="myhorse_2019103588" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2019103588" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019103588" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019103588" target="_blank" title="ライラック">ライラック<img id="myhorse_2019103588" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2019103588" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019103588" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -1608,8 +1687,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2019103588&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019103588" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2019103588" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019103588" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019103588" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2019103588" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019103588" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2019103588&race_id=202306050811" id="Bamei_2019103588" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -1696,8 +1775,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017104936" target="_blank" title="ヒートオンビート">ヒートオンビート<img id="myhorse_2017104936" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2017104936" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017104936" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017104936" target="_blank" title="ヒートオンビート">ヒートオンビート<img id="myhorse_2017104936" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2017104936" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017104936" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -1718,8 +1797,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2017104936&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017104936" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2017104936" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017104936" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017104936" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2017104936" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017104936" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2017104936&race_id=202306050811" id="Bamei_2017104936" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -1806,8 +1885,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019105346" target="_blank" title="ジャスティンパレス">ジャスティンパレス<img id="myhorse_2019105346" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2019105346" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019105346" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019105346" target="_blank" title="ジャスティンパレス">ジャスティンパレス<img id="myhorse_2019105346" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2019105346" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019105346" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -1828,8 +1907,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2019105346&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019105346" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2019105346" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019105346" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019105346" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2019105346" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019105346" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2019105346&race_id=202306050811" id="Bamei_2019105346" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -1916,8 +1995,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2020103458" target="_blank" title="ハーパー">ハーパー<img id="myhorse_2020103458" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2020103458" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2020103458" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2020103458" target="_blank" title="ハーパー">ハーパー<img id="myhorse_2020103458" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2020103458" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2020103458" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -1938,8 +2017,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2020103458&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2020103458" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2020103458" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2020103458" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2020103458" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2020103458" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2020103458" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2020103458&race_id=202306050811" id="Bamei_2020103458" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -2026,8 +2105,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017101431" target="_blank" title="ウインマリリン">ウインマリリン<img id="myhorse_2017101431" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2017101431" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017101431" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2017101431" target="_blank" title="ウインマリリン">ウインマリリン<img id="myhorse_2017101431" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2017101431" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2017101431" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -2048,8 +2127,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2017101431&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017101431" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2017101431" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017101431" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2017101431" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2017101431" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2017101431" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2017101431&race_id=202306050811" id="Bamei_2017101431" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -2136,8 +2215,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2020103532" target="_blank" title="タスティエーラ">タスティエーラ<img id="myhorse_2020103532" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2020103532" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2020103532" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2020103532" target="_blank" title="タスティエーラ">タスティエーラ<img id="myhorse_2020103532" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2020103532" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2020103532" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -2158,8 +2237,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2020103532&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2020103532" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2020103532" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2020103532" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2020103532" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2020103532" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2020103532" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2020103532&race_id=202306050811" id="Bamei_2020103532" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -2246,8 +2325,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019100109" target="_blank" title="プラダリア">プラダリア<img id="myhorse_2019100109" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2019100109" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019100109" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019100109" target="_blank" title="プラダリア">プラダリア<img id="myhorse_2019100109" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2019100109" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019100109" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -2268,8 +2347,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2019100109&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019100109" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2019100109" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019100109" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019100109" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2019100109" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019100109" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2019100109&race_id=202306050811" id="Bamei_2019100109" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -2356,8 +2435,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2018105269" target="_blank" title="スルーセブンシーズ">スルーセブンシーズ<img id="myhorse_2018105269" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2018105269" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2018105269" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2018105269" target="_blank" title="スルーセブンシーズ">スルーセブンシーズ<img id="myhorse_2018105269" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2018105269" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2018105269" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -2378,8 +2457,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2018105269&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2018105269" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2018105269" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2018105269" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2018105269" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2018105269" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2018105269" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2018105269&race_id=202306050811" id="Bamei_2018105269" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -2466,8 +2545,8 @@ var user_note = {};
 <td class="HorseInfo">
 <div>
 <div>
- <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019104740" target="_blank" title="スターズオンアース">スターズオンアース<img id="myhorse_2019104740" class="disp_none Favorite" src="https://cdn.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
-<img id="myhorse1_2019104740" src="https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019104740" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
+ <span class="HorseName"><a href="https://db.netkeiba.com/horse/2019104740" target="_blank" title="スターズオンアース">スターズオンアース<img id="myhorse_2019104740" class="disp_none Favorite" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/icon_horse.png?2019073001" alt="" width="18"></a></span>
+<img id="myhorse1_2019104740" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png" class="disp_none horsebookmark myhorse_2019104740" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/horse_favorite_icon_pc.png'" width="20">
 </div>
 </div>
 </td>
@@ -2488,8 +2567,8 @@ var user_note = {};
 </td>
 <td class="FavRegist Txt_C">
 <a href="https://db.sp.netkeiba.com?pid=horse_bookmark_add&horse_id=2019104740&rtn_url=https://race.netkeiba.com/race/shutuba.html?race_id=202306050811" title="お気に入り馬登録" class="popup_link_04 cboxElement cboxElement_Nologin">
-<img src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019104740" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
-<img id="myhorse1_2019104740" src="https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019104740" onmouseover="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdn.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png" class="horsebookmark myhorse1_2019104740" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_03.png'" width="18">
+<img id="myhorse1_2019104740" src="https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png" width="18" class="disp_none horsebookmark myhorse_2019104740" onmouseover="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'" onmouseout="this.src='https://cdnv2.netkeiba.com/img.race/common/img/icon/prof_icon_favhorse_comp_04.png'">
 </a>
 </td>
 <td class="FavMemo"><div><a href="../popup/horse_bookmark.html?ketto_num=2019104740&race_id=202306050811" id="Bamei_2019104740" title="" class="popup_link_04 cboxElement"></a></div></td>
@@ -2576,28 +2655,6 @@ var user_note = {};
 <button class="SubmitBtn" type="submit"><span class="Icon_Sprite_Nk Icon_RaceInfo32_3"></span>選んだ馬のオッズを見る</button>
 </div>
 </form><!-- /.shutuba_form -->
-<style>
-.apl_conductor {
-height: 0;
-}
-.apl_conductor a{
-display: block;
-margin:auto;
-}
-.apl_conductor a img {
-display: block;
-max-width: 100%;
-margin:auto;
-}
-</style>
-<div class="apl_conductor">
-<div id="nd_contents_race">
-<script language="JavaScript" type="text/javascript">
-/*noCacheParam=Math.random()*10000000000;document.write('<scr'+'ipt type="text/javascript" src="https://netdreamersad.durasite.net/A-affiliate2/mobile?site=23&keyword=nd_contents_race&isJS=true&encoding=EUC-JP&ord=' + noCacheParam + '"></scr'+'ipt>');*/
-loadDuraFiF("nd_contents_race",23);
-</script>
-</div>
-</div>
 <div class="OnOffArea OddsAutoCheck ToggleCheck LiveOddsUpdate Unfloat" style="display:none">
 <label class="OddsAutoCheckLabel">
 <span class="OddsAutoTxt">オッズの自動更新をONにする(最終更新 <span id="official_time"></span>)</span>
@@ -2618,7 +2675,7 @@ loadDuraFiF("nd_contents_race",23);
 //# sourceURL=http://debug/test1223.js
 var is_logined = 0;
 var update_myrace_item = function(race_id) {
-var _action_api_url = 'https://race.netkeiba.com/api/api_post_my_race.html';
+var _action_api_url = window.location.origin + '/api/api_post_my_race.html';
 var _data = { pid : 'api_post_my_race' };
 _data.input       = 'UTF-8';
 _data.output      = 'json';
@@ -2791,7 +2848,7 @@ $('.sort_icon').show();
 };
 /* Area created in the intern End */
 $.oddsUpdate({
-apiUrl:'https://race.netkeiba.com/api/api_get_jra_odds.html',
+apiUrl:window.location.origin + '/api/api_get_jra_odds.html',
 raceId:'202306050811',
 isPremium:0,
 displayDiffTime:false,
@@ -2812,7 +2869,7 @@ $('#odds_title').html('オッズ');
 $('#odds_title').html('オッズ');
 }
 // マイオッズ遷移先
-var action = 'https://race.netkeiba.com';
+var action = window.location.origin;
 var action_form_pid = '../odds/myodds';
 if(_odds_status=='yoso'){
 action = '';
@@ -3325,7 +3382,7 @@ location.reload();
 </tr>
 <tr>
 <td colspan="2" class="Blurred_Img_Wrap">
-<img src="https://cdn.netkeiba.com/img.race/common/img/aisho//blurred_img_rect.png" alt="">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/aisho//blurred_img_rect.png" alt="">
 </td>
 </tr>
 </tbody>
@@ -3354,7 +3411,7 @@ location.reload();
 <div class="Description_Inner_Title">波乱度</div>
 <div class="Description_Inner_ImgWrap">
 <p>AIが予測するレースの波乱レベルです。Lvが低いほど堅めの決着を予測してます。</p>
-<img src="https://cdn.netkeiba.com/img.race/common/img/aisho/aisho_description.png" alt="波乱度のレベル" class="mt05">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/aisho/aisho_description.png" alt="波乱度のレベル" class="mt05">
 </div>
 </div>
 </dd>
@@ -3370,7 +3427,7 @@ output: 'jsonp'
 };
 $.ajax({
 type : 'GET',
-url : 'https://race.netkeiba.com/api/api_get_race_compatibility.html',
+url : window.location.origin + '/api/api_get_race_compatibility.html',
 data : _data,
 dataType : _data.output,
 success : function(ret){
@@ -3448,9 +3505,9 @@ $(this).removeClass('active');
 </div>
 </div>
 </div>
-<!--<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/raceapi.action.js?2019073001"></script>-->
+<!--<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/raceapi.action.js?2019073001"></script>-->
 <script type="text/javascript">
-var _raceapi_action_api_url = "https://race.netkeiba.com"+'/api/api_get_racev3_surf.html';
+var _raceapi_action_api_url = window.location.origin+'/api/api_get_racev3_surf.html';
 $( document ).ready( function() {
 showRaceV3Surf( "race_message_box", "202306050811" );
 } );
@@ -3508,7 +3565,7 @@ console.log("view data not exiest");
 
 <div class="VideoSampleThum special_step_new_" id="race_digest">
 <a href="javascript:void(0);" class="PremiumModalLink01">
-<img src="https://cdn.netkeiba.com/img.race/common/img/netkeiba750.png" alt="参考レース映像" class="Movie_MainImgBox_Thumb lazyload" data-src="https://cdn.netkeiba.com/img.tv/tv_image.php?type=movie&id=9044">
+<img src="https://cdnv2.netkeiba.com/img.race/common/img/netkeiba750.png" alt="参考レース映像" class="Movie_MainImgBox_Thumb lazyload" data-src="https://cdnv2.netkeiba.com/img.tv/tv_image.php?type=movie&id=9044">
 
 </a>
 </div><!-- /.VideoSampleThum -->
@@ -3645,31 +3702,10 @@ $('.horse_list3 dl dt:nth-of-type(n+4), .horse_list3 dl dd:nth-of-type(n+4)').sh
 </script>
 
 </div>
-<div class="advertisement_news">
-
-<!-- block=common__advertisement_gam (d) -->
-<div class="nk_AdvBox_pc mt30">
-
-
-<!-- Geniee Wrapper Body Tag 1491441 -->
-<div data-cptid="1491441" id="1491441">
-<script>
-gnshbrequest.cmd.push(function() {
-gnshbrequest.applyPassback("1491441", "[data-cptid='1491441']");
-});
-if($('.Special_Step_New').length<1){
-$('#1491441').parent('.nk_AdvBox_pc').remove();
-}
-</script>
 </div>
-<!-- /Geniee Wrapper Body Tag 1491441 -->
 
-
-</div>
-</div>
-</div>
 <!-- block=race_tenkai_navi (cp) -->
-<link rel='stylesheet' href="https://cdn.netkeiba.com/img.race/common/css/develop.css" type='text/css' media="screen">
+<link rel='stylesheet' href="https://cdnv2.netkeiba.com/img.race/common/css/develop.css?20260304" type='text/css' media="screen">
 <div class="race_tenkai_naviContainer">
 <div class="Contents_Header">
 <h2 class="TitleHeading CardBackground"><span class="predictionTitle">AI展開予測<em class="master_course_badge">マスター</em></span></h2>
@@ -3687,10 +3723,12 @@ $('#1491441').parent('.nk_AdvBox_pc').remove();
 </div>
 <script>
 var is_shogai = "0";
+var is_shogai_hide = "1";
 $(document).ready(function () {
 if (is_shogai == "1") {
 $('#toggleSwitch').prop('checked', false);
 show_race_expect();
+if (is_shogai_hide == "1") $('.ToggleSwitch').remove();
 } else {
 $('#toggleSwitch').prop('checked', true);
 show_AI_tenkai();
@@ -3755,10 +3793,11 @@ $("[class^='master_course_infoText'].AI_tenkai,[class^='master_course_infoLink']
 }
 });
 </script>
+
 <!-- block=ai_tenkai (cp) -->
 <div class="Race_Infomation_Box">レース前日14時頃公開です。</div>
 <!-- block=race_expect (cp) -->
-<script type="text/javascript" src="https://cdn.netkeiba.com/img.race/common/js/slick.min.js"></script>
+<script type="text/javascript" src="https://cdnv2.netkeiba.com/img.race/common/js/slick.min.js"></script>
 <section class="Sec_Deploy_Race">
 <div class="Title_Sec" style="position: relative">
 <h2>レース展開予想</h2>
@@ -3768,7 +3807,7 @@ $("[class^='master_course_infoText'].AI_tenkai,[class^='master_course_infoLink']
 </dl>
 </div><!-- / .Title_Sec -->
 <div class="race_expect">
-<p class="deploy_race_image"><img  src="https://cdn.netkeiba.com/img.race/common/img/race/06_t2500.png?2019073001" alt=""></p>
+<p class="deploy_race_image"><img  src="https://cdnv2.netkeiba.com/img.race/common/img/race/06_t2500.png?2019073001" alt=""></p>
 <div class="race_expect_slide" >
 <div class="RaceOddsArea">
 <div class="RaceOddsMenu">
@@ -4012,41 +4051,32 @@ $slider.slick('slickGoTo', parseInt(slideIndex));
 <!-- block=shutuba__race_kyaku_type (d) -->
 
 
-<!-- block=common__advertisement_gam (d) -->
-<div class="nk_AdvBox_pc mt30">
-<!-- Geniee Wrapper Body Tag 1491440 -->
-<div data-cptid="1491440">
+<!-- block=ad_gam_body_rectangle (d) -->
+<div id="div-gpt-ad-23330414073-0" class="gam_ad" style='min-width: 728px; min-height: 90px;'>
 <script>
-gnshbrequest.cmd.push(function() {
-gnshbrequest.applyPassback("1491440", "[data-cptid='1491440']");
-});
+googletag.cmd.push(function() { googletag.display('div-gpt-ad-23330414073-0'); });
 </script>
-</div>
-<!-- /Geniee Wrapper Body Tag 1491440 -->
-
-
-
-
 </div>
 <!-- block=shutuba__race_yos_gensen_list_box (d) -->
 <!-- raceドメイン内　ウマいブロック　専用css -->
-<link rel='stylesheet' href="https://cdn.netkeiba.com/img.race/common/css/race_pc_umai_new.css?20200205" type='text/css' media="all">
+<link rel='stylesheet' href="https://cdnv2.netkeiba.com/img.race/common/css/race_pc_umai_new.css?20200205" type='text/css' media="all">
 <div class="Contents_Box YosoGensenListBox padd_bottom">
-<link href="https://cdn.netkeiba.com/img.yoso/common/css/umai_area01.css?2019073001" rel="stylesheet" type="text/css" media="all">
+<link href="https://cdnv2.netkeiba.com/img.yoso/common/css/umai_area01.css?2019073001" rel="stylesheet" type="text/css" media="all">
 <div class="GensenYosoTitle">
 <h2 class="TitleHeading  CardBackground"><span>厳選予想 ウマい馬券</span></h2>
 </div><!-- /.GensenYosoTitle -->
 <div id="ow_bunner_view" style="display: none; text-align: center; margin: 10px 0;"></div>
 <div id="delay_umai_baken">
 <div id="goods_view">
-<div class="FileLoader"><img src="https://cdn.netkeiba.com/img.race/common/img/common/gif-load.gif?2019073001"></div>
+<div class="FileLoader"><img src="https://cdnv2.netkeiba.com/img.race/common/img/common/gif-load.gif?2019073001"></div>
 </div>
 </div>
 </div><!-- /.Contents_Box.YosoGensenListBox -->
-<script src="https://cdn.netkeiba.com/img.yoso/common/js/social_cart.js?2019073001" type="text/javascript"></script>
-<script src="https://cdn.netkeiba.com/img.yoso/common/js/yoso/YosoJraNar.js?2025112101" type="text/javascript"></script>
-<script src="https://cdn.netkeiba.com/img.race/common/js/jquery.lazyscript.js?2019073001" type="text/javascript"></script>
+<script src="https://cdnv2.netkeiba.com/img.yoso/common/js/social_cart.js?2019073001" type="text/javascript"></script>
+<script src="https://cdnv2.netkeiba.com/img.yoso/common/js/yoso/YosoJraNar.js?2025112101" type="text/javascript"></script>
+<script src="https://cdnv2.netkeiba.com/img.race/common/js/jquery.lazyscript.js?2019073001" type="text/javascript"></script>
 <script type="text/javascript">
+var gv_umai_first_trial_state = '';
 $(document).ready( function(){
 var yoso_jra_nar = new YosoJraNar('https://yoso.netkeiba.com');
 var _show_id = 'goods_view';
@@ -4059,8 +4089,11 @@ scripts: [
 ],
 success: function () {
 
+yoso_jra_nar.GetYosoTrial(function(json_trial) {
+gv_umai_first_trial_state = String(json_trial.first_trial_state);
 yoso_jra_nar.ShowGoodsListRace(_race_id, _yosoka_id, function(data){
 $("#" + _show_id).html( data.html );
+});
 });
 }
 };
@@ -4081,11 +4114,11 @@ $.lazyscript(options);
 <a href="https://yoso.netkeiba.com/senmonshi/jra/?rf=pcrace_shutuba" title="競馬専門紙一覧" class="LinkMore Heading_Win">販売一覧</a>
 </h3>
 <div id="umai_goods_list_f_view">
-<div class="FileLoader"><img src="https://cdn.netkeiba.com/img.race/common/img/common/gif-load.gif?20190116" alt=""></div>
+<div class="FileLoader"><img src="https://cdnv2.netkeiba.com/img.race/common/img/common/gif-load.gif?20190116" alt=""></div>
 </div>
 </div>
 </div>
-<script src="https://cdn.netkeiba.com/img.race/common/js/jquery.lazyscript.js"></script>
+<script src="https://cdnv2.netkeiba.com/img.race/common/js/jquery.lazyscript.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
 var _race_id = '202306050811';
@@ -4150,21 +4183,11 @@ target_type: 'mix'
 });
 </script>
 
-<!-- block=common__advertisement_gam (d) -->
-<div class="nk_AdvBox_pc mt30">
-
-<!-- Geniee Wrapper Body Tag 1492791 -->
-<div data-cptid="1492791">
+<!-- block=ad_gam_body_rectangle (d) -->
+<div id="div-gpt-ad-23331092158-0" class="gam_ad" style='min-width: 728px; min-height: 90px;'>
 <script>
-gnshbrequest.cmd.push(function() {
-gnshbrequest.applyPassback("1492791", "[data-cptid='1492791']");
-});
+googletag.cmd.push(function() { googletag.display('div-gpt-ad-23331092158-0'); });
 </script>
-</div>
-<!-- /Geniee Wrapper Body Tag 1492791 -->
-
-
-
 </div>
 </div><!-- / .RaceColumn02 -->
 </div><!-- / #page -->
@@ -4185,12 +4208,12 @@ return false;
 });
 </script>
 <div class="KeirinLink01">
-<a href="//keirin.netkeiba.com/?rf=nk_pc_footer" title="netkeirin"><img src="https://cdn.netkeiba.com/img.www/style/netkeiba.ja/image/common/PC_footer_bnr01.png" alt="いま競輪が熱い！nerkeirinで競輪を気軽に楽しもう" /></a>
+<a href="//keirin.netkeiba.com/?rf=nk_pc_footer" title="netkeirin"><img src="https://cdnv2.netkeiba.com/img.www/style/netkeiba.ja/image/common/PC_footer_bnr01.png" alt="いま競輪が熱い！nerkeirinで競輪を気軽に楽しもう" /></a>
 </div><!-- /.KeirinLink01 -->
 <dl class="FootSiteTitle fc">
 <dt>
 <a href="https://www.netkeiba.com/?rf=footer" title="netkeiba">
-<img src="https://cdn.netkeiba.com/img.www/style/netkeiba.ja/image/common/netkeiba_logo01.png?2019073001" alt="netkeiba" />
+<img src="https://cdnv2.netkeiba.com/img.www/style/netkeiba.ja/image/common/netkeiba_logo01.png?2019073001" alt="netkeiba" />
 </a>
 </dt>
 <dd>
@@ -4229,7 +4252,7 @@ return false;
 </ul>
 <ul>
 <li>
-<a href="https://owner.netkeiba.com?rf=footer" title="一口馬主">一口馬主</a>
+<a href="https://own.netkeiba.com/?rf=nknabi" title="一口馬主" target="_blank">一口馬主</a>
 </li>
 <li>
 <a href="https://pog.netkeiba.com?rf=footer" title="POG">POG</a>
@@ -4238,7 +4261,7 @@ return false;
 <a href="https://bbs.pc.keiba.findfriends.jp?rf=footer" title="競馬広場">競馬広場</a>
 </li>
 <li>
-<a href="https://dir.netkeiba.com//keibamatome/index.html?rf=footer" title="まとめ">まとめ</a>
+<a href="https://dir.netkeiba.com/keibamatome/index.html?rf=footer" title="まとめ">まとめ</a>
 </li>
 <li>
 <a href="https://yoso.netkeiba.com/senmonshi/?rf=footer" title="競馬新聞">競馬新聞</a>
@@ -4257,7 +4280,7 @@ return false;
 <dd>
 <ul>
 <li>
-<a href="https://info.netkeiba.com//?rf=footer" title="お知らせ">お知らせ</a>
+<a href="https://info.netkeiba.com/?rf=footer" title="お知らせ">お知らせ</a>
 </li>
 <li>
 <a href="https://regist.netkeiba.com?pid=premium&rf=footer" title="プレミアムサービスのご案内">プレミアムサービスのご案内</a>
@@ -4305,17 +4328,17 @@ return false;
 <dl class="NkFoot01">
 <dt>スマホでnetkeiba</dt>
 <dd class="SpNkInfoImg">
-<img src="https://cdn.netkeiba.com/img.www/style/netkeiba.ja/image/common/img_nk_searchimg01.png?2019073001" alt="検索" class="SearchImg01" />
-<img src="https://cdn.netkeiba.com/img.www/style/netkeiba.ja/image/common/img_nk_qr01.png?2019073001" alt="バーコード" class="QrImg01" />
+<img src="https://cdnv2.netkeiba.com/img.www/style/netkeiba.ja/image/common/img_nk_searchimg01.png?2019073001" alt="検索" class="SearchImg01" />
+<img src="https://cdnv2.netkeiba.com/img.www/style/netkeiba.ja/image/common/img_nk_qr01.png?2019073001" alt="バーコード" class="QrImg01" />
 </dd>
 <dt>アプリでサクサクnetkeiba</dt>
 <dd>
 <ul class="AprStoreList fc">
 <li>
-<a href="https://itunes.apple.com/jp/app/id464562684/" title="Appstore"><img src="https://cdn.netkeiba.com/img.www/style/netkeiba.ja/image/common/bnr_appstore_01.png?2019073001" alt="Appstore" class="" /></a>
+<a href="https://itunes.apple.com/jp/app/id464562684/" title="Appstore"><img src="https://cdnv2.netkeiba.com/img.www/style/netkeiba.ja/image/common/bnr_appstore_01.png?2019073001" alt="Appstore" class="" /></a>
 </li>
 <li>
-<a href="https://play.google.com/store/apps/details?id=jp.co.netdreamers.netkeiba" title="googleplay"><img src="https://cdn.netkeiba.com/img.www/style/netkeiba.ja/image/common/bnr_googleplay_01.png?20210728" alt="googleplay" class="" /></a>
+<a href="https://play.google.com/store/apps/details?id=jp.co.netdreamers.netkeiba" title="googleplay"><img src="https://cdnv2.netkeiba.com/img.www/style/netkeiba.ja/image/common/bnr_googleplay_01.png?20210728" alt="googleplay" class="" /></a>
 </li>
 </ul>
 </dd>
@@ -4328,17 +4351,17 @@ return false;
 <ul class="Sns_Icon_List">
 <li class="Sns_Icon_List_Item">
 <a href="https://twitter.com/intent/tweet?text=%E3%80%8C%E3%83%8D%E3%83%83%E3%83%88%E3%82%B1%E3%82%A4%E3%83%90%E3%80%8D%E3%82%A2%E3%83%97%E3%83%AA%E3%81%A7%E7%AB%B6%E9%A6%AC%E3%82%92%E6%A5%BD%E3%81%97%E3%82%82%E3%81%86%EF%BC%81%0A%E3%83%8B%E3%83%A5%E3%83%BC%E3%82%B9%E3%82%84%E3%83%AC%E3%83%BC%E3%82%B9%E3%81%AE%E6%83%85%E5%A0%B1%E3%81%AA%E3%81%A9%E7%84%A1%E6%96%99%E3%81%A7%E4%BD%BF%E3%81%88%E3%82%8B%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E3%81%8C%E7%9B%9B%E3%82%8A%E3%81%A0%E3%81%8F%E3%81%95%E3%82%93%EF%BC%81%0A%0A%E3%82%A2%E3%83%97%E3%83%AA%E3%81%AE%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89%E3%81%AF%E2%86%93%E3%81%93%E3%81%A1%E3%82%89%E3%81%8B%E3%82%89%0Ahttps%3A%2F%2Fnetkeiba.onelink.me%2Fcexk%2Fyj5ftwq9" class="icon_x">
-<img src="https://cdn.netkeiba.com/img.sp/common/img/footer_twitter.png" style="width: 45px;height: 45px;">
+<img src="https://cdnv2.netkeiba.com/img.sp/common/img/footer_twitter.png" style="width: 45px;height: 45px;">
 </a>
 </li>
 <li class="Sns_Icon_List_Item">
 <a href="https://line.me/R/share?text=netkeiba%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89%E3%81%97%E3%81%A6%E7%AB%B6%E9%A6%AC%E3%82%92%E3%82%82%E3%81%A3%E3%81%A8%E6%A5%BD%E3%81%97%E3%82%82%E3%81%86%EF%BC%81%0D%0Ahttps%3A%2F%2Fnetkeiba.onelink.me%2Fcexk%2Fki89eacp" class="icon_line">
-<img src="https://cdn.netkeiba.com/img.sp/common/img/footer_line.png" style="width: 45px;height: 45px;">
+<img src="https://cdnv2.netkeiba.com/img.sp/common/img/footer_line.png" style="width: 45px;height: 45px;">
 </a>
 </li>
 <li class="Sns_Icon_List_Item">
 <a href="#" class="icon_sharelink" data-url="https://netkeiba.onelink.me/cexk/kt8klqcy">
-<img src="https://cdn.netkeiba.com/img.sp/common/img/footer_share.png" style="width: 45px;height: 45px;">
+<img src="https://cdnv2.netkeiba.com/img.sp/common/img/footer_share.png" style="width: 45px;height: 45px;">
 </a>
 </li>
 </ul>
@@ -4449,6 +4472,9 @@ toast.classList.remove("show");
 <dd>
 <ul>
 <li>
+<a href="//own.netkeiba.com/?rf=footer" target='_blank'>愛馬の管理はお任せ！ <strong>netkeibaオーナーズ</strong></a>
+</li>
+<li>
 <a href="//keirin.netkeiba.com/?rf=footer" target='_blank'>競輪総合メディア <strong>netkeirin(ネットケイリン)</strong></a>
 </li>
 </ul>
@@ -4478,9 +4504,6 @@ toast.classList.remove("show");
 <a href="https://smart.lets-ktai.jp/?rf=footer" target='_blank' title="SMART会員証">もっともセキュアな店舗売上向上アプリ <strong>SMART会員証</strong></a>
 </li>
 <li>
-<a href="https://lets-ktai.jp/?rf=footer" target='_blank' title="Let'sケータイ！">スマホサイト制作ASP <strong>Let'sケータイ！</strong></a>
-</li>
-<li>
 <a href="https://webspiral.jp/?rf=footer" target='_blank' title="WEB SPIRAL">サイト運営を劇的に効率化するCMS <strong>WEB SPIRAL</strong></a>
 </li>
 </ul>
@@ -4495,22 +4518,26 @@ toast.classList.remove("show");
 <!-- remove gtm_20220924 -->
 <!-- End Google Tag Manager -->
 
-<!-- block=common__advertisement_gam (d) -->
-<div class="nk_AdvBox_pc mt30">
-
-
-
-
-<!-- Geniee Wrapper Body Tag 1491463_1 -->
-<div data-cptid="1491463_1" style="display: block;">
+<!-- block=ad_gam_body_overlay (d) -->
+<div>
+<div id="footer-overlay-ad" style="position: fixed; height: auto; bottom: 0; width: 100%; text-align: center; left: 0; z-index: 1500; padding-top: 3px;">
+<div id="div-gpt-ad-23331502454-0"></div>
+</div>
+</div>
 <script>
-window.gnshbrequest.cmd.push(function() {
-window.gnshbrequest.applyPassback("1491463_1", "[data-cptid='1491463_1']");
+googletag.cmd.push(function () {
+var slotId = 'div-gpt-ad-23331502454-0';
+var slot = document.getElementById(slotId);
+var overlay = document.getElementById('footer-overlay-ad');
+var scrollElement = document.scrollingElement || document.documentElement;
+var originalPadding = parseFloat(getComputedStyle(scrollElement).paddingBottom) || 0;
+new ResizeObserver(function () {
+var height = slot.offsetHeight > 0 ? overlay.offsetHeight : 0;
+scrollElement.style.paddingBottom = originalPadding + height + 'px';
+}).observe(slot);
+googletag.display(slotId);
 });
 </script>
-</div>
-<!-- /Geniee Wrapper Body Tag 1491463_1 -->
-</div>
 </footer>
 <!-- block=common__advertisement_taboola_bottom (d) -->
 <script type="text/javascript">
