@@ -15,6 +15,8 @@ import time
 import requests
 import yaml
 
+from scraping.utils import resolve_response_encoding
+
 # テストケースYAMLファイルのパス
 TEST_CASE_YML_PATH = os.path.join(
     os.path.dirname(__file__), "..", "fixtures", "race_test_cases.yml"
@@ -129,7 +131,7 @@ def _fetch_page(url: str) -> str | None:
     """
     try:
         response = requests.get(url, headers=HEADERS, timeout=10)
-        response.encoding = "EUC-JP"
+        response.encoding = resolve_response_encoding(response)
         return response.text
     except requests.RequestException as exc:
         print(f"  [ERROR] 取得失敗: {exc}")

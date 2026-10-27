@@ -349,6 +349,17 @@ def test_scrape_race_info_expected_values(expected: dict[str, Any]) -> None:
         )
 
 
+def test_scrape_race_info_filly_race_symbol() -> None:
+    """括弧以外で始まる牝馬限定戦の競走記号を取得できることを確認する"""
+    soup = _load_soup_with_replacements(
+        "result_202505021211.html",
+        {"<span>(国際) 牡・牝(指)</span>": "<span>牝[指]</span>"},
+    )
+    result = scrape_race_info(soup, "202505021211")
+
+    assert result["競走記号"].iloc[0] == "牝[指]"
+
+
 # 出馬表と結果ページで同じレースの出力が一致することを確認
 BOTH_PAGE_RACE_IDS = [
     "202505021211",  # 日本ダービー2025
@@ -481,7 +492,7 @@ def test_scrape_race_info_validation_error_on_invalid_weather() -> None:
     # フィクスチャHTMLの天候を不正な値に置換
     soup = _load_soup_with_replacements(
         "result_202505021211.html",
-        {"天候:晴": "天候:台風"},
+        {'title="晴"': 'title="台風"'},
     )
     with pytest.raises(ParseError, match="天候が不正です"):
         scrape_race_info(soup, "202505021211")
@@ -494,7 +505,7 @@ def test_scrape_race_info_validation_error_on_invalid_track_condition() -> None:
     # フィクスチャHTMLの馬場を不正な値に置換
     soup = _load_soup_with_replacements(
         "result_202505021211.html",
-        {"馬場:良": "馬場:最悪"},
+        {'<span class="Item03"> 良</span>': '<span class="Item03"> 最悪</span>'},
     )
     with pytest.raises(ParseError, match="馬場が不正です"):
         scrape_race_info(soup, "202505021211")

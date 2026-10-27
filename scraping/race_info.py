@@ -8,7 +8,7 @@ import re
 from datetime import date
 
 import pandas as pd
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 from keiba_domain import parse_inout
 
 from scraping.config import GRADE_DICT, RACE_INFO_COLUMNS, WEIGHT_CONDITIONS
@@ -39,48 +39,24 @@ def scrape_race_info(
     _logger = logger or logging.getLogger(__name__)
     race_date, day_of_week = _extract_date_from_datelist(soup, _logger)
 
-    # class:RaceList_Item02のテキストを取得
     race_list_item = soup.find("div", attrs={"class": "RaceList_Item02"})
-    if race_list_item is None:
+    if race_list_item is None or not isinstance(race_list_item, Tag):
         _logger.error("RaceList_Item02が見つかりませんでした")
         raise ParseError("RaceList_Item02が見つかりませんでした")
-    race_raw_text: str = race_list_item.text
 
-    # テキストを整形
-    race_filtered_list = _format_race_info_text(race_raw_text, _logger)
-
-    # 地方重賞の場合
-    grade_icon = False
-    local_grade = ""
-
-    # 必要な要素数をチェック
-    if len(race_filtered_list) < 2:
-        error_message = "レース情報の要素数が不足しています。HTML構造が変更された可能性があります。"
-        _logger.error(error_message)
-        raise ParseError(error_message)
-
-    if "発走" not in race_filtered_list[1]:  # 2つ目の要素に"発走"が含まれていない場合
-        local_grade = race_filtered_list[1]
-        del race_filtered_list[1]  # 2つ目の要素を削除
-        grade_icon = True
-
-    # 情報をリストにまとめる
-    try:
-        race_info_list = _format_race_info_list(race_filtered_list, _logger)
-    except ValueError as e:
-        _logger.error("レース情報の整形に失敗しました: %s", e)
-        raise ParseError(f"レース情報の整形に失敗しました: {e}") from e
+    race_name = _parse_race_name(race_list_item, _logger)
+    race_data01 = _parse_race_data01(_find_div(race_list_item, "RaceData01", _logger), _logger)
+    race_data02 = _parse_race_data02(_find_div(race_list_item, "RaceData02", _logger), _logger)
 
     # RACE_INFO_COLUMNSの順でDataFrameを構築
-    race_info_dict = _build_race_info_dict(race_id, race_info_list, race_date, day_of_week)
+    race_info_dict = _build_race_info_dict(
+        race_id, race_name, race_data01, race_data02, race_date, day_of_week
+    )
     _validate_race_info_dict(race_info_dict, _logger)
     race_info_df = pd.DataFrame([race_info_dict], columns=RACE_INFO_COLUMNS)
 
-    # 地方重賞の場合グレードを更新
-    if grade_icon:
-        race_info_df.at[0, "グレード"] = local_grade
-    elif race_info_df.at[0, "競走条件"] == "オープン":
-        # 中央オープンの場合グレードアイコンを読み取る
+    # オープンの場合グレードアイコンを読み取る
+    if race_info_df.at[0, "競走条件"] == "オープン":
         race_info_df = _update_grade_from_icon(soup, race_info_df)
 
     return race_info_df
@@ -156,200 +132,200 @@ def _extract_date_from_datelist(soup: BeautifulSoup, logger: logging.Logger) -> 
     return race_date, day_of_week
 
 
-def _format_race_info_text(race_raw_text: str, logger: logging.Logger) -> list[str]:
-    """スクレイピングした生のテキストを整形してリストにする
-
-    RaceList_Item02のテキストを改行やスラッシュで分割し、斤量条件・頭数・賞金までの情報を抽出する。
+def _find_div(parent: Tag, class_name: str, logger: logging.Logger) -> Tag:
+    """指定したclassのdiv要素を取得する
 
     Args:
-        race_raw_text (str): class:RaceList_Item02のテキスト
+        parent (Tag): 検索対象の親要素
+        class_name (str): divのclass名
         logger (logging.Logger): ロガーインスタンス
 
     Returns:
-        list[str]: 整形したリスト
-    """
-    # \xa0をスペースに置換
-    race_raw_text = race_raw_text.replace("\xa0", " ")
-
-    # 区切り文字(\nと/)でテキストを分割してリストにする
-    split_text = re.split(r"[\n/]+", race_raw_text.strip())
-    split_text = [item for item in split_text if item]  # 空の要素を除去する
-
-    # 最後の空白より前の要素を追加し、空白以降は競走記号・斤量条件・頭数・賞金を抽出する
-    race_filtered_list: list[str] = []
-    space_count = 1
-    space_num = sum(1 for item in split_text if item.isspace())  # 空白の数を数える
-    for i, item in enumerate(split_text):
-        if item.isspace():  # 空白のみの場合
-            if space_count == space_num:  # 最後のスペースの場合
-                # 最後の空白以降から競走記号・斤量条件・頭数・賞金を抽出する
-                weight_added = False
-                kyoso_kigo_added = False
-                for j in range(i + 1, len(split_text)):
-                    remaining = split_text[j].strip()
-                    if remaining in WEIGHT_CONDITIONS:
-                        if not kyoso_kigo_added:
-                            race_filtered_list.append("")  # 競走記号なし
-                            kyoso_kigo_added = True
-                        race_filtered_list.append(remaining)
-                        weight_added = True
-                    elif remaining.endswith("頭"):
-                        race_filtered_list.append(remaining)
-                    elif remaining.startswith("本賞金:"):
-                        race_filtered_list.append(remaining)
-                    elif "(" in remaining or "[" in remaining:
-                        race_filtered_list.append(remaining)  # 競走記号
-                        kyoso_kigo_added = True
-                if not kyoso_kigo_added:
-                    logger.warning("競走記号が見つかりませんでした。")
-                    race_filtered_list.append("")  # 競走記号なし
-                if not weight_added:
-                    logger.warning("斤量条件が見つかりませんでした。")
-                    race_filtered_list.append("")
-                break
-            else:
-                space_count += 1  # 空白をカウント
-        else:  # 空白でない場合
-            race_filtered_list.append(item.strip())  # リストに追加
-
-    return race_filtered_list
-
-
-def _format_race_info_list(race_filtered_list: list[str], logger: logging.Logger) -> list[str]:
-    """レース情報を整形してリストにまとめる
-
-    整形したリストから各要素を解析してレース情報のリストを作成する。
-
-    Args:
-        race_filtered_list (list[str]): _format_race_info_textの出力リスト
-        logger (logging.Logger): ロガーインスタンス
-
-    Returns:
-        list[str]: レース情報を整形したリスト
-            順序: [レース名, 発走時刻, 芝ダ, 距離, コース, 天候, 馬場,
-                   回, 競馬場, 開催日, 競走種別, 競走条件, 競走記号, 斤量条件,
-                   頭数, 1着賞金, 2着賞金, 3着賞金, 4着賞金, 5着賞金]
-
-            ※ グレード（G1/G2/G3/JpnI など）は netkeiba のアイコン情報から別途更新され、
-               本関数が返すリストには含まれない。
+        Tag: 見つかったdiv要素
 
     Raises:
-        ValueError: レース情報のフォーマットが不正な場合
+        ParseError: div要素が見つからない場合
     """
-    race_info_list: list[str] = []
-    course = ""
-    for i, item in enumerate(race_filtered_list):
-        if i == 3:
-            if "天候:" in item:
-                race_info_list.append(item.split(":")[1])  # 天候:を削除して追加
-            elif "馬場:" in item:  # レース前日で天候と馬場が不明な場合（地方）
-                race_info_list.append("")  # 空の要素を追加（天候分）
-                race_info_list.append("")  # 空の要素を追加（馬場分）
-            else:  # 出走確定前で天候と馬場が不明な場合（中央）
-                race_info_list.append("")  # 空の要素を追加（天候分）
-                race_info_list.append("")  # 空の要素を追加（馬場分）
-                # 「1回」等の接尾辞を除去してから追加
-                value = (
-                    item.replace("発走", "").replace("回", "").replace("日目", "").replace("頭", "")
-                )
-                race_info_list.append(value)
-        elif "馬場:" in item:
-            race_info_list.append(item.split(":")[1])  # 馬場:を削除して追加
-        elif i != 0 and "m" in item:  # レース名にmが含まれる場合を回避
-            # 芝2000m(左 A) などを表す正規表現パターンを定義
-            pattern = r"([^\d]+)(\d+)\s*m\s*(?:\(([^)]+)\))?"
-            # テキストからマッチする部分を抽出
-            matches = re.match(pattern, item)
-            if matches:
-                turf_dirt = matches.group(1).strip()  # 芝orダor障
-                distance = matches.group(2).strip()  # 距離
-                course = matches.group(3).strip() if matches.group(3) else ""  # 左右，内外，コース
-            else:
-                logger.error("レース情報のフォーマットが不正です")
-                raise ValueError("レース情報のフォーマットが不正です")
-            # リストに追加
-            race_info_list.append(turf_dirt)
-            race_info_list.append(distance)
-            race_info_list.append(course)
-        elif i != 0 and ("回" in item or "日目" in item or "発走" in item or "頭" in item):
-            # 不要な接尾辞を除去
-            value = item.replace("発走", "").replace("回", "").replace("日目", "").replace("頭", "")
-            race_info_list.append(value)
-        elif item.startswith("本賞金:"):
-            # 本賞金: "本賞金:50000,20000,12500,7500,5000万円" → 5つの要素に分解
-            prize_str = item.replace("本賞金:", "").replace("万円", "")
-            parts = prize_str.split(",")
-            # 1〜5着の賞金を追加（不足分は"0"）
-            for j in range(5):
-                if j < len(parts) and parts[j].strip():
-                    race_info_list.append(parts[j].strip())
-                else:
-                    race_info_list.append("0")
-        elif i == len(race_filtered_list) - 1 and " " in item:  # 最後の要素でスペースがあったら
-            race_info_list.append(item.split(" ")[0])  # スペースで区切ってグレードとして追加
-            race_info_list.append(item.split(" ")[1])
-        else:
-            # その他の要素はそのまま追加
-            race_info_list.append(item)
+    div = parent.find("div", class_=class_name)
+    if div is None or not isinstance(div, Tag):
+        logger.error("%sが見つかりませんでした", class_name)
+        raise ParseError(f"{class_name}が見つかりませんでした")
+    return div
 
-    # 障害で芝ダート両方の場合馬場が2種類表記されるので1つにまとめる
-    if course == "芝 ダート":
-        race_info_list[6] = " ".join([race_info_list[6], race_info_list[7]])  # 馬場をまとめる
-        del race_info_list[7]
 
-    # 地方で最後の要素グレード表記がない場合
-    if len(race_info_list) < 13:
-        race_info_list.append("")  # グレード要素なしを追加
+def _parse_race_name(race_list_item: Tag, logger: logging.Logger) -> str:
+    """RaceList_Item02からレース名を取得する
 
-    # 頭数・賞金が取得できなかった場合のフォールバック
-    # （基本13 + 競走記号1 + 頭数1 + 賞金5 = 20要素）
-    while len(race_info_list) < 20:
-        race_info_list.append("")
+    Args:
+        race_list_item (Tag): class:RaceList_Item02の要素
+        logger (logging.Logger): ロガーインスタンス
 
-    return race_info_list
+    Returns:
+        str: レース名
+
+    Raises:
+        ParseError: レース名が見つからない場合
+    """
+    race_name_tag = race_list_item.find("h1", class_="RaceName")
+    if race_name_tag is None or not isinstance(race_name_tag, Tag):
+        logger.error("RaceNameが見つかりませんでした")
+        raise ParseError("RaceNameが見つかりませんでした")
+    return race_name_tag.get_text(strip=True)
+
+
+def _parse_race_data01(race_data01: Tag, logger: logging.Logger) -> dict[str, str]:
+    """RaceData01から発走時刻・芝ダ・距離・コース・天候・馬場を取得する
+
+    天候はアイコンのtitle属性、馬場はItem03（芝）・Item04（ダート）の要素から取得する。
+    出走確定前は天候・馬場の要素がないため空文字列になる。
+
+    Args:
+        race_data01 (Tag): class:RaceData01の要素
+        logger (logging.Logger): ロガーインスタンス
+
+    Returns:
+        dict[str, str]: キーは発走時刻・芝ダ・距離・コース・天候・馬場。
+            障害の場合、芝ダは"障"、コースは"芝"や"芝 ダート"になる。
+
+    Raises:
+        ParseError: 距離・コースが取得できない場合
+    """
+    # 先頭のテキストは「15:40発走 /」
+    start_time = str(race_data01.contents[0]).split("/")[0].strip().removesuffix("発走")
+
+    # 「芝2400m」のように芝ダと距離がclassなしのspanに入っている
+    distance_span = race_data01.find("span", class_=False)
+    if distance_span is None or not isinstance(distance_span, Tag):
+        logger.error("距離が見つかりませんでした")
+        raise ParseError("距離が見つかりませんでした")
+    distance_text = distance_span.get_text(strip=True)
+    distance_match = re.fullmatch(r"(\D+)(\d+)m", distance_text)
+    if distance_match is None:
+        logger.error("距離の表記が不正です: %s", distance_text)
+        raise ParseError(f"距離の表記が不正です: {distance_text}")
+
+    # 距離のspanの直後から次の「/」までがコース（例: "左 C", "右 外 B", "芝 ダート"）
+    course_text = distance_span.next_sibling
+    if not isinstance(course_text, NavigableString):
+        logger.error("コースが見つかりませんでした")
+        raise ParseError("コースが見つかりませんでした")
+    course = " ".join(course_text.split("/")[0].split())
+
+    # アイコンのclassは"Icon_Weather Weather01"と"Icon_Weather02 Icon_W01"の2通りある
+    weather_icon = race_data01.find("span", class_=re.compile(r"^Icon_Weather"))
+    weather = str(weather_icon.get("title", "")) if isinstance(weather_icon, Tag) else ""
+
+    # 障害の芝ダートはItem03とItem04の両方が表示される
+    baba_spans = race_data01.find_all("span", class_=["Item03", "Item04"])
+    baba = " ".join(span.get_text(strip=True) for span in baba_spans)
+
+    return {
+        "発走時刻": start_time,
+        "芝ダ": distance_match.group(1),
+        "距離": distance_match.group(2),
+        "コース": course,
+        "天候": weather,
+        "馬場": baba,
+    }
+
+
+def _parse_race_data02(race_data02: Tag, logger: logging.Logger) -> dict[str, str]:
+    """RaceData02から開催・競走条件・斤量条件・頭数・賞金を取得する
+
+    spanは回、競馬場、開催日、競走種別、競走条件、競走記号、斤量条件、頭数、本賞金の順に並ぶ。
+
+    Args:
+        race_data02 (Tag): class:RaceData02の要素
+        logger (logging.Logger): ロガーインスタンス
+
+    Returns:
+        dict[str, str]: キーは回・競馬場・開催日・競走種別・競走条件・競走記号・重量種別・頭数・
+            1着賞金〜5着賞金。回・開催日・頭数・賞金は数字のみの文字列。
+
+    Raises:
+        ParseError: いずれかの項目が取得できない場合
+    """
+    items = [span.get_text(strip=True) for span in race_data02.find_all("span")]
+    if len(items) < 5:
+        logger.error("RaceData02の要素数が不足しています: %s", items)
+        raise ParseError(f"RaceData02の要素数が不足しています: {items}")
+    kai, keibajo, kaisai_day, race_kind, race_condition = items[:5]
+    rest = items[5:]
+
+    def _find_one(label: str, candidates: list[str]) -> str:
+        """候補が1つだけであることを確認して返す
+
+        Args:
+            label (str): エラーメッセージに使う項目名
+            candidates (list[str]): 候補のリスト
+
+        Returns:
+            str: 唯一の候補
+
+        Raises:
+            ParseError: 候補が1つでない場合
+        """
+        if len(candidates) != 1:
+            logger.error("%sを特定できませんでした: %s", label, rest)
+            raise ParseError(f"{label}を特定できませんでした: {rest}")
+        return candidates[0]
+
+    race_symbol = _find_one("競走記号", [i for i in rest if "(" in i or "[" in i])
+    weight_type = _find_one("斤量条件", [i for i in rest if i in WEIGHT_CONDITIONS])
+    head_count = _find_one("頭数", [i for i in rest if re.fullmatch(r"\d+頭", i)])
+    prize_text = _find_one("本賞金", [i for i in rest if i.startswith("本賞金:")])
+
+    # "本賞金:30000,12000,7500,4500,3000万円" → 1〜5着の賞金
+    prizes = prize_text.removeprefix("本賞金:").removesuffix("万円").split(",")
+    if len(prizes) != 5:
+        logger.error("本賞金の表記が不正です: %s", prize_text)
+        raise ParseError(f"本賞金の表記が不正です: {prize_text}")
+
+    return {
+        "回": kai.removesuffix("回"),
+        "競馬場": keibajo,
+        "開催日": kaisai_day.removesuffix("日目"),
+        "競走種別": race_kind,
+        "競走条件": race_condition,
+        "競走記号": race_symbol,
+        "重量種別": weight_type,
+        "頭数": head_count.removesuffix("頭"),
+        **{f"{rank}着賞金": prize for rank, prize in enumerate(prizes, start=1)},
+    }
 
 
 def _build_race_info_dict(
-    race_id: str, race_info_list: list[str], race_date: date, day_of_week: str
+    race_id: str,
+    race_name: str,
+    race_data01: dict[str, str],
+    race_data02: dict[str, str],
+    race_date: date,
+    day_of_week: str,
 ) -> dict[str, str | int | date | None]:
-    """_format_race_info_listの出力をRACE_INFO_COLUMNSに対応するdictに変換する
-
-    _format_race_info_listの出力順序（20要素）:
-        [レース名(0), 発走時刻(1), 芝ダ(2), 距離(3), コース生値(4),
-         天候(5), 馬場(6), 回(7), 競馬場(8), 開催日(9),
-         競走種別(10), 競走条件(11), 競走記号(12), 斤量条件(13), 頭数(14),
-         1着賞金(15), 2着賞金(16), 3着賞金(17), 4着賞金(18), 5着賞金(19)]
+    """取得した値をRACE_INFO_COLUMNSに対応するdictに変換する
 
     グレードは netkeiba のアイコン情報から別途更新される（辞書の"グレード"は空文字列で初期化）。
     コース生値（例: "左 C", "右 外 B", "直線 A"）を「左右」「コース」「内外」に分割して
     辞書に格納する。
-    距離・回・開催日は_format_race_info_listで整形済みの数値文字列をintに変換する。
 
     障害レースの場合:
-        芝ダ(2)には"障"が含まれ、コース生値(4)には芝/ダの情報（例: "芝"）が格納される。
+        芝ダには"障"が入り、コース生値には芝/ダの情報（例: "芝"）が入る。
         "レース種別"を"障害"に設定し、"芝ダ"にはコース生値から抽出した"芝"または"ダ"を格納する。
         左右・コース・内外は空文字列になる。
 
     Args:
         race_id (str): レースID
-        race_info_list (list[str]): _format_race_info_listの出力
+        race_name (str): レース名
+        race_data01 (dict[str, str]): _parse_race_data01の出力
+        race_data02 (dict[str, str]): _parse_race_data02の出力
         race_date (date): レース開催日（date型）
         day_of_week (str): 曜日（漢字1文字、例: "日"）
 
     Returns:
         dict[str, str | int | date | None]: RACE_INFO_COLUMNSに対応する辞書
     """
-
-    def _safe_get(lst: list[str], idx: int) -> str:
-        """リストから安全に値を取得する"""
-        return lst[idx] if idx < len(lst) else ""
-
-    def _to_int(value: str) -> int:
-        """数値文字列をintに変換する。空文字の場合は0"""
-        return int(value) if value else 0
-
-    turf_dirt_raw = _safe_get(race_info_list, 2)
-    course_raw = _safe_get(race_info_list, 4)
+    turf_dirt_raw = race_data01["芝ダ"]
+    course_raw = race_data01["コース"]
 
     # 障害レースの判定: 芝ダの生値に「障」が含まれる場合は障害レース
     if "障" in turf_dirt_raw:
@@ -372,30 +348,26 @@ def _build_race_info_dict(
         "レースID": race_id,
         "日付": race_date,
         "曜日": day_of_week,
-        "レース名": _safe_get(race_info_list, 0),
-        "発走時刻": _safe_get(race_info_list, 1),
-        "天候": _safe_get(race_info_list, 5) or None,
-        "馬場": _safe_get(race_info_list, 6) or None,
+        "レース名": race_name,
+        "発走時刻": race_data01["発走時刻"],
+        "天候": race_data01["天候"] or None,
+        "馬場": race_data01["馬場"] or None,
         "レース種別": race_type,
         "芝ダ": turf_dirt,
-        "距離": _to_int(_safe_get(race_info_list, 3)),
+        "距離": int(race_data01["距離"]),
         "左右": _judge_direction(course_for_direction),
         "コース": _judge_abcd(course_for_direction),
         "内外": _judge_course_inout(course_for_direction),
-        "競馬場": _safe_get(race_info_list, 8),
-        "回": _to_int(_safe_get(race_info_list, 7)),
-        "開催日": _to_int(_safe_get(race_info_list, 9)),
-        "競走種別": _safe_get(race_info_list, 10),
-        "競走条件": _safe_get(race_info_list, 11),
+        "競馬場": race_data02["競馬場"],
+        "回": int(race_data02["回"]),
+        "開催日": int(race_data02["開催日"]),
+        "競走種別": race_data02["競走種別"],
+        "競走条件": race_data02["競走条件"],
         "グレード": "",
-        "競走記号": _safe_get(race_info_list, 12),
-        "重量種別": _safe_get(race_info_list, 13),
-        "頭数": _to_int(_safe_get(race_info_list, 14)),
-        "1着賞金": _to_int(_safe_get(race_info_list, 15)),
-        "2着賞金": _to_int(_safe_get(race_info_list, 16)),
-        "3着賞金": _to_int(_safe_get(race_info_list, 17)),
-        "4着賞金": _to_int(_safe_get(race_info_list, 18)),
-        "5着賞金": _to_int(_safe_get(race_info_list, 19)),
+        "競走記号": race_data02["競走記号"],
+        "重量種別": race_data02["重量種別"],
+        "頭数": int(race_data02["頭数"]),
+        **{f"{rank}着賞金": int(race_data02[f"{rank}着賞金"]) for rank in range(1, 6)},
     }
 
 
