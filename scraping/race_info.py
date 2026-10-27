@@ -270,7 +270,7 @@ def _parse_race_data02(race_data02: Tag, logger: logging.Logger) -> dict[str, st
             raise ParseError(f"{label}を特定できませんでした: {rest}")
         return candidates[0]
 
-    race_symbol = _find_one("競走記号", [i for i in rest if i.startswith(("(", "["))])
+    race_symbol = _find_one("競走記号", [i for i in rest if "(" in i or "[" in i])
     weight_type = _find_one("斤量条件", [i for i in rest if i in WEIGHT_CONDITIONS])
     head_count = _find_one("頭数", [i for i in rest if re.fullmatch(r"\d+頭", i)])
     prize_text = _find_one("本賞金", [i for i in rest if i.startswith("本賞金:")])

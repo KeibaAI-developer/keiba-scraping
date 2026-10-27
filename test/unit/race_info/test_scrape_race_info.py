@@ -349,6 +349,17 @@ def test_scrape_race_info_expected_values(expected: dict[str, Any]) -> None:
         )
 
 
+def test_scrape_race_info_filly_race_symbol() -> None:
+    """括弧以外で始まる牝馬限定戦の競走記号を取得できることを確認する"""
+    soup = _load_soup_with_replacements(
+        "result_202505021211.html",
+        {"<span>(国際) 牡・牝(指)</span>": "<span>牝[指]</span>"},
+    )
+    result = scrape_race_info(soup, "202505021211")
+
+    assert result["競走記号"].iloc[0] == "牝[指]"
+
+
 # 出馬表と結果ページで同じレースの出力が一致することを確認
 BOTH_PAGE_RACE_IDS = [
     "202505021211",  # 日本ダービー2025
