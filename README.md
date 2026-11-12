@@ -17,6 +17,7 @@
 - レーススケジュール（日別の開催レース一覧）
 - JRA重賞レース一覧（年間の重賞レース一覧）
 - JRA調教後馬体重（G1出走馬の調教後の馬体重）
+- JRAプレレーティング（G1登録馬のプレレーティング）
 
 
 ## 動作要件
@@ -194,6 +195,21 @@ playwright install chromium
 | 関数 | 説明 | カラム定義 |
 |------|------|------------|
 | `get_chokyo_bataiju()` | G1出走馬の調教後馬体重。発表前は `ChokyoBataijuUnavailableError`、G1特設ページの公開前は `PageNotFoundError` | [SCHEMA.md#jra調教後馬体重](doc/SCHEMA.md#jra調教後馬体重) |
+
+---
+
+### JRAプレレーティング
+
+- **サンプルURL**: `https://www.jra.go.jp/datafile/ranking/g1/2026/eliza.html`
+- **API**: `JraPreRatingScraper(year: int, g1_page: str)`
+- **サンプルコード**: [example/example_jra_pre_rating.py](example/example_jra_pre_rating.py)
+
+`g1_page` はプレレーティングのページ名（URLの `/datafile/ranking/g1/{year}/{g1_page}.html` の部分。エリザベス女王杯なら `eliza`）。
+レーティングはページに載っている数値のまま返し、性別による加算や前年の値との比較は行わない。
+
+| 関数 | 説明 | カラム定義 |
+|------|------|------------|
+| `get_pre_rating()` | G1登録馬のプレレーティング。ページの公開前は `PageNotFoundError` | [SCHEMA.md#jraプレレーティング](doc/SCHEMA.md#jraプレレーティング) |
 
 ---
 
