@@ -26,8 +26,11 @@ _RACE_HEADER_MARK = "該当レース"
 _COUNTRY_HEADER_MARK = "調教国"
 # レーティングの値が無いことを表すセルの文字列
 _NO_VALUE_TEXTS = frozenset({"", "-", "ー", "―"})
+# 距離区分。SMILE の1文字を「,」か「-」でつなぎ、芝の印「(T)」が続くことがある
+_CATEGORY_SOURCE = r"[SMILE](?:[,-][SMILE])*(?:\(T\))?"
+_CATEGORY_PATTERN = re.compile(rf"^{_CATEGORY_SOURCE}$")
 # 「111 E」や「113」のように、数値と距離区分が1つのセルに入る値
-_RATING_PATTERN = re.compile(r"^(\d+)\s*(.*)$")
+_RATING_PATTERN = re.compile(rf"^(\d+)(?:\s+({_CATEGORY_SOURCE}))?$")
 # 馬名の後ろに付く産地の略号や欧字の馬名の始まり
 _NAME_SUFFIX_PATTERN = re.compile(r"[（(\s]")
 
@@ -105,7 +108,12 @@ class JraPreRatingScraper:
             ParseError: ページの解析に失敗した場合
         """
         url = build_jra_pre_rating_url(self.year, self.g1_page, self.config)
-        return _parse_page(self._fetch_soup(url), url)
+        soup = self._fetch_soup(url)
+        try:
+            return _parse_page(soup, url)
+        except ParseError as exc:
+            self._logger.error("プレレーティングのページの解析に失敗しました: %s (%s)", exc, url)
+            raise
 
     def save_to_csv(self, df: pd.DataFrame, filepath: str) -> None:
         """DataFrameをCSVファイルに保存する
@@ -277,6 +285,8 @@ def _read_rating(cells: list[Tag], split_cells: bool) -> tuple[_Rating, int]:
     category = _normalize(cells[1].get_text(strip=True))
     if text in _NO_VALUE_TEXTS:
         return _Rating(None, None), 2
+    if category and _CATEGORY_PATTERN.match(category) is None:
+        raise ParseError(f"距離区分を読めません: {category!r}")
     return _Rating(_parse_int(text), category or None), 2
 
 
@@ -291,8 +301,7 @@ def _parse_rating(text: str) -> _Rating:
     match = _RATING_PATTERN.match(text)
     if match is None:
         raise ParseError(f"レーティングの値を読めません: {text!r}")
-    category = match.group(2).strip()
-    return _Rating(int(match.group(1)), category or None)
+    return _Rating(int(match.group(1)), match.group(2))
 
 
 def _parse_name(text: str) -> str:

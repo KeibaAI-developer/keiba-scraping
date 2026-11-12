@@ -219,13 +219,43 @@ def test_get_pre_rating_unexpected_last_header() -> None:
         scraper.get_pre_rating()
 
 
-def test_get_pre_rating_invalid_rating() -> None:
-    """レーティングの数値を読めない場合にParseErrorが発生すること"""
-    html = load_html(FIXTURE_CURRENT).replace('<span class="num">111</span>', "未定", 1)
+@pytest.mark.parametrize("num_text", ["未定", "111.5"])
+def test_get_pre_rating_invalid_rating(num_text: str) -> None:
+    """レーティングの数値を整数として読めない場合にParseErrorが発生すること"""
+    html = load_html(FIXTURE_CURRENT).replace('<span class="num">111</span>', num_text, 1)
     scraper, _ = create_scraper_with_mock(html)
 
     with pytest.raises(ParseError, match="レーティングの値を読めません"):
         scraper.get_pre_rating()
+
+
+def test_get_pre_rating_invalid_category() -> None:
+    """距離区分を読めない場合にParseErrorが発生すること"""
+    html = load_html(FIXTURE_CURRENT).replace("<span>E</span>", "<span>X</span>", 1)
+    scraper, _ = create_scraper_with_mock(html)
+
+    with pytest.raises(ParseError, match="レーティングの値を読めません"):
+        scraper.get_pre_rating()
+
+
+def test_get_pre_rating_old_layout_invalid_category() -> None:
+    """2016年以前の形で距離区分を読めない場合にParseErrorが発生すること"""
+    html = load_html(FIXTURE_OLD).replace(">Ｍ，Ｉ<", ">ＭＩＸ<", 1)
+    scraper, _ = create_scraper_with_mock(html)
+
+    with pytest.raises(ParseError, match="距離区分を読めません"):
+        scraper.get_pre_rating()
+
+
+def test_get_pre_rating_logs_parse_error() -> None:
+    """解析に失敗した場合に、注入したロガーへ記録してからParseErrorを送出すること"""
+    scraper, _ = create_scraper_with_mock("<html><body><p>準備中</p></body></html>")
+    scraper._logger = MagicMock()
+
+    with pytest.raises(ParseError):
+        scraper.get_pre_rating()
+
+    scraper._logger.error.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
