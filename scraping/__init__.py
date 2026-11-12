@@ -24,6 +24,7 @@ from scraping.config import (
     ID_TO_KEIBAJO_DICT,
     JRA_CHOKYO_BATAIJU_COLUMNS,
     JRA_GRADED_RACE_COLUMNS,
+    JRA_PRE_RATING_COLUMNS,
     KEIBAJO_TO_ID_DICT,
     LAP_TIME_COLUMNS,
     ODDS_COLUMNS,
@@ -60,6 +61,7 @@ from scraping.horse_info import HorseInfoScraper
 from scraping.horse_page import HorsePageScraper
 from scraping.jra_chokyo_bataiju import JraChokyoBataijuScraper
 from scraping.jra_graded_race import JraGradedRaceScraper
+from scraping.jra_pre_rating import JraPreRatingScraper
 from scraping.odds import (
     scrape_odds_from_jra,
     scrape_odds_from_netkeiba,
@@ -75,6 +77,7 @@ from scraping.url_builder import (
     build_horse_list_url,
     build_jra_g1_weight_url,
     build_jra_graded_race_url,
+    build_jra_pre_rating_url,
     build_odds_api_url,
     build_race_list_url,
     build_result_url,
@@ -122,6 +125,7 @@ __all__ = [
     "RACE_SCHEDULE_COLUMNS",
     "JRA_GRADED_RACE_COLUMNS",
     "JRA_CHOKYO_BATAIJU_COLUMNS",
+    "JRA_PRE_RATING_COLUMNS",
     "ODDS_COLUMNS",
     "YOSO_ODDS_COLUMNS",
     # exceptions
@@ -141,6 +145,7 @@ __all__ = [
     "build_horse_list_url",
     "build_jra_graded_race_url",
     "build_jra_g1_weight_url",
+    "build_jra_pre_rating_url",
     "build_odds_api_url",
     # utils
     "judge_turf_dirt",
@@ -165,6 +170,8 @@ __all__ = [
     "JraGradedRaceScraper",
     # jra_chokyo_bataiju
     "JraChokyoBataijuScraper",
+    # jra_pre_rating
+    "JraPreRatingScraper",
     # horse_info
     "HorseInfoScraper",
     # odds

@@ -141,3 +141,18 @@ def build_jra_g1_weight_url(g1_page: str, config: ScrapingConfig | None = None) 
     """
     cfg = config or ScrapingConfig()
     return f"{cfg.jra_url}/keiba/g1/{g1_page}/weight.html"
+
+
+def build_jra_pre_rating_url(year: int, g1_page: str, config: ScrapingConfig | None = None) -> str:
+    """JRAのG1のプレレーティングのページのURLを作成する
+
+    Args:
+        year (int): 開催年
+        g1_page (str): プレレーティングのページ名（エリザベス女王杯なら"eliza"）
+        config (ScrapingConfig | None): 設定オブジェクト
+
+    Returns:
+        str: URL
+    """
+    cfg = config or ScrapingConfig()
+    return f"{cfg.jra_url}/datafile/ranking/g1/{year}/{g1_page}.html"
