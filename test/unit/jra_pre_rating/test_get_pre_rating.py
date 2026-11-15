@@ -12,7 +12,12 @@ import pytest
 import requests
 
 from scraping.config import JRA_PRE_RATING_COLUMNS
-from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
+from scraping.exceptions import (
+    NetworkError,
+    PageNotFoundError,
+    ParseError,
+    PreRatingUnavailableError,
+)
 from scraping.jra_pre_rating import JraPreRatingScraper
 
 from .conftest import (
@@ -22,6 +27,7 @@ from .conftest import (
     FIXTURE_OLD,
     FIXTURE_OLD_WITH_FOREIGN,
     FIXTURE_OLD_WITH_PREVIOUS,
+    FIXTURE_UNPUBLISHED,
     create_scraper_with_mock,
     load_html,
 )
@@ -188,10 +194,49 @@ def test_save_to_csv() -> None:
 
 
 # ---------------------------------------------------------------------------
+# 準正常系: 発表前
+# ---------------------------------------------------------------------------
+def test_get_pre_rating_unpublished() -> None:
+    """表が無く発表の日時の案内がある場合にPreRatingUnavailableErrorが発生すること"""
+    scraper, _ = create_scraper_with_mock(load_html(FIXTURE_UNPUBLISHED))
+
+    with pytest.raises(PreRatingUnavailableError, match="プレレーティングはまだ発表されていません"):
+        scraper.get_pre_rating()
+
+
+def test_get_pre_rating_unpublished_is_not_parse_error() -> None:
+    """発表前の例外が、解析の失敗として捕まえられないこと"""
+    assert not issubclass(PreRatingUnavailableError, (ParseError, PageNotFoundError))
+
+
+def test_get_pre_rating_logs_unpublished() -> None:
+    """発表前の場合に、注入したロガーへURLを含むメッセージを記録すること"""
+    scraper, _ = create_scraper_with_mock(load_html(FIXTURE_UNPUBLISHED))
+    scraper._logger = MagicMock()
+
+    with pytest.raises(PreRatingUnavailableError):
+        scraper.get_pre_rating()
+
+    scraper._logger.error.assert_called_once()
+    message = scraper._logger.error.call_args.args[1]
+    assert "https://www.jra.go.jp/datafile/ranking/g1/2026/eliza.html" in str(message)
+
+
+def test_get_pre_rating_notice_with_table_returns_ratings() -> None:
+    """表があるページは、発表の案内の文言があっても表を読むこと"""
+    html = load_html(FIXTURE_CURRENT).replace(
+        "</body>", "<p>プレレーティングは、11月9日（月曜）11時以降に発表いたします。</p></body>"
+    )
+    scraper, _ = create_scraper_with_mock(html)
+
+    assert len(scraper.get_pre_rating()) == 23
+
+
+# ---------------------------------------------------------------------------
 # 準正常系: 解析エラー
 # ---------------------------------------------------------------------------
 def test_get_pre_rating_no_table() -> None:
-    """プレレーティングの表が無い場合にParseErrorが発生すること"""
+    """プレレーティングの表も発表の案内も無い場合にParseErrorが発生すること"""
     scraper, _ = create_scraper_with_mock("<html><body><p>準備中</p></body></html>")
 
     with pytest.raises(ParseError, match="プレレーティングの表が見つかりません"):

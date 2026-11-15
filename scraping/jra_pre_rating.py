@@ -13,7 +13,12 @@ import requests
 from bs4 import BeautifulSoup, Tag
 
 from scraping.config import JRA_PRE_RATING_COLUMNS, ScrapingConfig
-from scraping.exceptions import NetworkError, PageNotFoundError, ParseError
+from scraping.exceptions import (
+    NetworkError,
+    PageNotFoundError,
+    ParseError,
+    PreRatingUnavailableError,
+)
 from scraping.url_builder import build_jra_pre_rating_url
 from scraping.utils import resolve_response_encoding
 
@@ -31,6 +36,9 @@ _CATEGORY_SOURCE = r"[SMILE](?:[,-][SMILE])*(?:\(T\))?"
 _CATEGORY_PATTERN = re.compile(rf"^{_CATEGORY_SOURCE}$")
 # 「111 E」や「113」のように、数値と距離区分が1つのセルに入る値
 _RATING_PATTERN = re.compile(rf"^(\d+)(?:\s+({_CATEGORY_SOURCE}))?$")
+# 発表前のページに載る、発表の日時の案内（例: 「…のプレレーティングは、11月16日（月曜）11時以降に
+# 発表いたします。」）。間の日時の表記は問わない
+_UNPUBLISHED_NOTICE_PATTERN = re.compile(r"プレレーティングは[^。]*発表いたします")
 # 馬名の後ろに付く産地の略号や欧字の馬名の始まり
 _NAME_SUFFIX_PATTERN = re.compile(r"[（(\s]")
 
@@ -104,13 +112,17 @@ class JraPreRatingScraper:
 
         Raises:
             NetworkError: ページの取得に失敗した場合
-            PageNotFoundError: ページが見つからない場合（プレレーティングの公開前を含む）
+            PageNotFoundError: ページが見つからない場合
+            PreRatingUnavailableError: ページはあるが、プレレーティングの発表前の場合
             ParseError: ページの解析に失敗した場合
         """
         url = build_jra_pre_rating_url(self.year, self.g1_page, self.config)
         soup = self._fetch_soup(url)
         try:
             return _parse_page(soup, url)
+        except PreRatingUnavailableError as exc:
+            self._logger.error("%s", exc)
+            raise
         except ParseError as exc:
             self._logger.error("プレレーティングのページの解析に失敗しました: %s (%s)", exc, url)
             raise
@@ -172,7 +184,8 @@ def _parse_page(soup: BeautifulSoup, url: str) -> pd.DataFrame:
         pd.DataFrame: JRA_PRE_RATING_COLUMNSのカラムを持つDataFrame
 
     Raises:
-        ParseError: 表が無い場合、表に馬がいない場合、または値の解析に失敗した場合
+        PreRatingUnavailableError: 表が無く、発表の日時の案内がある場合
+        ParseError: 表も案内も無い場合、表に馬がいない場合、または値の解析に失敗した場合
     """
     rows: list[dict[str, object]] = []
     found = False
@@ -191,6 +204,8 @@ def _parse_page(soup: BeautifulSoup, url: str) -> pd.DataFrame:
                 continue
             rows.append(_parse_row(cells, layout))
     if not found:
+        if _UNPUBLISHED_NOTICE_PATTERN.search(soup.get_text()):
+            raise PreRatingUnavailableError(f"プレレーティングはまだ発表されていません: {url}")
         raise ParseError(f"プレレーティングの表が見つかりません: {url}")
     if not rows:
         raise ParseError(f"プレレーティングの表に馬がいません: {url}")

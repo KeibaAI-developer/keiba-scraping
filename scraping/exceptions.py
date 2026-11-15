@@ -30,3 +30,7 @@ class ExpectedOddsUnavailableError(ScrapingError):
 
 class ChokyoBataijuUnavailableError(ScrapingError):
     """調教後馬体重がまだ発表されていない場合の例外"""
+
+
+class PreRatingUnavailableError(ScrapingError):
+    """プレレーティングがまだ発表されていない場合の例外"""

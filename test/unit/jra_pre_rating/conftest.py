@@ -23,6 +23,8 @@ FIXTURE_OLD = "jra_pre_rating_2016_eliza.html"
 FIXTURE_OLD_WITH_PREVIOUS = "jra_pre_rating_2014_feb.html"
 # 2016年以前の形で外国馬の表がある、2011年エリザベス女王杯のページ
 FIXTURE_OLD_WITH_FOREIGN = "jra_pre_rating_2011_eliza.html"
+# 発表前で表が無く、発表の日時の案内が載る、2026年マイルCSのページ
+FIXTURE_UNPUBLISHED = "jra_pre_rating_2026_mile_unpublished.html"
 
 
 def load_html(fixture_filename: str) -> str:
