@@ -55,6 +55,7 @@ from scraping.exceptions import (
     NetworkError,
     PageNotFoundError,
     ParseError,
+    PreRatingUnavailableError,
     ScrapingError,
 )
 from scraping.horse_info import HorseInfoScraper
@@ -136,6 +137,7 @@ __all__ = [
     "DriverError",
     "ExpectedOddsUnavailableError",
     "ChokyoBataijuUnavailableError",
+    "PreRatingUnavailableError",
     # url_builder
     "build_race_list_url",
     "build_today_race_list_url",

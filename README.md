@@ -209,7 +209,7 @@ playwright install chromium
 
 | 関数 | 説明 | カラム定義 |
 |------|------|------------|
-| `get_pre_rating()` | G1登録馬のプレレーティング。ページの公開前は `PageNotFoundError` | [SCHEMA.md#jraプレレーティング](doc/SCHEMA.md#jraプレレーティング) |
+| `get_pre_rating()` | G1登録馬のプレレーティング。発表前は `PreRatingUnavailableError`、ページの公開前は `PageNotFoundError` | [SCHEMA.md#jraプレレーティング](doc/SCHEMA.md#jraプレレーティング) |
 
 ---
 
