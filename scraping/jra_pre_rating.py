@@ -34,6 +34,8 @@ _NO_VALUE_TEXTS = frozenset({"", "-", "ー", "―"})
 # 距離区分。SMILE の1文字を「,」か「-」でつなぎ、芝の印「(T)」が続くことがある
 _CATEGORY_SOURCE = r"[SMILE](?:[,-][SMILE])*(?:\(T\))?"
 _CATEGORY_PATTERN = re.compile(rf"^{_CATEGORY_SOURCE}$")
+# 距離区分に紛れることがある、ラテン文字と同じ形のキリル文字（例: 「124 М」の「М」は U+041C）
+_CATEGORY_HOMOGLYPHS = str.maketrans({"\u041c": "M"})
 # 「111 E」や「113」のように、数値と距離区分が1つのセルに入る値
 _RATING_PATTERN = re.compile(rf"^(\d+)(?:\s+({_CATEGORY_SOURCE}))?$")
 # 発表前のページに載る、発表の日時の案内（例: 「…のプレレーティングは、11月16日（月曜）11時以降に
@@ -287,7 +289,7 @@ def _read_rating(cells: list[Tag], split_cells: bool) -> tuple[_Rating, int]:
     if not cells:
         raise ParseError("レーティングのセルが足りません")
     first = cells[0]
-    text = _normalize(first.get_text(" ", strip=True))
+    text = _normalize_rating(first.get_text(" ", strip=True))
     if not split_cells:
         return _parse_rating(text), 1
     # 数値と距離区分が別のセルに分かれる形でも、値が無い馬は2列分の幅の1セルになる
@@ -297,7 +299,7 @@ def _read_rating(cells: list[Tag], split_cells: bool) -> tuple[_Rating, int]:
         return _Rating(None, None), 1
     if len(cells) < 2:
         raise ParseError(f"距離区分のセルがありません: {text!r}")
-    category = _normalize(cells[1].get_text(strip=True))
+    category = _normalize_rating(cells[1].get_text(strip=True))
     if text in _NO_VALUE_TEXTS:
         return _Rating(None, None), 2
     if category and _CATEGORY_PATTERN.match(category) is None:
@@ -317,6 +319,11 @@ def _parse_rating(text: str) -> _Rating:
     if match is None:
         raise ParseError(f"レーティングの値を読めません: {text!r}")
     return _Rating(int(match.group(1)), match.group(2))
+
+
+def _normalize_rating(text: str) -> str:
+    """レーティングのセルの文字列を、距離区分をラテン文字にそろえた半角の文字列にする"""
+    return _normalize(text).translate(_CATEGORY_HOMOGLYPHS)
 
 
 def _parse_name(text: str) -> str:

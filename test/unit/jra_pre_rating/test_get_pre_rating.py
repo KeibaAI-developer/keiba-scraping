@@ -22,6 +22,7 @@ from scraping.jra_pre_rating import JraPreRatingScraper
 
 from .conftest import (
     FIXTURE_CURRENT,
+    FIXTURE_CURRENT_CYRILLIC_CATEGORY,
     FIXTURE_CURRENT_WITH_FOREIGN,
     FIXTURE_CURRENT_WITH_PREVIOUS,
     FIXTURE_OLD,
@@ -127,6 +128,15 @@ def test_get_pre_rating_current_layout_foreign_horse() -> None:
     assert pd.isna(row["該当レース"])
 
 
+def test_get_pre_rating_current_layout_cyrillic_category() -> None:
+    """距離区分がキリル文字の「М」でも、ラテン文字の「M」として読むこと（エルデナリ）"""
+    scraper, _ = create_scraper_with_mock(load_html(FIXTURE_CURRENT_CYRILLIC_CATEGORY))
+    row = _row(scraper.get_pre_rating(), "エルデナリ")
+
+    assert row["レーティング"] == 124
+    assert row["距離区分"] == "M"
+
+
 def test_get_pre_rating_old_layout_values() -> None:
     """2016年以前の形の、全角の数値と別のセルの距離区分を読めること（シュンドルボン）"""
     scraper, _ = create_scraper_with_mock(load_html(FIXTURE_OLD))
@@ -138,6 +148,16 @@ def test_get_pre_rating_old_layout_values() -> None:
     assert row["レーティング"] == 105
     assert row["距離区分"] == "M,I"
     assert row["該当レース"] == "中山牝馬Ｓ１着、マーメイドＳ４着"
+
+
+def test_get_pre_rating_old_layout_cyrillic_category() -> None:
+    """2016年以前の形で距離区分がキリル文字の「М」でも、ラテン文字の「M」として読むこと"""
+    html = load_html(FIXTURE_OLD).replace(">Ｍ，Ｉ<", ">\u041c，Ｉ<", 1)
+    scraper, _ = create_scraper_with_mock(html)
+    row = _row(scraper.get_pre_rating(), "シュンドルボン")
+
+    assert row["レーティング"] == 105
+    assert row["距離区分"] == "M,I"
 
 
 def test_get_pre_rating_old_layout_no_value() -> None:
