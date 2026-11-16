@@ -23,6 +23,8 @@ FIXTURE_OLD = "jra_pre_rating_2016_eliza.html"
 FIXTURE_OLD_WITH_PREVIOUS = "jra_pre_rating_2014_feb.html"
 # 2016年以前の形で外国馬の表がある、2011年エリザベス女王杯のページ
 FIXTURE_OLD_WITH_FOREIGN = "jra_pre_rating_2011_eliza.html"
+# 2017年以降の形で、外国馬の距離区分がキリル文字の「М」（U+041C）の、2026年マイルCSのページ
+FIXTURE_CURRENT_CYRILLIC_CATEGORY = "jra_pre_rating_2026_mile.html"
 # 発表前で表が無く、発表の日時の案内が載る、2026年マイルCSのページ
 FIXTURE_UNPUBLISHED = "jra_pre_rating_2026_mile_unpublished.html"
 
