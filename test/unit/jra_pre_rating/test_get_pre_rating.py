@@ -23,6 +23,7 @@ from scraping.jra_pre_rating import JraPreRatingScraper
 from .conftest import (
     FIXTURE_CURRENT,
     FIXTURE_CURRENT_CYRILLIC_CATEGORY,
+    FIXTURE_CURRENT_FOREIGN_INSIDE_JAPANESE,
     FIXTURE_CURRENT_WITH_FOREIGN,
     FIXTURE_CURRENT_WITH_PREVIOUS,
     FIXTURE_OLD,
@@ -126,6 +127,21 @@ def test_get_pre_rating_current_layout_foreign_horse() -> None:
     assert row["レーティング"] == 111
     assert row["距離区分"] == "L"
     assert pd.isna(row["該当レース"])
+
+
+def test_get_pre_rating_current_layout_foreign_table_inside_japanese_table() -> None:
+    """外国馬の表が日本馬の表の中に入るページでも、日本馬の表の後ろに外国馬の表をつなぐこと"""
+    scraper, _ = create_scraper_with_mock(load_html(FIXTURE_CURRENT_FOREIGN_INSIDE_JAPANESE))
+    df = scraper.get_pre_rating()
+    japanese = _row(df, "カレンブーケドール")
+
+    assert len(df) == 17
+    assert df["馬名"].tolist()[-2:] == ["ワールドプレミア", "ウェイトゥパリス"]
+    assert japanese["レーティング"] == 110
+    assert japanese["距離区分"] == "L"
+    assert japanese["該当レース"] == "オールカマー2着"
+    assert _row(df, "ヨシオ")["距離区分"] == "S(D)"
+    assert df.iloc[-1]["レーティング"] == 116
 
 
 def test_get_pre_rating_current_layout_cyrillic_category() -> None:

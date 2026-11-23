@@ -31,8 +31,8 @@ _RACE_HEADER_MARK = "該当レース"
 _COUNTRY_HEADER_MARK = "調教国"
 # レーティングの値が無いことを表すセルの文字列
 _NO_VALUE_TEXTS = frozenset({"", "-", "ー", "―"})
-# 距離区分。SMILE の1文字を「,」か「-」でつなぎ、芝の印「(T)」が続くことがある
-_CATEGORY_SOURCE = r"[SMILE](?:[,-][SMILE])*(?:\(T\))?"
+# 距離区分。SMILE の1文字を「,」か「-」でつなぎ、芝の印「(T)」かダートの印「(D)」が続くことがある
+_CATEGORY_SOURCE = r"[SMILE](?:[,-][SMILE])*(?:\([TD]\))?"
 _CATEGORY_PATTERN = re.compile(rf"^{_CATEGORY_SOURCE}$")
 # 距離区分に紛れることがある、ラテン文字と同じ形のキリル文字（例: 「124 М」の「М」は U+041C）
 _CATEGORY_HOMOGLYPHS = str.maketrans({"\u041c": "M"})
@@ -191,11 +191,10 @@ def _parse_page(soup: BeautifulSoup, url: str) -> pd.DataFrame:
     """
     rows: list[dict[str, object]] = []
     found = False
-    # 古い年のページは表が入れ子になり、外側の表も同じ行を含むため、最も内側の表だけを読む
+    # 古い年のページは表が入れ子になる。閉じていないタグのせいで、外国馬の表が日本馬の表の中に
+    # 入ることもある。どの表も、入れ子の表の行を除いたその表自身の行だけを読む
     for table in soup.find_all("table"):
-        if table.find("table") is not None:
-            continue
-        trs = table.find_all("tr")
+        trs = _own_rows(table)
         if not trs or _header_texts(trs[0])[:1] != [_LEADING_HEADERS[0]]:
             continue
         found = True
@@ -215,6 +214,11 @@ def _parse_page(soup: BeautifulSoup, url: str) -> pd.DataFrame:
     for column in ("レーティング", "前年レーティング"):
         df[column] = df[column].astype("Int64")
     return df
+
+
+def _own_rows(table: Tag) -> list[Tag]:
+    """表の行のうち、入れ子の表の行を除いたその表自身の行を返す"""
+    return [tr for tr in table.find_all("tr") if tr.find_parent("table") is table]
 
 
 def _header_texts(tr: Tag) -> list[str]:
