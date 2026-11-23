@@ -17,6 +17,8 @@ FIXTURE_CURRENT = "jra_pre_rating_2026_eliza.html"
 FIXTURE_CURRENT_WITH_PREVIOUS = "jra_pre_rating_2026_osaka.html"
 # 2017年以降の形で外国馬の表がある、2022年エリザベス女王杯のページ
 FIXTURE_CURRENT_WITH_FOREIGN = "jra_pre_rating_2022_eliza.html"
+# 2017年以降の形で、閉じていないタグで外国馬の表が日本馬の表の中に入る、2020年ジャパンCのページ
+FIXTURE_CURRENT_FOREIGN_INSIDE_JAPANESE = "jra_pre_rating_2020_jc.html"
 # 2016年以前の形の、2016年エリザベス女王杯のページ
 FIXTURE_OLD = "jra_pre_rating_2016_eliza.html"
 # 2016年以前の形で前年のJPNランキングの列がある、2014年フェブラリーSのページ
